@@ -1,4 +1,4 @@
-module main
+module github.com/chimera-rpg/go-editor
 
 go 1.14
 

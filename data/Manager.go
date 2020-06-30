@@ -1,19 +1,12 @@
 package data
 
 import (
-	"bytes"
 	"image"
-	"strconv"
-	"strings"
 
 	_ "image/png"
 	"os"
 	"path"
 	"path/filepath"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/kettek/apng"
 )
 
 // Manager handles access to files on the system.
