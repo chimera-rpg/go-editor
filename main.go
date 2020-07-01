@@ -5,7 +5,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/chimera-rpg/go-client/ui"
 	"github.com/chimera-rpg/go-editor/data"
 	"github.com/chimera-rpg/go-editor/editor"
 )
@@ -16,22 +15,21 @@ func main() {
 	var err error
 	var dataManager data.Manager
 	var editorInstance editor.Editor
-	var uiInstance ui.Instance
 
 	defer func() {
 		if r := recover(); r != nil {
-			ui.ShowError("%v", r.(error).Error())
+			log.Fatalln(r.(error))
 			debug.PrintStack()
 		}
 	}()
 	log.Print("Starting Chimera editor (golang)")
 
 	if err = dataManager.Setup(); err != nil {
-		ui.ShowError("%s", err)
+		log.Fatalln(err)
 	}
 
 	// Setup our UI
-	if err = uiInstance.Setup(&dataManager); err != nil {
+	/*if err = uiInstance.Setup(&dataManager); err != nil {
 		ui.ShowError("%s", err)
 		return
 	}
@@ -49,7 +47,15 @@ func main() {
 	go editorInstance.Loop()
 
 	// Start our UI Loop.
-	uiInstance.Loop()
+	uiInstance.Loop()*/
+
+	if err = editorInstance.Setup(&dataManager); err != nil {
+		log.Fatalln(err)
+		return
+	}
+	defer editorInstance.Destroy()
+	// Start the clientInstance's channel listening loop as a coroutine
+	editorInstance.Start()
 
 	log.Print("Sayonara!")
 }
