@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"fmt"
 	"os"
 
 	g "github.com/AllenDang/giu"
@@ -75,5 +76,26 @@ func (e *Editor) drawArchetypes() {
 }
 
 func (e *Editor) drawMap( /* m Map* */ ) {
-	g.Window("Map", 210, 30, 200, 100, g.Layout{})
+	var yChildren []g.Widget
+	mHeight := 8
+	mWidth := 8
+	mDepth := 8
+	tWidth := 32
+	tHeight := 24
+	for y := 0; y < mHeight; y++ {
+		var rows []*g.RowWidget
+		for z := 0; z < mDepth; z++ {
+			var cells []g.Widget
+			for x := 0; x < mWidth; x++ {
+				cells = append(cells, g.SelectableV("", false, g.SelectableFlagsNone, float32(tWidth), float32(tHeight), func() {
+					fmt.Printf("%dx%dx%d\n", y, x, z)
+				}))
+			}
+			rows = append(rows, g.Row(cells...))
+		}
+		yChildren = append(yChildren, g.Child(fmt.Sprintf("layer %d", y), true, float32(mWidth*tWidth), float32(mDepth*tHeight), g.WindowFlagsNoBackground|g.WindowFlagsNoCollapse|g.WindowFlagsNoResize|g.WindowFlagsNoDecoration, g.Layout{
+			g.Table("", false, rows),
+		}))
+	}
+	g.Window("Map", 210, 30, float32(mWidth*tWidth), float32(mWidth*tWidth), yChildren)
 }
