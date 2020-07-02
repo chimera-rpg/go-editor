@@ -40,17 +40,20 @@ func (m *Maps) draw() {
 			}()
 		} else {
 			tabs = append(tabs, g.TabItem(v.Name, g.Layout{
-				g.Image(t.texture, t.width, t.height),
+				g.Child(v.Name, false, 0, 0, g.WindowFlagsHorizontalScrollbar, g.Layout{
+					g.Image(t.texture, t.width, t.height),
+				}),
 			}))
 		}
 	}
 	var b bool
 
-	g.WindowV(fmt.Sprintf("MapSet: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
+	g.WindowV(fmt.Sprintf("Maps: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
 			g.Menu("File", g.Layout{
-				g.MenuItem("Save", nil),
+				g.MenuItem("Save", func() { m.saveAll() }),
 				g.Separator(),
+				g.MenuItem("Close", func() { m.close() }),
 			}),
 		}),
 		g.TabBarV("Tabs", g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown, tabs),
@@ -59,27 +62,51 @@ func (m *Maps) draw() {
 
 func (m *Maps) createMapTexture(name string, sm *sdata.Map) {
 	mT := MapTexture{}
-	mHeight := sm.Height
+	scale := 4.0
+	//mHeight := sm.Height
+	mHeight := 4
 	mWidth := sm.Width
 	mDepth := sm.Depth
-	tWidth := 32
-	tHeight := 24
+	tWidth := 8
+	tHeight := 6
 	cWidth := mWidth * tWidth
 	cHeight := mDepth * tHeight
 
-	mT.width = float32(cWidth)
-	mT.height = float32(cHeight)
+	focusedY := 3
 
-	dc := gg.NewContext(cWidth, cHeight)
-	dc.SetRGB(1, 1, 1)
+	mT.width = float32(cWidth+(mHeight*1)) * float32(scale)
+	mT.height = float32(cHeight+(mHeight*4)) * float32(scale)
+
+	dc := gg.NewContext(int(mT.width), int(mT.height))
+	dc.SetRGB(0.1, 0.1, 0.1)
+	dc.Clear()
+	dc.SetRGB(0.9, 0.9, 0.9)
+	dc.SetLineWidth(1)
+	startY := mHeight * 4
 	for y := 0; y < mHeight; y++ {
+		xOffset := y * 1
+		yOffset := y * 4
 		for x := 0; x < mWidth; x++ {
 			for z := 0; z < mDepth; z++ {
-				dc.DrawRectangle(float64(x*tWidth), float64(z*tHeight), float64(tWidth), float64(tHeight))
+				oX := float64(x*tWidth+xOffset) * scale
+				oY := float64(z*tHeight-yOffset+startY) * scale
+				oW := float64(tWidth) * scale
+				oH := float64(tHeight) * scale
+				dc.DrawRectangle(oX, oY, oW, oH)
+				if y == focusedY {
+					dc.SetRGB(0.1, 0.1, 0.1)
+					dc.FillPreserve()
+					dc.SetRGB(0.9, 0.9, 0.9)
+					dc.Stroke()
+				} else {
+					dc.SetRGBA(0.1, 0.1, 0.1, 0.1)
+					dc.FillPreserve()
+					dc.SetRGBA(0.9, 0.9, 0.9, 0.1)
+					dc.Stroke()
+				}
 			}
 		}
 	}
-	dc.Stroke()
 
 	var err error
 	mT.texture, err = g.NewTextureFromRgba(dc.Image().(*image.RGBA))
@@ -87,4 +114,12 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map) {
 		log.Fatalln(err)
 	}
 	m.mapTextures[name] = mT
+}
+
+func (m *Maps) saveAll() {
+	log.Println("TODO: Save all maps in file")
+}
+
+func (m *Maps) close() {
+	log.Println("TODO: Issue close of map")
 }
