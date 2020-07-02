@@ -73,6 +73,8 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map) {
 	cHeight := mDepth * tHeight
 
 	focusedY := 3
+	focusedX := 2
+	focusedZ := 2
 
 	mT.width = float32(cWidth+(mHeight*1)) * float32(scale)
 	mT.height = float32(cHeight+(mHeight*4)) * float32(scale)
@@ -80,7 +82,6 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map) {
 	dc := gg.NewContext(int(mT.width), int(mT.height))
 	dc.SetRGB(0.1, 0.1, 0.1)
 	dc.Clear()
-	dc.SetRGB(0.9, 0.9, 0.9)
 	dc.SetLineWidth(1)
 	startY := mHeight * 4
 	for y := 0; y < mHeight; y++ {
@@ -94,16 +95,15 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map) {
 				oH := float64(tHeight) * scale
 				dc.DrawRectangle(oX, oY, oW, oH)
 				if y == focusedY {
-					dc.SetRGB(0.1, 0.1, 0.1)
-					dc.FillPreserve()
+					if x == focusedX && z == focusedZ {
+						dc.SetRGBA(0.2, 0.3, 0.6, 0.5)
+						dc.FillPreserve()
+					}
 					dc.SetRGB(0.9, 0.9, 0.9)
-					dc.Stroke()
 				} else {
-					dc.SetRGBA(0.1, 0.1, 0.1, 0.1)
-					dc.FillPreserve()
 					dc.SetRGBA(0.9, 0.9, 0.9, 0.1)
-					dc.Stroke()
 				}
+				dc.Stroke()
 			}
 		}
 	}
