@@ -16,10 +16,13 @@ import (
 
 // Manager handles access to files on the system.
 type Manager struct {
-	DataPath       string // Path for client data (fonts, etc.)
-	MapsPath       string // Path for maps
-	ArchetypesPath string // Path for archetypes.
-	images         map[uint32]image.Image
+	DataPath            string // Path for client data (fonts, etc.)
+	MapsPath            string // Path for maps
+	ArchetypesPath      string // Path for archetypes.
+	images              map[uint32]image.Image
+	archetypeFiles      map[string]map[string]*sdata.Archetype
+	archetypeFilesOrder []string
+	animationFiles      map[string]map[string]struct{}
 }
 
 // Setup gets the required data paths and creates them if needed.
@@ -42,6 +45,8 @@ func (m *Manager) Setup() (err error) {
 	}
 
 	m.images = make(map[uint32]image.Image)
+	m.archetypeFiles = make(map[string]map[string]*sdata.Archetype)
+	m.animationFiles = make(map[string]map[string]struct{})
 
 	if err = m.LoadArchetypes(); err != nil {
 		return
@@ -128,8 +133,20 @@ func (m *Manager) LoadArchetypes() error {
 }
 
 func (m *Manager) LoadArchetypeFile(filepath string) error {
-	log.Printf("Load arch %s\n", filepath)
-	//
+	r, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return err
+	}
+
+	archetypesMap := make(map[string]*sdata.Archetype)
+
+	if err = yaml.Unmarshal(r, &archetypesMap); err != nil {
+		return err
+	}
+
+	m.archetypeFiles[filepath] = archetypesMap
+	m.archetypeFilesOrder = append(m.archetypeFilesOrder, filepath)
+
 	return nil
 }
 
@@ -158,4 +175,12 @@ func (m *Manager) LoadAnimationFile(filepath string) error {
 	log.Printf("Load anim %s\n", filepath)
 	//
 	return nil
+}
+
+func (m *Manager) GetArchetypeFiles() []string {
+	return m.archetypeFilesOrder
+}
+
+func (m *Manager) GetArchetypeFile(f string) map[string]*sdata.Archetype {
+	return m.archetypeFiles[f]
 }
