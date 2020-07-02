@@ -31,6 +31,7 @@ func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 
 func (m *Maps) draw() {
 	var tabs []g.Widget
+	childPos := image.Point{0, 0}
 	for k, v := range m.maps {
 		t, ok := m.mapTextures[k]
 		if !ok || t.texture == nil {
@@ -41,7 +42,19 @@ func (m *Maps) draw() {
 		} else {
 			tabs = append(tabs, g.TabItem(v.Name, g.Layout{
 				g.Child(v.Name, false, 0, 0, g.WindowFlagsHorizontalScrollbar, g.Layout{
+					g.Custom(func() {
+						childPos = g.GetCursorScreenPos()
+					}),
 					g.Image(t.texture, t.width, t.height),
+					g.Custom(func() {
+						if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
+							mousePos := g.Context.IO().GetMousePos()
+							mousePos.X -= float32(childPos.X)
+							mousePos.Y -= float32(childPos.Y)
+							// TODO: Send mousePos as a click for the selected map.
+							log.Println(mousePos)
+						}
+					}),
 				}),
 			}))
 		}

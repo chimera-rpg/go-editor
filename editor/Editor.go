@@ -52,6 +52,7 @@ func (e *Editor) loop() {
 	if !e.isRunning {
 		os.Exit(0)
 	}
+
 	g.MainMenuBar(g.Layout{
 		g.Menu("File", g.Layout{
 			g.MenuItem("Open", nil),
