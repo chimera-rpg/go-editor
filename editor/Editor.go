@@ -68,6 +68,7 @@ func (e *Editor) loop() {
 		m.draw()
 	}
 	e.drawArchetypes()
+	e.drawAnimations()
 	e.drawSplash()
 }
 
@@ -85,8 +86,36 @@ func (e *Editor) drawSplash() {
 
 func (e *Editor) drawArchetypes() {
 	var rows []*g.RowWidget
-	rows = append(rows, g.Row(g.Label("test")))
-	g.Window("Archetypes", 10, 30, 200, 400, g.Layout{
-		g.FastTable("yeet", true, rows),
+	archs := e.dataManager.GetArchetypeFiles()
+	for _, archFile := range archs {
+		for archName := range e.dataManager.GetArchetypeFile(archFile) {
+			rows = append(rows, g.Row(g.Label(archName)))
+		}
+	}
+	var b bool
+	g.WindowV("Archetypes", &b, g.WindowFlagsMenuBar, 10, 30, 200, 400, g.Layout{
+		g.MenuBar(g.Layout{
+			g.Menu("File", g.Layout{
+				g.MenuItem("New...", func() {}),
+				g.Separator(),
+			}),
+		}),
+		g.FastTable("archetypes", true, rows),
+	})
+
+}
+
+func (e *Editor) drawAnimations() {
+	var rows []*g.RowWidget
+	rows = append(rows, g.Row(g.Label("anim")))
+	var b bool
+	g.WindowV("Animations", &b, g.WindowFlagsMenuBar, 10, 500, 200, 400, g.Layout{
+		g.MenuBar(g.Layout{
+			g.Menu("File", g.Layout{
+				g.MenuItem("New...", func() {}),
+				g.Separator(),
+			}),
+		}),
+		g.FastTable("animations", true, rows),
 	})
 }
