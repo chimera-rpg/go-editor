@@ -2,11 +2,12 @@ package editor
 
 import (
 	"fmt"
+	"image"
+
 	g "github.com/AllenDang/giu"
 	sdata "github.com/chimera-rpg/go-server/data"
 	"github.com/fogleman/gg"
 	log "github.com/sirupsen/logrus"
-	"image"
 )
 
 type Maps struct {
@@ -48,9 +49,9 @@ func (m *Maps) draw() {
 					g.Image(t.texture, t.width, t.height),
 					g.Custom(func() {
 						if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
-							mousePos := g.Context.IO().GetMousePos()
-							mousePos.X -= float32(childPos.X)
-							mousePos.Y -= float32(childPos.Y)
+							mousePos := g.GetMousePos()
+							mousePos.X -= childPos.X
+							mousePos.Y -= childPos.Y
 							// TODO: Send mousePos as a click for the selected map.
 							log.Println(mousePos)
 						}
