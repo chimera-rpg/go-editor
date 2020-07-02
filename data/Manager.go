@@ -2,6 +2,8 @@ package data
 
 import (
 	"image"
+	"log"
+	"strings"
 
 	sdata "github.com/chimera-rpg/go-server/data"
 	"gopkg.in/yaml.v2"
@@ -35,8 +37,19 @@ func (m *Manager) Setup() (err error) {
 	if err = m.acquireMapPath(); err != nil {
 		return
 	}
+	if err = m.acquireArchetypesPath(); err != nil {
+		return
+	}
 
 	m.images = make(map[uint32]image.Image)
+
+	if err = m.LoadArchetypes(); err != nil {
+		return
+	}
+
+	if err = m.LoadAnimations(); err != nil {
+		return
+	}
 
 	return
 }
@@ -70,6 +83,17 @@ func (m *Manager) acquireMapPath() (err error) {
 	return
 }
 
+func (m *Manager) acquireArchetypesPath() (err error) {
+	var dir string
+	if dir, err = filepath.Abs(os.Args[0]); err != nil {
+		return
+	}
+	dir = path.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "archetypes")
+
+	m.ArchetypesPath = dir
+	return
+}
+
 func (m *Manager) LoadMap(filepath string) (maps map[string]*sdata.Map, err error) {
 	r, err := ioutil.ReadFile(filepath)
 	if err != nil {
@@ -80,4 +104,58 @@ func (m *Manager) LoadMap(filepath string) (maps map[string]*sdata.Map, err erro
 		return
 	}
 	return
+}
+
+func (m *Manager) LoadArchetypes() error {
+	err := filepath.Walk(m.ArchetypesPath, func(file string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			if strings.HasSuffix(file, ".arch.yaml") {
+				err = m.LoadArchetypeFile(file)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Manager) LoadArchetypeFile(filepath string) error {
+	log.Printf("Load arch %s\n", filepath)
+	//
+	return nil
+}
+
+func (m *Manager) LoadAnimations() error {
+	err := filepath.Walk(m.ArchetypesPath, func(file string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			if strings.HasSuffix(file, ".anim.yaml") {
+				err = m.LoadAnimationFile(file)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Manager) LoadAnimationFile(filepath string) error {
+	log.Printf("Load anim %s\n", filepath)
+	//
+	return nil
 }
