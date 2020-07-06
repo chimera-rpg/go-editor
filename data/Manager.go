@@ -1,6 +1,7 @@
 package data
 
 import (
+	"errors"
 	"image"
 	"log"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/nfnt/resize"
 
 	sdata "github.com/chimera-rpg/go-server/data"
 	"gopkg.in/yaml.v2"
@@ -21,6 +24,9 @@ type Manager struct {
 	MapsPath            string // Path for maps
 	ArchetypesPath      string // Path for archetypes.
 	images              map[string]image.Image
+	scaledImages        map[float64]map[string]image.Image
+	animations          map[string]sdata.AnimationPre
+	archetypes          map[string]*sdata.Archetype
 	archetypeFiles      map[string]map[string]*sdata.Archetype
 	archetypeFilesOrder []string
 	animationFiles      map[string]map[string]struct{}
@@ -46,8 +52,11 @@ func (m *Manager) Setup() (err error) {
 	}
 
 	m.images = make(map[string]image.Image)
+	m.scaledImages = make(map[float64]map[string]image.Image)
+	m.archetypes = make(map[string]*sdata.Archetype)
 	m.archetypeFiles = make(map[string]map[string]*sdata.Archetype)
 	m.animationFiles = make(map[string]map[string]struct{})
+	m.animations = make(map[string]sdata.AnimationPre)
 
 	if err = m.LoadArchetypes(); err != nil {
 		return
@@ -153,6 +162,10 @@ func (m *Manager) LoadArchetypeFile(filepath string) error {
 	m.archetypeFiles[filepath] = archetypesMap
 	m.archetypeFilesOrder = append(m.archetypeFilesOrder, filepath)
 
+	for k, a := range archetypesMap {
+		m.archetypes[k] = a
+	}
+
 	return nil
 }
 
@@ -178,8 +191,21 @@ func (m *Manager) LoadAnimations() error {
 }
 
 func (m *Manager) LoadAnimationFile(filepath string) error {
-	log.Printf("Load anim %s\n", filepath)
-	//
+	r, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return err
+	}
+
+	animationsMap := make(map[string]sdata.AnimationPre)
+
+	if err = yaml.Unmarshal(r, &animationsMap); err != nil {
+		return err
+	}
+
+	for k, a := range animationsMap {
+		m.animations[k] = a
+	}
+
 	return nil
 }
 
@@ -205,7 +231,8 @@ func (m *Manager) LoadImages() error {
 }
 
 func (m *Manager) LoadImage(p string) error {
-	if _, ok := m.images[p]; ok {
+	shortpath := filepath.ToSlash(p[len(m.ArchetypesPath)+1:])
+	if _, ok := m.images[shortpath]; ok {
 		return nil
 	}
 
@@ -219,7 +246,7 @@ func (m *Manager) LoadImage(p string) error {
 		return err
 	}
 
-	m.images[p] = img
+	m.images[shortpath] = img
 	return nil
 }
 
@@ -229,4 +256,43 @@ func (m *Manager) GetArchetypeFiles() []string {
 
 func (m *Manager) GetArchetypeFile(f string) map[string]*sdata.Archetype {
 	return m.archetypeFiles[f]
+}
+
+func (m *Manager) GetArchetype(f string) *sdata.Archetype {
+	return m.archetypes[f]
+}
+
+func (m *Manager) GetAnimFaceImage(anim, face string) (string, error) {
+	a, ok := m.animations[anim]
+	if !ok {
+		return "", errors.New("missing animation")
+	}
+	f, ok := a.Faces[face]
+	if !ok {
+		return "", errors.New("missing face")
+	}
+	if len(f) < 0 {
+		return "", errors.New("missing frame")
+	}
+	return f[0].Image, nil
+}
+
+func (m *Manager) GetImage(i string) image.Image {
+	return m.images[i]
+}
+
+func (m *Manager) GetScaledImage(scale float64, name string) image.Image {
+	img := m.GetImage(name)
+	if img == nil {
+		return nil
+	}
+	if _, ok := m.scaledImages[scale]; !ok {
+		m.scaledImages[scale] = make(map[string]image.Image)
+	}
+	scaledImage, ok := m.scaledImages[scale][name]
+	if !ok {
+		scaledImage = resize.Resize(uint(float64(img.Bounds().Max.X)*scale), uint(float64(img.Bounds().Max.Y)*scale), img, resize.NearestNeighbor)
+		m.scaledImages[scale][name] = scaledImage
+	}
+	return scaledImage
 }
