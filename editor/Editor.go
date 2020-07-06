@@ -3,10 +3,11 @@ package editor
 import (
 	"os"
 
+	"path"
+
 	g "github.com/AllenDang/giu"
 	"github.com/chimera-rpg/go-editor/data"
 	log "github.com/sirupsen/logrus"
-	"path"
 )
 
 type Editor struct {
@@ -65,7 +66,7 @@ func (e *Editor) loop() {
 	}).Build()
 
 	for _, m := range e.mapsMap {
-		m.draw()
+		m.draw(e.dataManager)
 	}
 	e.drawArchetypes()
 	e.drawAnimations()

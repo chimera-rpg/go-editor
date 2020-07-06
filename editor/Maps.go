@@ -1,10 +1,12 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"image"
 
 	g "github.com/AllenDang/giu"
+	"github.com/chimera-rpg/go-editor/data"
 	sdata "github.com/chimera-rpg/go-server/data"
 	"github.com/fogleman/gg"
 	log "github.com/sirupsen/logrus"
@@ -20,8 +22,8 @@ type Maps struct {
 
 type MapTexture struct {
 	texture *g.Texture
-	width   float32
-	height  float32
+	width   int
+	height  int
 }
 
 func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
@@ -39,14 +41,14 @@ func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 	return m
 }
 
-func (m *Maps) draw() {
+func (m *Maps) draw(d *data.Manager) {
 	var tabs []g.Widget
 	childPos := image.Point{0, 0}
 	for k, v := range m.maps {
 		t, ok := m.mapTextures[k]
 		if !ok || t.texture == nil {
 			go func() {
-				m.createMapTexture(k, v)
+				m.createMapTexture(k, v, d)
 				g.Update()
 			}()
 		} else {
@@ -55,7 +57,7 @@ func (m *Maps) draw() {
 					g.Custom(func() {
 						childPos = g.GetCursorScreenPos()
 					}),
-					g.Image(t.texture, t.width, t.height),
+					g.Image(t.texture, float32(t.width), float32(t.height)),
 					g.Custom(func() {
 						if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
 							mousePos := g.GetMousePos()
@@ -104,39 +106,58 @@ func (m *Maps) handleMapMouse(p image.Point, which int) {
 	log.Printf("%dx%d: %dx%d\n", hitX, hitY, nearestX, nearestY)
 }
 
-func (m *Maps) createMapTexture(name string, sm *sdata.Map) {
+func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 	mT := MapTexture{}
 	scale := 4.0
-	//mHeight := sm.Height
-	mHeight := 4
-	mWidth := sm.Width
-	mDepth := sm.Depth
 	tWidth := 8
 	tHeight := 6
-	cWidth := mWidth * tWidth
-	cHeight := mDepth * tHeight
+	padding := 4
+	cWidth := sm.Width * tWidth
+	cHeight := sm.Depth * tHeight
 
-	mT.width = float32(cWidth+(mHeight*1)) * float32(scale)
-	mT.height = float32(cHeight+(mHeight*4)) * float32(scale)
+	mT.width = int(float64(cWidth+(sm.Height*1)+padding*2) * scale)
+	mT.height = int(float64(cHeight+(sm.Height*4)+padding*2) * scale)
 
 	dc := gg.NewContext(int(mT.width), int(mT.height))
 	dc.SetRGB(0.1, 0.1, 0.1)
 	dc.Clear()
-	dc.SetLineWidth(1)
-	startY := mHeight * 4
-	for y := 0; y < mHeight; y++ {
+
+	startX := padding
+	startY := padding
+
+	// Draw archetypes.
+	for y := 0; y < sm.Height; y++ {
 		xOffset := y * 1
 		yOffset := y * 4
-		for x := 0; x < mWidth; x++ {
-			for z := 0; z < mDepth; z++ {
-				oX := float64(x*tWidth+xOffset) * scale
+		for x := 0; x < sm.Width; x++ {
+			for z := 0; z < sm.Depth; z++ {
+				oX := float64(x*tWidth+xOffset+startX) * scale
+				oY := float64(z*tHeight-yOffset+startY) * scale
+				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
+					img, _ := m.GetImage(&sm.Tiles[y][x][z][t], dm, scale)
+					if img != nil {
+						dc.DrawImage(img, int(oX), int(oY))
+					}
+				}
+			}
+		}
+	}
+
+	// Draw grid.
+	dc.SetLineWidth(1)
+	for y := 0; y < sm.Height; y++ {
+		xOffset := y * 1
+		yOffset := y * 4
+		for x := 0; x < sm.Width; x++ {
+			for z := 0; z < sm.Depth; z++ {
+				oX := float64(x*tWidth+xOffset+startX) * scale
 				oY := float64(z*tHeight-yOffset+startY) * scale
 				oW := float64(tWidth) * scale
 				oH := float64(tHeight) * scale
 				dc.DrawRectangle(oX, oY, oW, oH)
 				if y == m.focusedY {
 					if x == m.focusedX && z == m.focusedZ {
-						dc.SetRGBA(0.2, 0.3, 0.6, 0.5)
+						dc.SetRGBA(0.2, 0.3, 0.6, 0.25)
 						dc.FillPreserve()
 					}
 					dc.SetRGB(0.9, 0.9, 0.9)
@@ -154,6 +175,55 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map) {
 		log.Fatalln(err)
 	}
 	m.mapTextures[name] = mT
+}
+
+func (m *Maps) GetAnimAndFace(dm *data.Manager, a *sdata.Archetype, anim, face string) (string, string) {
+	if anim == "" && a.Anim != "" {
+		anim = a.Anim
+	}
+	if face == "" && a.Face != "" {
+		face = a.Face
+	}
+
+	if anim == "" || face == "" {
+		if a.Arch != "" {
+			o := dm.GetArchetype(a.Arch)
+			if o != nil {
+				anim, face = m.GetAnimAndFace(dm, o, anim, face)
+				if anim != "" && face != "" {
+					return anim, face
+				}
+			}
+		}
+		for _, name := range a.Archs {
+			o := dm.GetArchetype(name)
+			if o != nil {
+				anim, face = m.GetAnimAndFace(dm, o, anim, face)
+				if anim != "" && face != "" {
+					return anim, face
+				}
+			}
+		}
+	}
+
+	return anim, face
+}
+
+func (m *Maps) GetImage(a *sdata.Archetype, dm *data.Manager, scale float64) (img image.Image, err error) {
+	anim, face := m.GetAnimAndFace(dm, a, "", "")
+
+	imgName, err := dm.GetAnimFaceImage(anim, face)
+	if err != nil {
+		return nil, err
+	}
+
+	img = dm.GetScaledImage(scale, imgName)
+	if img == nil {
+		return nil, errors.New("missing image")
+	}
+
+	// Didn't find anything, return missing image...
+	return
 }
 
 func (m *Maps) saveAll() {
