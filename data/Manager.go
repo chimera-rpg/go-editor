@@ -5,13 +5,14 @@ import (
 	"log"
 	"strings"
 
-	sdata "github.com/chimera-rpg/go-server/data"
-	"gopkg.in/yaml.v2"
 	_ "image/png"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+
+	sdata "github.com/chimera-rpg/go-server/data"
+	"gopkg.in/yaml.v2"
 )
 
 // Manager handles access to files on the system.
@@ -19,7 +20,7 @@ type Manager struct {
 	DataPath            string // Path for client data (fonts, etc.)
 	MapsPath            string // Path for maps
 	ArchetypesPath      string // Path for archetypes.
-	images              map[uint32]image.Image
+	images              map[string]image.Image
 	archetypeFiles      map[string]map[string]*sdata.Archetype
 	archetypeFilesOrder []string
 	animationFiles      map[string]map[string]struct{}
@@ -44,7 +45,7 @@ func (m *Manager) Setup() (err error) {
 		return
 	}
 
-	m.images = make(map[uint32]image.Image)
+	m.images = make(map[string]image.Image)
 	m.archetypeFiles = make(map[string]map[string]*sdata.Archetype)
 	m.animationFiles = make(map[string]map[string]struct{})
 
@@ -55,6 +56,11 @@ func (m *Manager) Setup() (err error) {
 	if err = m.LoadAnimations(); err != nil {
 		return
 	}
+
+	if err = m.LoadImages(); err != nil {
+		return
+	}
+	log.Printf("Cached %d images\n", len(m.images))
 
 	return
 }
@@ -174,6 +180,46 @@ func (m *Manager) LoadAnimations() error {
 func (m *Manager) LoadAnimationFile(filepath string) error {
 	log.Printf("Load anim %s\n", filepath)
 	//
+	return nil
+}
+
+func (m *Manager) LoadImages() error {
+	err := filepath.Walk(m.ArchetypesPath, func(file string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			if strings.HasSuffix(file, ".png") {
+				err = m.LoadImage(file)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Manager) LoadImage(p string) error {
+	if _, ok := m.images[p]; ok {
+		return nil
+	}
+
+	reader, err := os.Open(p)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	img, _, err := image.Decode(reader)
+	if err != nil {
+		return err
+	}
+
+	m.images[p] = img
 	return nil
 }
 
