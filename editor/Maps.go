@@ -11,9 +11,11 @@ import (
 )
 
 type Maps struct {
-	filename    string
-	maps        map[string]*sdata.Map
-	mapTextures map[string]MapTexture
+	filename                     string
+	maps                         map[string]*sdata.Map
+	currentMap                   string
+	mapTextures                  map[string]MapTexture
+	focusedY, focusedX, focusedZ int
 }
 
 type MapTexture struct {
@@ -23,11 +25,18 @@ type MapTexture struct {
 }
 
 func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
-	return &Maps{
+	m := &Maps{
 		filename:    name,
 		maps:        maps,
 		mapTextures: make(map[string]MapTexture),
 	}
+
+	for k := range maps {
+		m.currentMap = k
+		break
+	}
+
+	return m
 }
 
 func (m *Maps) draw() {
@@ -52,8 +61,7 @@ func (m *Maps) draw() {
 							mousePos := g.GetMousePos()
 							mousePos.X -= childPos.X
 							mousePos.Y -= childPos.Y
-							// TODO: Send mousePos as a click for the selected map.
-							log.Println(mousePos)
+							m.handleMapMouse(mousePos, 0)
 						}
 					}),
 				}),
@@ -74,6 +82,28 @@ func (m *Maps) draw() {
 	})
 }
 
+func (m *Maps) handleMapMouse(p image.Point, which int) {
+	_, ok := m.maps[m.currentMap]
+	if !ok {
+		return
+	}
+	scale := 4.0
+	tWidth := 8
+	tHeight := 6
+
+	hitX := int(float64(p.X) / scale)
+	hitY := int(float64(p.Y) / scale)
+
+	focusedY := 3
+
+	xOffset := focusedY * 1
+	yOffset := focusedY * 4
+
+	nearestX := (hitX + xOffset) / tWidth
+	nearestY := (hitY - yOffset) / tHeight
+	log.Printf("%dx%d: %dx%d\n", hitX, hitY, nearestX, nearestY)
+}
+
 func (m *Maps) createMapTexture(name string, sm *sdata.Map) {
 	mT := MapTexture{}
 	scale := 4.0
@@ -85,10 +115,6 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map) {
 	tHeight := 6
 	cWidth := mWidth * tWidth
 	cHeight := mDepth * tHeight
-
-	focusedY := 3
-	focusedX := 2
-	focusedZ := 2
 
 	mT.width = float32(cWidth+(mHeight*1)) * float32(scale)
 	mT.height = float32(cHeight+(mHeight*4)) * float32(scale)
@@ -108,8 +134,8 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map) {
 				oW := float64(tWidth) * scale
 				oH := float64(tHeight) * scale
 				dc.DrawRectangle(oX, oY, oW, oH)
-				if y == focusedY {
-					if x == focusedX && z == focusedZ {
+				if y == m.focusedY {
+					if x == m.focusedX && z == m.focusedZ {
 						dc.SetRGBA(0.2, 0.3, 0.6, 0.5)
 						dc.FillPreserve()
 					}
