@@ -6,6 +6,7 @@ import (
 	"image"
 
 	g "github.com/AllenDang/giu"
+	cdata "github.com/chimera-rpg/go-common/data"
 	"github.com/chimera-rpg/go-editor/data"
 	sdata "github.com/chimera-rpg/go-server/data"
 	"github.com/fogleman/gg"
@@ -96,10 +97,8 @@ func (m *Maps) handleMapMouse(p image.Point, which int) {
 	hitX := int(float64(p.X) / scale)
 	hitY := int(float64(p.Y) / scale)
 
-	focusedY := 3
-
-	xOffset := focusedY * 1
-	yOffset := focusedY * 4
+	xOffset := m.focusedY * 1
+	yOffset := m.focusedY * 4
 
 	nearestX := (hitX + xOffset) / tWidth
 	nearestY := (hitY - yOffset) / tHeight
@@ -109,14 +108,15 @@ func (m *Maps) handleMapMouse(p image.Point, which int) {
 func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 	mT := MapTexture{}
 	scale := 4.0
-	tWidth := 8
-	tHeight := 6
+	tWidth := int(dm.AnimationsConfig.TileWidth)
+	tHeight := int(dm.AnimationsConfig.TileHeight)
+	yStep := dm.AnimationsConfig.YStep
 	padding := 4
 	cWidth := sm.Width * tWidth
 	cHeight := sm.Depth * tHeight
 
-	mT.width = int(float64(cWidth+(sm.Height*1)+padding*2) * scale)
-	mT.height = int(float64(cHeight+(sm.Height*4)+padding*2) * scale)
+	mT.width = int(float64(cWidth+(sm.Height*int(yStep.X))+padding*2) * scale)
+	mT.height = int(float64(cHeight+(sm.Height*int(yStep.Y))+padding*4) * scale)
 
 	dc := gg.NewContext(int(mT.width), int(mT.height))
 	dc.SetRGB(0.1, 0.1, 0.1)
@@ -127,13 +127,17 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 
 	// Draw archetypes.
 	for y := 0; y < sm.Height; y++ {
-		xOffset := y * 1
-		yOffset := y * 4
-		for x := 0; x < sm.Width; x++ {
+		xOffset := y * int(yStep.X)
+		yOffset := y * int(yStep.Y)
+		for x := sm.Width - 1; x >= 0; x-- {
 			for z := 0; z < sm.Depth; z++ {
 				oX := float64(x*tWidth+xOffset+startX) * scale
 				oY := float64(z*tHeight-yOffset+startY) * scale
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
+					if adjustment, ok := dm.AnimationsConfig.Adjustments[m.GetType(dm, &sm.Tiles[y][x][z][t], 0)]; ok {
+						oX += float64(adjustment.X) * scale
+						oY += float64(adjustment.Y) * scale
+					}
 					img, _ := m.GetImage(&sm.Tiles[y][x][z][t], dm, scale)
 					if img != nil {
 						dc.DrawImage(img, int(oX), int(oY))
@@ -146,8 +150,8 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 	// Draw grid.
 	dc.SetLineWidth(1)
 	for y := 0; y < sm.Height; y++ {
-		xOffset := y * 1
-		yOffset := y * 4
+		xOffset := y * int(yStep.X)
+		yOffset := y * int(yStep.Y)
 		for x := 0; x < sm.Width; x++ {
 			for z := 0; z < sm.Depth; z++ {
 				oX := float64(x*tWidth+xOffset+startX) * scale
@@ -160,7 +164,7 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 						dc.SetRGBA(0.2, 0.3, 0.6, 0.25)
 						dc.FillPreserve()
 					}
-					dc.SetRGB(0.9, 0.9, 0.9)
+					dc.SetRGBA(0.9, 0.9, 0.9, 0.5)
 				} else {
 					dc.SetRGBA(0.9, 0.9, 0.9, 0.1)
 				}
@@ -207,6 +211,35 @@ func (m *Maps) GetAnimAndFace(dm *data.Manager, a *sdata.Archetype, anim, face s
 	}
 
 	return anim, face
+}
+
+func (m *Maps) GetType(dm *data.Manager, a *sdata.Archetype, atype cdata.ArchetypeType) cdata.ArchetypeType {
+	if atype == 0 && a.Type != 0 {
+		atype = a.Type
+	}
+
+	if atype == 0 {
+		if a.Arch != "" {
+			o := dm.GetArchetype(a.Arch)
+			if o != nil {
+				atype = m.GetType(dm, o, atype)
+				if atype != 0 {
+					return atype
+				}
+			}
+		}
+		for _, name := range a.Archs {
+			o := dm.GetArchetype(name)
+			if o != nil {
+				atype = m.GetType(dm, o, atype)
+				if atype != 0 {
+					return atype
+				}
+			}
+		}
+	}
+
+	return atype
 }
 
 func (m *Maps) GetImage(a *sdata.Archetype, dm *data.Manager, scale float64) (img image.Image, err error) {
