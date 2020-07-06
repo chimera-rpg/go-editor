@@ -14,6 +14,7 @@ import (
 
 	"github.com/nfnt/resize"
 
+	cdata "github.com/chimera-rpg/go-common/data"
 	sdata "github.com/chimera-rpg/go-server/data"
 	"gopkg.in/yaml.v2"
 )
@@ -28,6 +29,7 @@ type Manager struct {
 	animations          map[string]sdata.AnimationPre
 	archetypes          map[string]*sdata.Archetype
 	archetypeFiles      map[string]map[string]*sdata.Archetype
+	AnimationsConfig    cdata.AnimationsConfig
 	archetypeFilesOrder []string
 	animationFiles      map[string]map[string]struct{}
 }
@@ -57,6 +59,16 @@ func (m *Manager) Setup() (err error) {
 	m.archetypeFiles = make(map[string]map[string]*sdata.Archetype)
 	m.animationFiles = make(map[string]map[string]struct{})
 	m.animations = make(map[string]sdata.AnimationPre)
+
+	// Read animations config
+	animationsConfigPath := path.Join(m.ArchetypesPath, "config.yaml")
+	r, err := ioutil.ReadFile(animationsConfigPath)
+	if err != nil {
+		return err
+	}
+	if err = yaml.Unmarshal(r, &m.AnimationsConfig); err != nil {
+		return err
+	}
 
 	if err = m.LoadArchetypes(); err != nil {
 		return
