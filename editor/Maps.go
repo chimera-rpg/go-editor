@@ -47,12 +47,11 @@ func (m *Maps) draw(d *data.Manager) {
 	childPos := image.Point{0, 0}
 	for k, v := range m.maps {
 		t, ok := m.mapTextures[k]
-		if !ok || t.texture == nil {
-			go func() {
-				m.createMapTexture(k, v, d)
-				g.Update()
-			}()
-		} else {
+		go func() {
+			m.createMapTexture(k, v, d)
+			g.Update()
+		}()
+		if ok && t.texture != nil {
 			tabs = append(tabs, g.TabItem(v.Name, g.Layout{
 				g.Child(v.Name, false, 0, 0, g.WindowFlagsHorizontalScrollbar, g.Layout{
 					g.Custom(func() {
@@ -64,7 +63,7 @@ func (m *Maps) draw(d *data.Manager) {
 							mousePos := g.GetMousePos()
 							mousePos.X -= childPos.X
 							mousePos.Y -= childPos.Y
-							m.handleMapMouse(mousePos, 0)
+							m.handleMapMouse(mousePos, 0, d)
 						}
 					}),
 				}),
@@ -85,24 +84,28 @@ func (m *Maps) draw(d *data.Manager) {
 	})
 }
 
-func (m *Maps) handleMapMouse(p image.Point, which int) {
-	_, ok := m.maps[m.currentMap]
+func (m *Maps) handleMapMouse(p image.Point, which int, dm *data.Manager) {
+	sm, ok := m.maps[m.currentMap]
 	if !ok {
 		return
 	}
 	scale := 4.0
-	tWidth := 8
-	tHeight := 6
+	padding := 4
+	tWidth := int(dm.AnimationsConfig.TileWidth)
+	tHeight := int(dm.AnimationsConfig.TileHeight)
 
 	hitX := int(float64(p.X) / scale)
 	hitY := int(float64(p.Y) / scale)
 
-	xOffset := m.focusedY * 1
-	yOffset := m.focusedY * 4
+	xOffset := m.focusedY*int(dm.AnimationsConfig.YStep.X) + padding
+	yOffset := m.focusedY*int(dm.AnimationsConfig.YStep.Y) + padding
 
-	nearestX := (hitX + xOffset) / tWidth
+	nearestX := (hitX+xOffset)/tWidth - 1
 	nearestY := (hitY - yOffset) / tHeight
-	log.Printf("%dx%d: %dx%d\n", hitX, hitY, nearestX, nearestY)
+	if nearestX >= 0 && nearestX < sm.Width && nearestY >= 0 && nearestY < sm.Depth {
+		m.focusedX = nearestX
+		m.focusedZ = nearestY
+	}
 }
 
 func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
@@ -161,10 +164,10 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 				dc.DrawRectangle(oX, oY, oW, oH)
 				if y == m.focusedY {
 					if x == m.focusedX && z == m.focusedZ {
-						dc.SetRGBA(0.2, 0.3, 0.6, 0.25)
+						dc.SetRGBA(0.2, 0.3, 0.6, 0.5)
 						dc.FillPreserve()
 					}
-					dc.SetRGBA(0.9, 0.9, 0.9, 0.5)
+					dc.SetRGB(0.9, 0.9, 0.9)
 				} else {
 					dc.SetRGBA(0.9, 0.9, 0.9, 0.1)
 				}
