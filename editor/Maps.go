@@ -17,6 +17,9 @@ type Maps struct {
 	currentMap                   string
 	mapTextures                  map[string]MapTexture
 	focusedY, focusedX, focusedZ int
+	resizeL, resizeR             int32
+	resizeT, resizeB             int32
+	resizeU, resizeD             int32
 }
 
 type MapTexture struct {
@@ -41,6 +44,7 @@ func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 }
 
 func (m *Maps) draw(d *data.Manager) {
+	sm := m.maps[m.currentMap]
 	var tabs []g.Widget
 	childPos := image.Point{0, 0}
 	for k, v := range m.maps {
@@ -70,15 +74,59 @@ func (m *Maps) draw(d *data.Manager) {
 	}
 	var b bool
 
+	var resizeMapPopup bool
+	mapWidth := int32(sm.Width)
+	mapHeight := int32(sm.Height)
+	mapDepth := int32(sm.Depth)
+
 	g.WindowV(fmt.Sprintf("Maps: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
-			g.Menu("File", g.Layout{
+			g.Menu("Maps", g.Layout{
 				g.MenuItem("Save", func() { m.saveAll() }),
 				g.Separator(),
 				g.MenuItem("Close", func() { m.close() }),
 			}),
+			g.Menu("Map", g.Layout{
+				g.MenuItem("Resize", func() {
+					resizeMapPopup = true
+				}),
+			}),
 		}),
 		g.TabBarV("Tabs", g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown, tabs),
+		g.Custom(func() {
+			if resizeMapPopup {
+				g.OpenPopup("Resize Map")
+			}
+		}),
+		g.PopupModalV("Resize Map", nil, 0, g.Layout{
+			g.Label("Grow or Shrink the current map"),
+			g.Line(
+				g.InputIntV("Height", 50, &mapHeight, g.InputTextFlagsReadOnly, nil),
+				g.InputInt("Up    ", 50, &m.resizeU),
+				g.InputInt("Down  ", 50, &m.resizeD),
+			),
+			g.Line(
+				g.InputIntV("Width ", 50, &mapWidth, g.InputTextFlagsReadOnly, nil),
+				g.InputInt("Left  ", 50, &m.resizeL),
+				g.InputInt("Right ", 50, &m.resizeR),
+			),
+			g.Line(
+				g.InputIntV("Depth ", 50, &mapDepth, g.InputTextFlagsReadOnly, nil),
+				g.InputInt("Top   ", 50, &m.resizeT),
+				g.InputInt("Bottom", 50, &m.resizeB),
+			),
+			g.Line(
+				g.Button("Resize", func() {
+					m.resizeMap(int(m.resizeU), int(m.resizeD), int(m.resizeL), int(m.resizeR), int(m.resizeT), int(m.resizeB))
+					m.resizeU, m.resizeD, m.resizeL, m.resizeR, m.resizeT, m.resizeB = 0, 0, 0, 0, 0, 0
+					g.CloseCurrentPopup()
+				}),
+				g.Button("Cancel", func() {
+					m.resizeU, m.resizeD, m.resizeL, m.resizeR, m.resizeT, m.resizeB = 0, 0, 0, 0, 0, 0
+					g.CloseCurrentPopup()
+				}),
+			),
+		}),
 	})
 }
 
@@ -188,4 +236,12 @@ func (m *Maps) saveAll() {
 
 func (m *Maps) close() {
 	log.Println("TODO: Issue close of map")
+}
+
+func (m *Maps) resizeMap(u, d, l, r, t, b int) {
+	cm, ok := m.maps[m.currentMap]
+	if !ok {
+		return
+	}
+	log.Printf("Resize %s...\n", cm.Name)
 }
