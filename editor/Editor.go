@@ -113,18 +113,19 @@ func (e *Editor) drawArchetypes() {
 		archs := e.dataManager.GetArchetypes()
 		for _, archName := range archs {
 			var flags g.TreeNodeFlags
-			flags = imgui.TreeNodeFlagsLeaf
+			flags = imgui.TreeNodeFlagsLeaf | imgui.TreeNodeFlagsSpanFullWidth
 			if archName == e.selectedArchetype {
 				flags |= imgui.TreeNodeFlagsSelected
 			}
-			items = append(items, g.TreeNode(archName, flags, g.Layout{
-				g.ContextMenu(g.Layout{
-					g.Selectable("Edit", func(name string) func() { return func() { log.Printf("edit %s\n", name) } }(archName)),
-				}),
+			items = append(items, g.TreeNode("", flags, g.Layout{
 				g.Custom(func(name string) func() {
 					return func() {
-						if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
-							e.selectedArchetype = name
+						if g.IsItemHovered() {
+							if g.IsMouseDoubleClicked(g.MouseButtonLeft) {
+								e.openArchetypeEditor(name)
+							} else if g.IsMouseClicked(g.MouseButtonLeft) {
+								e.selectedArchetype = name
+							}
 						}
 					}
 				}(archName)),
@@ -161,6 +162,8 @@ func (e *Editor) drawArchetypes() {
 						}
 					}
 				}(archName)),
+				g.Custom(func() { g.SameLine() }),
+				g.Label(archName),
 			}))
 		}
 	} else {
@@ -207,4 +210,8 @@ func (e *Editor) drawAnimations() {
 		}),
 		g.FastTable("animations", true, rows),
 	})
+}
+
+func (e *Editor) openArchetypeEditor(archName string) {
+	log.Printf("Open archetype editor for file that corresponds to %s\n", archName)
 }
