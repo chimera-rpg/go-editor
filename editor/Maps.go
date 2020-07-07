@@ -13,7 +13,7 @@ import (
 
 type Maps struct {
 	filename                     string
-	maps                         map[string]*sdata.Map
+	maps                         map[string]UnReMap
 	currentMap                   string
 	mapTextures                  map[string]MapTexture
 	focusedY, focusedX, focusedZ int
@@ -31,8 +31,12 @@ type MapTexture struct {
 func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 	m := &Maps{
 		filename:    name,
-		maps:        maps,
+		maps:        make(map[string]UnReMap),
 		mapTextures: make(map[string]MapTexture),
+	}
+
+	for k, v := range maps {
+		m.maps[k] = NewUnReMap(v)
 	}
 
 	for k := range maps {
@@ -44,18 +48,18 @@ func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 }
 
 func (m *Maps) draw(d *data.Manager) {
-	//sm := m.maps[m.currentMap]
+	sm := m.maps[m.currentMap]
 	var tabs []g.Widget
 	childPos := image.Point{0, 0}
 	for k, v := range m.maps {
 		t, ok := m.mapTextures[k]
 		go func() {
-			m.createMapTexture(k, v, d)
+			m.createMapTexture(k, v.Get(), d)
 			g.Update()
 		}()
 		if ok && t.texture != nil {
-			tabs = append(tabs, g.TabItem(v.Name, g.Layout{
-				g.Child(v.Name, false, 0, 0, g.WindowFlagsHorizontalScrollbar, g.Layout{
+			tabs = append(tabs, g.TabItem(v.Get().Name, g.Layout{
+				g.Child(v.Get().Name, false, 0, 0, g.WindowFlagsHorizontalScrollbar, g.Layout{
 					g.Custom(func() {
 						childPos = g.GetCursorScreenPos()
 					}),
@@ -86,6 +90,13 @@ func (m *Maps) draw(d *data.Manager) {
 			g.Menu("Map", g.Layout{
 				g.MenuItem("Resize", func() {
 					resizeMapPopup = true
+				}),
+				g.Separator(),
+				g.MenuItem("Undo", func() {
+					sm.Undo()
+				}),
+				g.MenuItem("Redo", func() {
+					sm.Redo()
 				}),
 			}),
 		}),
@@ -142,7 +153,7 @@ func (m *Maps) handleMapMouse(p image.Point, which int, dm *data.Manager) {
 
 	nearestX := (hitX+xOffset)/tWidth - 1
 	nearestY := (hitY - yOffset) / tHeight
-	if nearestX >= 0 && nearestX < sm.Width && nearestY >= 0 && nearestY < sm.Depth {
+	if nearestX >= 0 && nearestX < sm.Get().Width && nearestY >= 0 && nearestY < sm.Get().Depth {
 		m.focusedX = nearestX
 		m.focusedZ = nearestY
 	}
@@ -237,19 +248,19 @@ func (m *Maps) resizeMap(u, d, l, r, t, b int) {
 	if !ok {
 		return
 	}
-	nH := cm.Height + u + d
-	nW := cm.Width + l + r
-	nD := cm.Depth + t + b
+	nH := cm.Get().Height + u + d
+	nW := cm.Get().Width + l + r
+	nD := cm.Get().Depth + t + b
 	offsetY := d
 	offsetX := l
 	offsetZ := t
 	// Make a new map according to the given dimensions
 	newMap := &sdata.Map{
-		Name:        cm.Name,
-		Description: cm.Description,
-		Darkness:    cm.Darkness,
-		Lore:        cm.Lore,
-		ResetTime:   cm.ResetTime,
+		Name:        cm.Get().Name,
+		Description: cm.Get().Description,
+		Darkness:    cm.Get().Darkness,
+		Lore:        cm.Get().Lore,
+		ResetTime:   cm.Get().ResetTime,
 		Height:      nH,
 		Width:       nW,
 		Depth:       nD,
@@ -265,22 +276,22 @@ func (m *Maps) resizeMap(u, d, l, r, t, b int) {
 		}
 	}
 	// Iterate through old map tiles and copy what is in range.
-	for y := 0; y < cm.Height; y++ {
+	for y := 0; y < cm.Get().Height; y++ {
 		if y+offsetY < 0 || y+offsetY >= newMap.Height {
 			continue
 		}
-		for x := 0; x < cm.Width; x++ {
+		for x := 0; x < cm.Get().Width; x++ {
 			if x+offsetX < 0 || x+offsetX >= newMap.Width {
 				continue
 			}
-			for z := 0; z < cm.Depth; z++ {
+			for z := 0; z < cm.Get().Depth; z++ {
 				if z+offsetZ < 0 || z+offsetZ >= newMap.Depth {
 					continue
 				}
-				newMap.Tiles[y+offsetY][x+offsetX][z+offsetZ] = cm.Tiles[y][x][z]
+				newMap.Tiles[y+offsetY][x+offsetX][z+offsetZ] = cm.Get().Tiles[y][x][z]
 			}
 		}
 	}
-	m.maps[m.currentMap] = newMap
+	cm.Set(newMap)
 	log.Printf("%+v\n", newMap)
 }
