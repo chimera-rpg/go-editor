@@ -6,24 +6,28 @@ import (
 	"path"
 
 	g "github.com/AllenDang/giu"
+	"github.com/AllenDang/giu/imgui"
 	"github.com/chimera-rpg/go-editor/data"
 	log "github.com/sirupsen/logrus"
 )
 
 type Editor struct {
-	masterWindow *g.MasterWindow
-	dataManager  *data.Manager
-	isRunning    bool
-	showSplash   bool
-	mapTexture   *g.Texture
-	mapTextureW  float32
-	mapTextureH  float32
-	mapsMap      map[string]*Maps
+	masterWindow      *g.MasterWindow
+	dataManager       *data.Manager
+	archetypesMode    bool
+	selectedArchetype string
+	isRunning         bool
+	showSplash        bool
+	mapTexture        *g.Texture
+	mapTextureW       float32
+	mapTextureH       float32
+	mapsMap           map[string]*Maps
 }
 
 func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.dataManager = dataManager
 	e.isRunning = true
+	e.archetypesMode = true
 	e.mapsMap = make(map[string]*Maps)
 
 	return
@@ -56,7 +60,9 @@ func (e *Editor) loop() {
 
 	g.MainMenuBar(g.Layout{
 		g.Menu("File", g.Layout{
-			g.MenuItem("Open", nil),
+			g.MenuItem("Open Map", func() {
+				imgui.OpenPopup("Open Map...")
+			}),
 			g.Separator(),
 			g.MenuItem("Exit", func() { e.isRunning = false }),
 		}),
@@ -65,12 +71,21 @@ func (e *Editor) loop() {
 		}),
 	}).Build()
 
+	g.PopupModal("Open Map...", g.Layout{
+		g.Label("Select a file"),
+		g.Line(
+			g.Button("Cancel", func() { imgui.CloseCurrentPopup() }),
+			g.Button("Open", nil),
+		),
+	}).Build()
+
 	for _, m := range e.mapsMap {
 		m.draw(e.dataManager)
 	}
 	e.drawArchetypes()
 	e.drawAnimations()
 	e.drawSplash()
+
 }
 
 func (e *Editor) drawSplash() {
@@ -85,12 +100,51 @@ func (e *Editor) drawSplash() {
 	}
 }
 
+func editFunc(name string) func() {
+	return func() {
+		log.Printf("edit %s\n", name)
+	}
+}
+
+func focusFunc(name string, toReplace *string) func() {
+	return func() {
+		if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
+			*toReplace = name
+		}
+	}
+}
+
 func (e *Editor) drawArchetypes() {
-	var rows []*g.RowWidget
-	archs := e.dataManager.GetArchetypeFiles()
-	for _, archFile := range archs {
-		for archName := range e.dataManager.GetArchetypeFile(archFile) {
-			rows = append(rows, g.Row(g.Label(archName)))
+
+	var items g.Layout
+	if e.archetypesMode {
+		archs := e.dataManager.GetArchetypes()
+		for _, archName := range archs {
+			var flags g.TreeNodeFlags
+			flags = imgui.TreeNodeFlagsLeaf
+			if archName == e.selectedArchetype {
+				flags |= imgui.TreeNodeFlagsSelected
+			}
+			items = append(items, g.TreeNode(archName, flags, g.Layout{
+				g.ContextMenu(g.Layout{
+					g.Selectable("Edit", editFunc(archName)),
+				}),
+				g.Custom(focusFunc(archName, &e.selectedArchetype)),
+			}))
+		}
+	} else {
+		archs := e.dataManager.GetArchetypeFiles()
+		for _, archFile := range archs {
+			var archItems []g.Widget
+			for archName := range e.dataManager.GetArchetypeFile(archFile) {
+				archItems = append(archItems, g.Layout{
+					g.Label(archName),
+					g.ContextMenu(g.Layout{
+						g.Selectable("Argh", func() {}),
+					}),
+				})
+			}
+			items = append(items, g.Row(g.TreeNode(archFile, imgui.TreeNodeFlagsCollapsingHeader|imgui.TreeNodeFlagsDefaultOpen, archItems)))
 		}
 	}
 	var b bool
@@ -100,8 +154,11 @@ func (e *Editor) drawArchetypes() {
 				g.MenuItem("New...", func() {}),
 				g.Separator(),
 			}),
+			g.Menu("Misc", g.Layout{
+				g.Checkbox("Archetype Mode", &e.archetypesMode, func() {}),
+			}),
 		}),
-		g.FastTable("archetypes", true, rows),
+		items,
 	})
 
 }
