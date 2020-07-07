@@ -20,6 +20,8 @@ type Maps struct {
 	resizeL, resizeR             int32
 	resizeT, resizeB             int32
 	resizeU, resizeD             int32
+	zoom                         int32
+	showGrid                     bool
 }
 
 type MapTexture struct {
@@ -33,6 +35,8 @@ func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 		filename:    name,
 		maps:        make(map[string]UnReMap),
 		mapTextures: make(map[string]MapTexture),
+		zoom:        3.0,
+		showGrid:    true,
 	}
 
 	for k, v := range maps {
@@ -99,6 +103,10 @@ func (m *Maps) draw(d *data.Manager) {
 					sm.Redo()
 				}),
 			}),
+			g.Menu("View", g.Layout{
+				g.Checkbox("Grid", &m.showGrid, nil),
+				g.SliderInt("Zoom", &m.zoom, 1, 8, "%d"),
+			}),
 		}),
 		g.TabBarV("Tabs", g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown, tabs),
 		g.Custom(func() {
@@ -140,7 +148,7 @@ func (m *Maps) handleMapMouse(p image.Point, which int, dm *data.Manager) {
 	if !ok {
 		return
 	}
-	scale := 4.0
+	scale := float64(m.zoom)
 	padding := 4
 	tWidth := int(dm.AnimationsConfig.TileWidth)
 	tHeight := int(dm.AnimationsConfig.TileHeight)
@@ -161,7 +169,7 @@ func (m *Maps) handleMapMouse(p image.Point, which int, dm *data.Manager) {
 
 func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 	mT := MapTexture{}
-	scale := 4.0
+	scale := float64(m.zoom)
 	tWidth := int(dm.AnimationsConfig.TileWidth)
 	tHeight := int(dm.AnimationsConfig.TileHeight)
 	yStep := dm.AnimationsConfig.YStep
@@ -202,29 +210,44 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 	}
 
 	// Draw grid.
-	dc.SetLineWidth(1)
-	for y := 0; y < sm.Height; y++ {
-		xOffset := y * int(yStep.X)
-		yOffset := y * int(yStep.Y)
-		for x := 0; x < sm.Width; x++ {
-			for z := 0; z < sm.Depth; z++ {
-				oX := float64(x*tWidth+xOffset+startX) * scale
-				oY := float64(z*tHeight-yOffset+startY) * scale
-				oW := float64(tWidth) * scale
-				oH := float64(tHeight) * scale
-				dc.DrawRectangle(oX, oY, oW, oH)
-				if y == m.focusedY {
-					if x == m.focusedX && z == m.focusedZ {
-						dc.SetRGBA(0.2, 0.3, 0.6, 0.5)
-						dc.FillPreserve()
+	if m.showGrid {
+		dc.SetLineWidth(1)
+		for y := 0; y < sm.Height; y++ {
+			xOffset := y * int(yStep.X)
+			yOffset := y * int(yStep.Y)
+			for x := 0; x < sm.Width; x++ {
+				for z := 0; z < sm.Depth; z++ {
+					oX := float64(x*tWidth+xOffset+startX) * scale
+					oY := float64(z*tHeight-yOffset+startY) * scale
+					oW := float64(tWidth) * scale
+					oH := float64(tHeight) * scale
+					dc.DrawRectangle(oX, oY, oW, oH)
+					if y == m.focusedY {
+						dc.SetRGB(0.9, 0.9, 0.9)
+					} else {
+						dc.SetRGBA(0.9, 0.9, 0.9, 0.1)
 					}
-					dc.SetRGB(0.9, 0.9, 0.9)
-				} else {
-					dc.SetRGBA(0.9, 0.9, 0.9, 0.1)
+					dc.Stroke()
 				}
-				dc.Stroke()
 			}
 		}
+	}
+
+	// Draw selected.
+	{
+		xOffset := m.focusedY * int(yStep.X)
+		yOffset := m.focusedY * int(yStep.Y)
+		oX := float64(m.focusedX*tWidth+xOffset+startX) * scale
+		oY := float64(m.focusedZ*tHeight-yOffset+startY) * scale
+		oW := float64(tWidth) * scale
+		oH := float64(tHeight) * scale
+		dc.DrawRectangle(oX, oY, oW, oH)
+		dc.SetLineWidth(2)
+		dc.SetRGBA(0, 0, 0, 0.85)
+		dc.StrokePreserve()
+		dc.SetLineWidth(1)
+		dc.SetRGBA(1, 0, 0, 0.85)
+		dc.Stroke()
 	}
 
 	var err error
@@ -293,5 +316,4 @@ func (m *Maps) resizeMap(u, d, l, r, t, b int) {
 		}
 	}
 	cm.Set(newMap)
-	log.Printf("%+v\n", newMap)
 }
