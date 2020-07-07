@@ -44,7 +44,7 @@ func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 }
 
 func (m *Maps) draw(d *data.Manager) {
-	sm := m.maps[m.currentMap]
+	//sm := m.maps[m.currentMap]
 	var tabs []g.Widget
 	childPos := image.Point{0, 0}
 	for k, v := range m.maps {
@@ -75,9 +75,6 @@ func (m *Maps) draw(d *data.Manager) {
 	var b bool
 
 	var resizeMapPopup bool
-	mapWidth := int32(sm.Width)
-	mapHeight := int32(sm.Height)
-	mapDepth := int32(sm.Depth)
 
 	g.WindowV(fmt.Sprintf("Maps: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
@@ -101,17 +98,14 @@ func (m *Maps) draw(d *data.Manager) {
 		g.PopupModalV("Resize Map", nil, 0, g.Layout{
 			g.Label("Grow or Shrink the current map"),
 			g.Line(
-				g.InputIntV("Height", 50, &mapHeight, g.InputTextFlagsReadOnly, nil),
 				g.InputInt("Up    ", 50, &m.resizeU),
 				g.InputInt("Down  ", 50, &m.resizeD),
 			),
 			g.Line(
-				g.InputIntV("Width ", 50, &mapWidth, g.InputTextFlagsReadOnly, nil),
 				g.InputInt("Left  ", 50, &m.resizeL),
 				g.InputInt("Right ", 50, &m.resizeR),
 			),
 			g.Line(
-				g.InputIntV("Depth ", 50, &mapDepth, g.InputTextFlagsReadOnly, nil),
 				g.InputInt("Top   ", 50, &m.resizeT),
 				g.InputInt("Bottom", 50, &m.resizeB),
 			),
@@ -243,5 +237,50 @@ func (m *Maps) resizeMap(u, d, l, r, t, b int) {
 	if !ok {
 		return
 	}
-	log.Printf("Resize %s...\n", cm.Name)
+	nH := cm.Height + u + d
+	nW := cm.Width + l + r
+	nD := cm.Depth + t + b
+	offsetY := d
+	offsetX := l
+	offsetZ := t
+	// Make a new map according to the given dimensions
+	newMap := &sdata.Map{
+		Name:        cm.Name,
+		Description: cm.Description,
+		Darkness:    cm.Darkness,
+		Lore:        cm.Lore,
+		ResetTime:   cm.ResetTime,
+		Height:      nH,
+		Width:       nW,
+		Depth:       nD,
+	}
+	// Create the new map according to dimensions.
+	for y := 0; y < nH; y++ {
+		newMap.Tiles = append(newMap.Tiles, [][][]sdata.Archetype{})
+		for x := 0; x < nW; x++ {
+			newMap.Tiles[y] = append(newMap.Tiles[y], [][]sdata.Archetype{})
+			for z := 0; z < nD; z++ {
+				newMap.Tiles[y][x] = append(newMap.Tiles[y][x], []sdata.Archetype{})
+			}
+		}
+	}
+	// Iterate through old map tiles and copy what is in range.
+	for y := 0; y < cm.Height; y++ {
+		if y+offsetY < 0 || y+offsetY >= newMap.Height {
+			continue
+		}
+		for x := 0; x < cm.Width; x++ {
+			if x+offsetX < 0 || x+offsetX >= newMap.Width {
+				continue
+			}
+			for z := 0; z < cm.Depth; z++ {
+				if z+offsetZ < 0 || z+offsetZ >= newMap.Depth {
+					continue
+				}
+				newMap.Tiles[y+offsetY][x+offsetX][z+offsetZ] = cm.Tiles[y][x][z]
+			}
+		}
+	}
+	m.maps[m.currentMap] = newMap
+	log.Printf("%+v\n", newMap)
 }
