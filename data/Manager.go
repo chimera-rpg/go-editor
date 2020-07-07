@@ -28,6 +28,7 @@ type Manager struct {
 	scaledImages        map[float64]map[string]image.Image
 	animations          map[string]sdata.AnimationPre
 	archetypes          map[string]*sdata.Archetype
+	archetypesOrder     []string
 	archetypeFiles      map[string]map[string]*sdata.Archetype
 	AnimationsConfig    cdata.AnimationsConfig
 	archetypeFilesOrder []string
@@ -159,8 +160,8 @@ func (m *Manager) LoadArchetypes() error {
 	return nil
 }
 
-func (m *Manager) LoadArchetypeFile(filepath string) error {
-	r, err := ioutil.ReadFile(filepath)
+func (m *Manager) LoadArchetypeFile(fpath string) error {
+	r, err := ioutil.ReadFile(fpath)
 	if err != nil {
 		return err
 	}
@@ -171,11 +172,15 @@ func (m *Manager) LoadArchetypeFile(filepath string) error {
 		return err
 	}
 
-	m.archetypeFiles[filepath] = archetypesMap
-	m.archetypeFilesOrder = append(m.archetypeFilesOrder, filepath)
+	shortpath := filepath.ToSlash(fpath[len(m.ArchetypesPath)+1:])
+	shortpath = shortpath[0 : len(shortpath)-len(".arch.yaml")]
+
+	m.archetypeFiles[shortpath] = archetypesMap
+	m.archetypeFilesOrder = append(m.archetypeFilesOrder, shortpath)
 
 	for k, a := range archetypesMap {
 		m.archetypes[k] = a
+		m.archetypesOrder = append(m.archetypesOrder, k)
 	}
 
 	return nil
@@ -268,6 +273,10 @@ func (m *Manager) GetArchetypeFiles() []string {
 
 func (m *Manager) GetArchetypeFile(f string) map[string]*sdata.Archetype {
 	return m.archetypeFiles[f]
+}
+
+func (m *Manager) GetArchetypes() []string {
+	return m.archetypesOrder
 }
 
 func (m *Manager) GetArchetype(f string) *sdata.Archetype {
