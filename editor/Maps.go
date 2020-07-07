@@ -1,12 +1,10 @@
 package editor
 
 import (
-	"errors"
 	"fmt"
 	"image"
 
 	g "github.com/AllenDang/giu"
-	cdata "github.com/chimera-rpg/go-common/data"
 	"github.com/chimera-rpg/go-editor/data"
 	sdata "github.com/chimera-rpg/go-server/data"
 	"github.com/fogleman/gg"
@@ -137,11 +135,11 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 				oX := float64(x*tWidth+xOffset+startX) * scale
 				oY := float64(z*tHeight-yOffset+startY) * scale
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
-					if adjustment, ok := dm.AnimationsConfig.Adjustments[m.GetType(dm, &sm.Tiles[y][x][z][t], 0)]; ok {
+					if adjustment, ok := dm.AnimationsConfig.Adjustments[dm.GetArchType(&sm.Tiles[y][x][z][t], 0)]; ok {
 						oX += float64(adjustment.X) * scale
 						oY += float64(adjustment.Y) * scale
 					}
-					img, _ := m.GetImage(&sm.Tiles[y][x][z][t], dm, scale)
+					img, _ := dm.GetArchImage(&sm.Tiles[y][x][z][t], scale)
 					if img != nil {
 						dc.DrawImage(img, int(oX), int(oY))
 					}
@@ -182,84 +180,6 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 		log.Fatalln(err)
 	}
 	m.mapTextures[name] = mT
-}
-
-func (m *Maps) GetAnimAndFace(dm *data.Manager, a *sdata.Archetype, anim, face string) (string, string) {
-	if anim == "" && a.Anim != "" {
-		anim = a.Anim
-	}
-	if face == "" && a.Face != "" {
-		face = a.Face
-	}
-
-	if anim == "" || face == "" {
-		if a.Arch != "" {
-			o := dm.GetArchetype(a.Arch)
-			if o != nil {
-				anim, face = m.GetAnimAndFace(dm, o, anim, face)
-				if anim != "" && face != "" {
-					return anim, face
-				}
-			}
-		}
-		for _, name := range a.Archs {
-			o := dm.GetArchetype(name)
-			if o != nil {
-				anim, face = m.GetAnimAndFace(dm, o, anim, face)
-				if anim != "" && face != "" {
-					return anim, face
-				}
-			}
-		}
-	}
-
-	return anim, face
-}
-
-func (m *Maps) GetType(dm *data.Manager, a *sdata.Archetype, atype cdata.ArchetypeType) cdata.ArchetypeType {
-	if atype == 0 && a.Type != 0 {
-		atype = a.Type
-	}
-
-	if atype == 0 {
-		if a.Arch != "" {
-			o := dm.GetArchetype(a.Arch)
-			if o != nil {
-				atype = m.GetType(dm, o, atype)
-				if atype != 0 {
-					return atype
-				}
-			}
-		}
-		for _, name := range a.Archs {
-			o := dm.GetArchetype(name)
-			if o != nil {
-				atype = m.GetType(dm, o, atype)
-				if atype != 0 {
-					return atype
-				}
-			}
-		}
-	}
-
-	return atype
-}
-
-func (m *Maps) GetImage(a *sdata.Archetype, dm *data.Manager, scale float64) (img image.Image, err error) {
-	anim, face := m.GetAnimAndFace(dm, a, "", "")
-
-	imgName, err := dm.GetAnimFaceImage(anim, face)
-	if err != nil {
-		return nil, err
-	}
-
-	img = dm.GetScaledImage(scale, imgName)
-	if img == nil {
-		return nil, errors.New("missing image")
-	}
-
-	// Didn't find anything, return missing image...
-	return
 }
 
 func (m *Maps) saveAll() {

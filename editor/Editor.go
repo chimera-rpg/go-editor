@@ -1,6 +1,8 @@
 package editor
 
 import (
+	"image"
+	"image/draw"
 	"os"
 
 	"path"
@@ -18,10 +20,13 @@ type Editor struct {
 	selectedArchetype string
 	isRunning         bool
 	showSplash        bool
-	mapTexture        *g.Texture
-	mapTextureW       float32
-	mapTextureH       float32
 	mapsMap           map[string]*Maps
+	imageTextures     map[string]ImageTexture
+}
+
+type ImageTexture struct {
+	texture       *g.Texture
+	width, height float32
 }
 
 func (e *Editor) Setup(dataManager *data.Manager) (err error) {
@@ -29,6 +34,7 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.isRunning = true
 	e.archetypesMode = true
 	e.mapsMap = make(map[string]*Maps)
+	e.imageTextures = make(map[string]ImageTexture)
 
 	return
 }
@@ -119,6 +125,39 @@ func (e *Editor) drawArchetypes() {
 					return func() {
 						if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
 							e.selectedArchetype = name
+						}
+					}
+				}(archName)),
+				g.Custom(func(archName string) func() {
+					return func() {
+						arch := e.dataManager.GetArchetype(archName)
+						if arch == nil {
+							return
+						}
+						anim, face := e.dataManager.GetAnimAndFace(arch, "", "")
+						imageName, err := e.dataManager.GetAnimFaceImage(anim, face)
+						if err != nil {
+							return
+						}
+						img := e.dataManager.GetImage(imageName)
+						if t, ok := e.imageTextures[imageName]; !ok || t.texture == nil {
+							go func() {
+								rgba := image.NewRGBA(img.Bounds())
+								draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
+								tex, err := g.NewTextureFromRgba(rgba)
+								if err != nil {
+									log.Fatalln(err)
+								}
+								e.imageTextures[imageName] = ImageTexture{
+									texture: tex,
+									width:   float32(img.Bounds().Max.X),
+									height:  float32(img.Bounds().Max.Y),
+								}
+								g.Update()
+							}()
+						} else {
+							g.SameLine()
+							g.Image(t.texture, t.width, t.height).Build()
 						}
 					}
 				}(archName)),

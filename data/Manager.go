@@ -264,6 +264,7 @@ func (m *Manager) LoadImage(p string) error {
 	}
 
 	m.images[shortpath] = img
+
 	return nil
 }
 
@@ -316,4 +317,82 @@ func (m *Manager) GetScaledImage(scale float64, name string) image.Image {
 		m.scaledImages[scale][name] = scaledImage
 	}
 	return scaledImage
+}
+
+func (m *Manager) GetAnimAndFace(a *sdata.Archetype, anim, face string) (string, string) {
+	if anim == "" && a.Anim != "" {
+		anim = a.Anim
+	}
+	if face == "" && a.Face != "" {
+		face = a.Face
+	}
+
+	if anim == "" || face == "" {
+		if a.Arch != "" {
+			o := m.GetArchetype(a.Arch)
+			if o != nil {
+				anim, face = m.GetAnimAndFace(o, anim, face)
+				if anim != "" && face != "" {
+					return anim, face
+				}
+			}
+		}
+		for _, name := range a.Archs {
+			o := m.GetArchetype(name)
+			if o != nil {
+				anim, face = m.GetAnimAndFace(o, anim, face)
+				if anim != "" && face != "" {
+					return anim, face
+				}
+			}
+		}
+	}
+
+	return anim, face
+}
+
+func (m *Manager) GetArchType(a *sdata.Archetype, atype cdata.ArchetypeType) cdata.ArchetypeType {
+	if atype == 0 && a.Type != 0 {
+		atype = a.Type
+	}
+
+	if atype == 0 {
+		if a.Arch != "" {
+			o := m.GetArchetype(a.Arch)
+			if o != nil {
+				atype = m.GetArchType(o, atype)
+				if atype != 0 {
+					return atype
+				}
+			}
+		}
+		for _, name := range a.Archs {
+			o := m.GetArchetype(name)
+			if o != nil {
+				atype = m.GetArchType(o, atype)
+				if atype != 0 {
+					return atype
+				}
+			}
+		}
+	}
+
+	return atype
+}
+
+func (m *Manager) GetArchImage(a *sdata.Archetype, scale float64) (img image.Image, err error) {
+	anim, face := m.GetAnimAndFace(a, "", "")
+
+	imgName, err := m.GetAnimFaceImage(anim, face)
+	if err != nil {
+		return nil, err
+	}
+
+	img = m.GetScaledImage(scale, imgName)
+	if img == nil {
+		return nil, errors.New("missing image")
+	}
+
+	// Didn't find anything, return missing image...
+	return
 }
