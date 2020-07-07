@@ -100,20 +100,6 @@ func (e *Editor) drawSplash() {
 	}
 }
 
-func editFunc(name string) func() {
-	return func() {
-		log.Printf("edit %s\n", name)
-	}
-}
-
-func focusFunc(name string, toReplace *string) func() {
-	return func() {
-		if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
-			*toReplace = name
-		}
-	}
-}
-
 func (e *Editor) drawArchetypes() {
 
 	var items g.Layout
@@ -127,9 +113,15 @@ func (e *Editor) drawArchetypes() {
 			}
 			items = append(items, g.TreeNode(archName, flags, g.Layout{
 				g.ContextMenu(g.Layout{
-					g.Selectable("Edit", editFunc(archName)),
+					g.Selectable("Edit", func(name string) func() { return func() { log.Printf("edit %s\n", name) } }(archName)),
 				}),
-				g.Custom(focusFunc(archName, &e.selectedArchetype)),
+				g.Custom(func(name string) func() {
+					return func() {
+						if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
+							e.selectedArchetype = name
+						}
+					}
+				}(archName)),
 			}))
 		}
 	} else {
