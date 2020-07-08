@@ -3,8 +3,10 @@ package editor
 import (
 	"fmt"
 	"image"
+	"sort"
 
 	g "github.com/AllenDang/giu"
+	"github.com/AllenDang/giu/imgui"
 	"github.com/chimera-rpg/go-editor/data"
 	sdata "github.com/chimera-rpg/go-server/data"
 	"github.com/fogleman/gg"
@@ -12,16 +14,18 @@ import (
 )
 
 type Maps struct {
-	filename                     string
-	maps                         map[string]UnReMap
-	currentMap                   string
-	mapTextures                  map[string]MapTexture
-	focusedY, focusedX, focusedZ int
-	resizeL, resizeR             int32
-	resizeT, resizeB             int32
-	resizeU, resizeD             int32
-	zoom                         int32
-	showGrid                     bool
+	filename                         string
+	maps                             map[string]UnReMap
+	currentMap                       string
+	mapTextures                      map[string]MapTexture
+	focusedY, focusedX, focusedZ     int
+	resizeL, resizeR                 int32
+	resizeT, resizeB                 int32
+	resizeU, resizeD                 int32
+	newH, newW, newD                 int32
+	newName, newDescription, newLore string
+	zoom                             int32
+	showGrid                         bool
 }
 
 type MapTexture struct {
@@ -37,6 +41,9 @@ func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 		mapTextures: make(map[string]MapTexture),
 		zoom:        3.0,
 		showGrid:    true,
+		newW:        1,
+		newH:        1,
+		newD:        1,
 	}
 
 	for k, v := range maps {
@@ -53,46 +60,30 @@ func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 
 func (m *Maps) draw(d *data.Manager) {
 	sm := m.maps[m.currentMap]
-	var tabs []g.Widget
 	childPos := image.Point{0, 0}
-	for k, v := range m.maps {
-		t, ok := m.mapTextures[k]
-		go func() {
-			m.createMapTexture(k, v.Get(), d)
-			g.Update()
-		}()
-		if ok && t.texture != nil {
-			tabs = append(tabs, g.TabItem(v.Get().Name, g.Layout{
-				g.Child(v.Get().Name, false, 0, 0, g.WindowFlagsHorizontalScrollbar, g.Layout{
-					g.Custom(func() {
-						childPos = g.GetCursorScreenPos()
-					}),
-					g.Image(t.texture, float32(t.width), float32(t.height)),
-					g.Custom(func() {
-						if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
-							mousePos := g.GetMousePos()
-							mousePos.X -= childPos.X
-							mousePos.Y -= childPos.Y
-							m.handleMapMouse(mousePos, 0, d)
-						}
-					}),
-				}),
-			}))
-		}
+	mapKeys := make([]string, 0, len(m.maps))
+	for k := range m.maps {
+		mapKeys = append(mapKeys, k)
 	}
+	sort.Strings(mapKeys)
+
 	var b bool
 
-	var resizeMapPopup bool
+	var resizeMapPopup, newMapPopup bool
 
 	g.WindowV(fmt.Sprintf("Maps: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
 			g.Menu("Maps", g.Layout{
+				g.MenuItem("New Map...", func() {
+					newMapPopup = true
+				}),
+				g.Separator(),
 				g.MenuItem("Save", func() { m.saveAll() }),
 				g.Separator(),
 				g.MenuItem("Close", func() { m.close() }),
 			}),
 			g.Menu("Map", g.Layout{
-				g.MenuItem("Resize", func() {
+				g.MenuItem("Resize...", func() {
 					resizeMapPopup = true
 				}),
 				g.Separator(),
@@ -108,10 +99,48 @@ func (m *Maps) draw(d *data.Manager) {
 				g.SliderInt("Zoom", &m.zoom, 1, 8, "%d"),
 			}),
 		}),
-		g.TabBarV("Tabs", g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown, tabs),
+		g.Custom(func() {
+			if imgui.BeginTabBarV("Maps", int(g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown)) {
+				for _, k := range mapKeys {
+					v := m.maps[k]
+					if imgui.BeginTabItemV(v.Get().Name, nil, 0) {
+						m.currentMap = v.Get().Name
+						// Generate texture.
+						t, ok := m.mapTextures[k]
+						go func() {
+							m.createMapTexture(k, v.Get(), d)
+							g.Update()
+						}()
+						// Render content (if texture is ready)
+						if ok && t.texture != nil {
+							g.Layout{
+								g.Child(v.Get().Name, false, 0, 0, g.WindowFlagsHorizontalScrollbar, g.Layout{
+									g.Custom(func() {
+										childPos = g.GetCursorScreenPos()
+									}),
+									g.Image(t.texture, float32(t.width), float32(t.height)),
+									g.Custom(func() {
+										if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
+											mousePos := g.GetMousePos()
+											mousePos.X -= childPos.X
+											mousePos.Y -= childPos.Y
+											m.handleMapMouse(mousePos, 0, d)
+										}
+									}),
+								}),
+							}.Build()
+						}
+						imgui.EndTabItem()
+					}
+				}
+				imgui.EndTabBar()
+			}
+		}),
 		g.Custom(func() {
 			if resizeMapPopup {
 				g.OpenPopup("Resize Map")
+			} else if newMapPopup {
+				g.OpenPopup("New Map")
 			}
 		}),
 		g.PopupModalV("Resize Map", nil, 0, g.Layout{
@@ -137,6 +166,28 @@ func (m *Maps) draw(d *data.Manager) {
 				g.Button("Cancel", func() {
 					m.resizeU, m.resizeD, m.resizeL, m.resizeR, m.resizeT, m.resizeB = 0, 0, 0, 0, 0, 0
 					g.CloseCurrentPopup()
+				}),
+			),
+		}),
+		g.PopupModalV("New Map", nil, g.WindowFlagsHorizontalScrollbar, g.Layout{
+			g.Label("Create a new map"),
+			g.InputText("Name", 0, &m.newName),
+			g.InputTextMultiline("Description", &m.newDescription, 0, 0, g.InputTextFlagsAllowTabInput, nil, nil),
+			g.InputTextMultiline("Lore", &m.newLore, 0, 0, g.InputTextFlagsAllowTabInput, nil, nil),
+			g.SliderInt("Height", &m.newH, 1, 200, "%d"),
+			g.SliderInt("Width ", &m.newW, 1, 200, "%d"),
+			g.SliderInt("Depth ", &m.newD, 1, 200, "%d"),
+			g.Line(
+				g.Button("Create", func() {
+					g.CloseCurrentPopup()
+					// TODO: Check if map with same name already exists!
+					newMap := m.createMap(m.newName, m.newDescription, m.newLore, 0, 0, int(m.newH), int(m.newW), int(m.newD))
+					m.maps[m.newName] = NewUnReMap(newMap)
+					m.newName, m.newDescription, m.newLore = "", "", ""
+				}),
+				g.Button("Cancel", func() {
+					g.CloseCurrentPopup()
+					m.newName, m.newDescription, m.newLore = "", "", ""
 				}),
 			),
 		}),
@@ -278,16 +329,16 @@ func (m *Maps) resizeMap(u, d, l, r, t, b int) {
 	offsetX := l
 	offsetZ := t
 	// Make a new map according to the given dimensions
-	newMap := &sdata.Map{
-		Name:        cm.Get().Name,
-		Description: cm.Get().Description,
-		Darkness:    cm.Get().Darkness,
-		Lore:        cm.Get().Lore,
-		ResetTime:   cm.Get().ResetTime,
-		Height:      nH,
-		Width:       nW,
-		Depth:       nD,
-	}
+	newMap := m.createMap(
+		cm.Get().Name,
+		cm.Get().Description,
+		cm.Get().Lore,
+		cm.Get().Darkness,
+		cm.Get().ResetTime,
+		nH,
+		nW,
+		nD,
+	)
 	// Create the new map according to dimensions.
 	for y := 0; y < nH; y++ {
 		newMap.Tiles = append(newMap.Tiles, [][][]sdata.Archetype{})
@@ -316,4 +367,29 @@ func (m *Maps) resizeMap(u, d, l, r, t, b int) {
 		}
 	}
 	cm.Set(newMap)
+}
+
+func (m *Maps) createMap(name, desc, lore string, darkness, resettime int, h, w, d int) *sdata.Map {
+	// Make a new map according to the given dimensions
+	newMap := &sdata.Map{
+		Name:        name,
+		Description: desc,
+		Darkness:    darkness,
+		ResetTime:   resettime,
+		Lore:        lore,
+		Height:      h,
+		Width:       w,
+		Depth:       d,
+	}
+	// Create the new map according to dimensions.
+	for y := 0; y < h; y++ {
+		newMap.Tiles = append(newMap.Tiles, [][][]sdata.Archetype{})
+		for x := 0; x < w; x++ {
+			newMap.Tiles[y] = append(newMap.Tiles[y], [][]sdata.Archetype{})
+			for z := 0; z < d; z++ {
+				newMap.Tiles[y][x] = append(newMap.Tiles[y][x], []sdata.Archetype{})
+			}
+		}
+	}
+	return newMap
 }
