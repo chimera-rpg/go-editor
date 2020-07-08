@@ -56,7 +56,12 @@ func (m *Maps) draw(d *data.Manager) {
 
 	var b bool
 
-	var resizeMapPopup, newMapPopup, adjustMapPopup bool
+	var mapExists bool
+	var resizeMapPopup, newMapPopup, adjustMapPopup, deleteMapPopup bool
+
+	if m.CurrentMap() != nil {
+		mapExists = true
+	}
 
 	g.WindowV(fmt.Sprintf("Maps: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
@@ -70,7 +75,7 @@ func (m *Maps) draw(d *data.Manager) {
 				g.MenuItem("Close", func() { m.close() }),
 			}),
 			g.Menu("Map", g.Layout{
-				g.MenuItem("Properties...", func() {
+				g.MenuItemV("Properties...", false, mapExists, func() {
 					cm := m.CurrentMap()
 					m.newName = cm.Get().Name
 					m.newDataName = cm.DataName()
@@ -78,17 +83,21 @@ func (m *Maps) draw(d *data.Manager) {
 					m.newLore = cm.Get().Lore
 					adjustMapPopup = true
 				}),
-				g.MenuItem("Resize...", func() {
+				g.MenuItemV("Resize...", false, mapExists, func() {
 					resizeMapPopup = true
 				}),
 				g.Separator(),
-				g.MenuItem("Undo", func() {
+				g.MenuItemV("Undo", false, mapExists, func() {
 					cm := m.CurrentMap()
 					cm.Undo()
 				}),
-				g.MenuItem("Redo", func() {
+				g.MenuItemV("Redo", false, mapExists, func() {
 					cm := m.CurrentMap()
 					cm.Redo()
+				}),
+				g.Separator(),
+				g.MenuItemV("Delete...", false, mapExists, func() {
+					deleteMapPopup = true
 				}),
 			}),
 			g.Menu("View", g.Layout{
@@ -139,6 +148,8 @@ func (m *Maps) draw(d *data.Manager) {
 				g.OpenPopup("New Map")
 			} else if adjustMapPopup {
 				g.OpenPopup("Map Properties")
+			} else if deleteMapPopup {
+				g.OpenPopup("Delete Map")
 			}
 		}),
 		g.PopupModalV("Resize Map", nil, 0, g.Layout{
@@ -214,6 +225,19 @@ func (m *Maps) draw(d *data.Manager) {
 				g.Button("Cancel", func() {
 					g.CloseCurrentPopup()
 					m.newName, m.newDataName, m.newDescription, m.newLore = "", "", "", ""
+				}),
+			),
+		}),
+		g.PopupModalV("Delete Map", nil, 0, g.Layout{
+			g.Label("Delete map?"),
+			g.Label("This cannot be recovered."),
+			g.Line(
+				g.Button("Delete", func() {
+					m.deleteMap(m.currentMapIndex)
+					g.CloseCurrentPopup()
+				}),
+				g.Button("Cancel", func() {
+					g.CloseCurrentPopup()
 				}),
 			),
 		}),
@@ -440,6 +464,22 @@ func (m *Maps) createMap(name, desc, lore string, darkness, resettime int, h, w,
 	return newMap
 }
 
+func (m *Maps) deleteMap(index int) {
+	if index >= len(m.maps) || index < 0 {
+		return
+	}
+	m.maps = append(m.maps[:index], m.maps[index+1:]...)
+	if m.currentMapIndex > index {
+		m.currentMapIndex--
+	}
+	if m.currentMapIndex < 0 {
+		m.currentMapIndex = 0
+	}
+}
+
 func (m *Maps) CurrentMap() *UnReMap {
+	if m.currentMapIndex < 0 || m.currentMapIndex >= len(m.maps) {
+		return nil
+	}
 	return &m.maps[m.currentMapIndex]
 }
