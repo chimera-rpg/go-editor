@@ -3,6 +3,7 @@ package editor
 import (
 	"fmt"
 	"image"
+	"image/color"
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
@@ -123,7 +124,7 @@ func (m *Maps) draw(d *data.Manager) {
 									g.Custom(func() {
 										childPos = g.GetCursorScreenPos()
 									}),
-									g.Image(t.texture, float32(t.width), float32(t.height)),
+									g.ImageButtonV(t.texture, float32(t.width), float32(t.height), image.Point{X: 0, Y: 0}, image.Point{X: 1, Y: 1}, 0, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 255, 255, 255}, nil),
 									g.Custom(func() {
 										if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
 											mousePos := g.GetMousePos()
