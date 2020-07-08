@@ -3,7 +3,6 @@ package editor
 import (
 	"fmt"
 	"image"
-	"sort"
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
@@ -14,18 +13,18 @@ import (
 )
 
 type Maps struct {
-	filename                         string
-	maps                             map[string]UnReMap
-	currentMap                       string
-	mapTextures                      map[string]MapTexture
-	focusedY, focusedX, focusedZ     int
-	resizeL, resizeR                 int32
-	resizeT, resizeB                 int32
-	resizeU, resizeD                 int32
-	newH, newW, newD                 int32
-	newName, newDescription, newLore string
-	zoom                             int32
-	showGrid                         bool
+	filename                                      string
+	maps                                          []UnReMap
+	currentMapIndex                               int
+	mapTextures                                   map[int]MapTexture
+	focusedY, focusedX, focusedZ                  int
+	resizeL, resizeR                              int32
+	resizeT, resizeB                              int32
+	resizeU, resizeD                              int32
+	newH, newW, newD                              int32
+	newDataName, newName, newDescription, newLore string
+	zoom                                          int32
+	showGrid                                      bool
 }
 
 type MapTexture struct {
@@ -37,8 +36,7 @@ type MapTexture struct {
 func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 	m := &Maps{
 		filename:    name,
-		maps:        make(map[string]UnReMap),
-		mapTextures: make(map[string]MapTexture),
+		mapTextures: make(map[int]MapTexture),
 		zoom:        3.0,
 		showGrid:    true,
 		newW:        1,
@@ -47,29 +45,18 @@ func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 	}
 
 	for k, v := range maps {
-		m.maps[k] = NewUnReMap(v)
-	}
-
-	for k := range maps {
-		m.currentMap = k
-		break
+		m.maps = append(m.maps, NewUnReMap(v, k))
 	}
 
 	return m
 }
 
 func (m *Maps) draw(d *data.Manager) {
-	sm := m.maps[m.currentMap]
 	childPos := image.Point{0, 0}
-	mapKeys := make([]string, 0, len(m.maps))
-	for k := range m.maps {
-		mapKeys = append(mapKeys, k)
-	}
-	sort.Strings(mapKeys)
 
 	var b bool
 
-	var resizeMapPopup, newMapPopup bool
+	var resizeMapPopup, newMapPopup, adjustMapPopup bool
 
 	g.WindowV(fmt.Sprintf("Maps: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
@@ -83,15 +70,25 @@ func (m *Maps) draw(d *data.Manager) {
 				g.MenuItem("Close", func() { m.close() }),
 			}),
 			g.Menu("Map", g.Layout{
+				g.MenuItem("Properties...", func() {
+					cm := m.CurrentMap()
+					m.newName = cm.Get().Name
+					m.newDataName = cm.DataName()
+					m.newDescription = cm.Get().Description
+					m.newLore = cm.Get().Lore
+					adjustMapPopup = true
+				}),
 				g.MenuItem("Resize...", func() {
 					resizeMapPopup = true
 				}),
 				g.Separator(),
 				g.MenuItem("Undo", func() {
-					sm.Undo()
+					cm := m.CurrentMap()
+					cm.Undo()
 				}),
 				g.MenuItem("Redo", func() {
-					sm.Redo()
+					cm := m.CurrentMap()
+					cm.Redo()
 				}),
 			}),
 			g.Menu("View", g.Layout{
@@ -101,14 +98,13 @@ func (m *Maps) draw(d *data.Manager) {
 		}),
 		g.Custom(func() {
 			if imgui.BeginTabBarV("Maps", int(g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown)) {
-				for _, k := range mapKeys {
-					v := m.maps[k]
-					if imgui.BeginTabItemV(v.Get().Name, nil, 0) {
-						m.currentMap = v.Get().Name
+				for mapIndex, v := range m.maps {
+					if imgui.BeginTabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, 0) {
+						m.currentMapIndex = mapIndex
 						// Generate texture.
-						t, ok := m.mapTextures[k]
+						t, ok := m.mapTextures[mapIndex]
 						go func() {
-							m.createMapTexture(k, v.Get(), d)
+							m.createMapTexture(mapIndex, v.Get(), d)
 							g.Update()
 						}()
 						// Render content (if texture is ready)
@@ -141,6 +137,8 @@ func (m *Maps) draw(d *data.Manager) {
 				g.OpenPopup("Resize Map")
 			} else if newMapPopup {
 				g.OpenPopup("New Map")
+			} else if adjustMapPopup {
+				g.OpenPopup("Map Properties")
 			}
 		}),
 		g.PopupModalV("Resize Map", nil, 0, g.Layout{
@@ -171,6 +169,7 @@ func (m *Maps) draw(d *data.Manager) {
 		}),
 		g.PopupModalV("New Map", nil, g.WindowFlagsHorizontalScrollbar, g.Layout{
 			g.Label("Create a new map"),
+			g.InputText("Data Name", 0, &m.newDataName),
 			g.InputText("Name", 0, &m.newName),
 			g.InputTextMultiline("Description", &m.newDescription, 0, 0, g.InputTextFlagsAllowTabInput, nil, nil),
 			g.InputTextMultiline("Lore", &m.newLore, 0, 0, g.InputTextFlagsAllowTabInput, nil, nil),
@@ -182,12 +181,39 @@ func (m *Maps) draw(d *data.Manager) {
 					g.CloseCurrentPopup()
 					// TODO: Check if map with same name already exists!
 					newMap := m.createMap(m.newName, m.newDescription, m.newLore, 0, 0, int(m.newH), int(m.newW), int(m.newD))
-					m.maps[m.newName] = NewUnReMap(newMap)
-					m.newName, m.newDescription, m.newLore = "", "", ""
+					m.maps = append(m.maps, NewUnReMap(newMap, m.newDataName))
+					m.newName, m.newDataName, m.newDescription, m.newLore = "", "", "", ""
 				}),
 				g.Button("Cancel", func() {
 					g.CloseCurrentPopup()
-					m.newName, m.newDescription, m.newLore = "", "", ""
+					m.newName, m.newDataName, m.newDescription, m.newLore = "", "", "", ""
+				}),
+			),
+		}),
+		g.PopupModalV("Map Properties", nil, g.WindowFlagsHorizontalScrollbar, g.Layout{
+			g.InputText("Data Name", 0, &m.newDataName),
+			g.InputText("Name", 0, &m.newName),
+			g.InputTextMultiline("Description", &m.newDescription, 0, 0, g.InputTextFlagsAllowTabInput, nil, nil),
+			g.InputTextMultiline("Lore", &m.newLore, 0, 0, g.InputTextFlagsAllowTabInput, nil, nil),
+			g.Line(
+				g.Button("Save", func() {
+					g.CloseCurrentPopup()
+					//
+					cm := m.CurrentMap()
+
+					clone := m.cloneMap(cm.Get())
+					clone.Name = m.newName
+					clone.Description = m.newDescription
+					clone.Lore = m.newLore
+					cm.dataName = m.newDataName
+
+					cm.Set(clone)
+
+					m.newName, m.newDataName, m.newDescription, m.newLore = "", "", "", ""
+				}),
+				g.Button("Cancel", func() {
+					g.CloseCurrentPopup()
+					m.newName, m.newDataName, m.newDescription, m.newLore = "", "", "", ""
 				}),
 			),
 		}),
@@ -195,10 +221,8 @@ func (m *Maps) draw(d *data.Manager) {
 }
 
 func (m *Maps) handleMapMouse(p image.Point, which int, dm *data.Manager) {
-	sm, ok := m.maps[m.currentMap]
-	if !ok {
-		return
-	}
+	sm := m.CurrentMap()
+
 	scale := float64(m.zoom)
 	padding := 4
 	tWidth := int(dm.AnimationsConfig.TileWidth)
@@ -218,7 +242,7 @@ func (m *Maps) handleMapMouse(p image.Point, which int, dm *data.Manager) {
 	}
 }
 
-func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
+func (m *Maps) createMapTexture(index int, sm *sdata.Map, dm *data.Manager) {
 	mT := MapTexture{}
 	scale := float64(m.zoom)
 	tWidth := int(dm.AnimationsConfig.TileWidth)
@@ -306,7 +330,7 @@ func (m *Maps) createMapTexture(name string, sm *sdata.Map, dm *data.Manager) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	m.mapTextures[name] = mT
+	m.mapTextures[index] = mT
 }
 
 func (m *Maps) saveAll() {
@@ -318,10 +342,7 @@ func (m *Maps) close() {
 }
 
 func (m *Maps) resizeMap(u, d, l, r, t, b int) {
-	cm, ok := m.maps[m.currentMap]
-	if !ok {
-		return
-	}
+	cm := m.CurrentMap()
 	nH := cm.Get().Height + u + d
 	nW := cm.Get().Width + l + r
 	nD := cm.Get().Depth + t + b
@@ -369,6 +390,31 @@ func (m *Maps) resizeMap(u, d, l, r, t, b int) {
 	cm.Set(newMap)
 }
 
+func (m *Maps) cloneMap(t *sdata.Map) *sdata.Map {
+	clone := m.createMap(
+		t.Name,
+		t.Description,
+		t.Lore,
+		t.Darkness,
+		t.ResetTime,
+		t.Height,
+		t.Width,
+		t.Depth,
+	)
+	// Create the new map according to dimensions.
+	for y := 0; y < t.Height; y++ {
+		clone.Tiles = append(clone.Tiles, [][][]sdata.Archetype{})
+		for x := 0; x < t.Width; x++ {
+			clone.Tiles[y] = append(clone.Tiles[y], [][]sdata.Archetype{})
+			for z := 0; z < t.Depth; z++ {
+				clone.Tiles[y][x] = append(t.Tiles[y][x], []sdata.Archetype{})
+				clone.Tiles[y][x][z] = t.Tiles[y][x][z]
+			}
+		}
+	}
+	return clone
+}
+
 func (m *Maps) createMap(name, desc, lore string, darkness, resettime int, h, w, d int) *sdata.Map {
 	// Make a new map according to the given dimensions
 	newMap := &sdata.Map{
@@ -392,4 +438,8 @@ func (m *Maps) createMap(name, desc, lore string, darkness, resettime int, h, w,
 		}
 	}
 	return newMap
+}
+
+func (m *Maps) CurrentMap() *UnReMap {
+	return &m.maps[m.currentMapIndex]
 }

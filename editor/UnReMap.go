@@ -6,14 +6,16 @@ import (
 )
 
 type UnReMap struct {
-	undoer undo.Undoer
+	undoer   undo.Undoer
+	dataName string
 }
 
-func NewUnReMap(m *sdata.Map) UnReMap {
+func NewUnReMap(m *sdata.Map, d string) UnReMap {
 	undoer := undo.NewUndoer(0)
 	undoer.Save(m)
 	return UnReMap{
-		undoer: undoer,
+		undoer:   undoer,
+		dataName: d,
 	}
 }
 
@@ -31,4 +33,8 @@ func (u *UnReMap) Undo() {
 
 func (u *UnReMap) Redo() {
 	u.undoer.Redo()
+}
+
+func (u *UnReMap) DataName() string {
+	return u.dataName
 }
