@@ -61,10 +61,13 @@ func (e *Editor) loop() {
 		os.Exit(0)
 	}
 
-	var openMapPopup bool
+	var openMapPopup, newMapPopup bool
 
 	g.MainMenuBar(g.Layout{
 		g.Menu("File", g.Layout{
+			g.MenuItem("New Mapset...", func() {
+				newMapPopup = true
+			}),
 			g.MenuItem("Open Mapset...", func() {
 				openMapPopup = true
 			}),
@@ -78,6 +81,8 @@ func (e *Editor) loop() {
 
 	if openMapPopup {
 		g.OpenPopup("Open Mapset...")
+	} else if newMapPopup {
+		g.OpenPopup("New Mapset...")
 	}
 
 	g.PopupModalV("Open Mapset...", nil, g.WindowFlagsNoResize, g.Layout{
@@ -94,6 +99,19 @@ func (e *Editor) loop() {
 				} else {
 					e.mapsets[fullPath] = NewMapset(fullPath, dMapset)
 				}
+				g.CloseCurrentPopup()
+			}),
+		),
+	}).Build()
+
+	g.PopupModalV("New Mapset...", nil, g.WindowFlagsNoResize, g.Layout{
+		g.Label("Create a new mapset file"),
+		g.Line(
+			g.Button("Cancel", func() {
+				g.CloseCurrentPopup()
+			}),
+			g.Button("Okay", func() {
+				e.mapsets["Untitled Map"] = NewMapset("Untitled Map", nil)
 				g.CloseCurrentPopup()
 			}),
 		),
