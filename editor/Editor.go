@@ -22,6 +22,7 @@ type Editor struct {
 	showSplash        bool
 	mapsets           []*Mapset
 	archsets          []*Archset
+	animsets          []*Animset
 	imageTextures     map[string]ImageTexture
 	//
 	openMapCWD, openMapFilename string
@@ -59,12 +60,12 @@ func (e *Editor) loop() {
 		os.Exit(0)
 	}
 
-	var openMapPopup, newMapPopup bool
+	var openMapPopup bool
 
 	g.MainMenuBar(g.Layout{
 		g.Menu("File", g.Layout{
-			g.MenuItem("New Mapset...", func() {
-				newMapPopup = true
+			g.MenuItem("New Mapset", func() {
+				e.mapsets = append(e.mapsets, NewMapset("", nil))
 			}),
 			g.MenuItem("Open Mapset...", func() {
 				openMapPopup = true
@@ -79,8 +80,6 @@ func (e *Editor) loop() {
 
 	if openMapPopup {
 		g.OpenPopup("Open Mapset...")
-	} else if newMapPopup {
-		g.OpenPopup("New Mapset...")
 	}
 
 	g.PopupModalV("Open Mapset...", nil, g.WindowFlagsNoResize, g.Layout{
@@ -102,24 +101,15 @@ func (e *Editor) loop() {
 		),
 	}).Build()
 
-	g.PopupModalV("New Mapset...", nil, g.WindowFlagsNoResize, g.Layout{
-		g.Label("Create a new mapset file"),
-		g.Line(
-			g.Button("Cancel", func() {
-				g.CloseCurrentPopup()
-			}),
-			g.Button("Okay", func() {
-				e.mapsets = append(e.mapsets, NewMapset("Untitled Map", nil))
-				g.CloseCurrentPopup()
-			}),
-		),
-	}).Build()
-
 	for _, m := range e.mapsets {
 		m.draw(e.dataManager)
 	}
 
 	for _, a := range e.archsets {
+		a.draw(e.dataManager)
+	}
+
+	for _, a := range e.animsets {
 		a.draw(e.dataManager)
 	}
 
@@ -157,7 +147,7 @@ func (e *Editor) drawArchetypes() {
 					return func() {
 						if g.IsItemHovered() {
 							if g.IsMouseDoubleClicked(g.MouseButtonLeft) {
-								e.openArchetypeEditor(name)
+								e.openArchsetFromArchetype(name)
 							} else if g.IsMouseClicked(g.MouseButtonLeft) {
 								e.selectedArchetype = name
 							}
@@ -247,6 +237,6 @@ func (e *Editor) drawAnimations() {
 	})
 }
 
-func (e *Editor) openArchetypeEditor(archName string) {
-	log.Printf("Open archetype editor for file that corresponds to %s\n", archName)
+func (e *Editor) openArchsetFromArchetype(archName string) {
+	log.Printf("Open archset editor for file that corresponds to %s\n", archName)
 }
