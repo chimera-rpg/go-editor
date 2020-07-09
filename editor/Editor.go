@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"errors"
 	"image"
 	"image/draw"
 	"os"
@@ -238,5 +239,16 @@ func (e *Editor) drawAnimations() {
 }
 
 func (e *Editor) openArchsetFromArchetype(archName string) {
-	log.Printf("Open archset editor for file that corresponds to %s\n", archName)
+	archFilename := e.dataManager.LookupArchetypeFile(archName)
+	if archFilename == "" {
+		log.Errorln(errors.New("No archetype file for arch"))
+		return
+	}
+	archFile := e.dataManager.GetArchetypeFile(archFilename)
+	if archFile == nil {
+		log.Errorln(errors.New("Missing archetype file"))
+		return
+	}
+	e.archsets = append(e.archsets, NewArchset(archFilename, archFile))
+
 }

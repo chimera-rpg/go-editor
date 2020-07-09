@@ -277,6 +277,17 @@ func (m *Manager) GetArchetypeFile(f string) map[string]*sdata.Archetype {
 	return m.archetypeFiles[f]
 }
 
+func (m *Manager) LookupArchetypeFile(a string) string {
+	for k, v := range m.archetypeFiles {
+		for ak, _ := range v {
+			if ak == a {
+				return k
+			}
+		}
+	}
+	return ""
+}
+
 func (m *Manager) GetArchetypes() []string {
 	return m.archetypesOrder
 }
