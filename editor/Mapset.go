@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Maps struct {
+type Mapset struct {
 	filename                                      string
 	maps                                          []UnReMap
 	currentMapIndex                               int
@@ -34,8 +34,8 @@ type MapTexture struct {
 	height  int
 }
 
-func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
-	m := &Maps{
+func NewMapset(name string, maps map[string]*sdata.Map) *Mapset {
+	m := &Mapset{
 		filename:    name,
 		mapTextures: make(map[int]MapTexture),
 		zoom:        3.0,
@@ -52,7 +52,7 @@ func NewMaps(name string, maps map[string]*sdata.Map) *Maps {
 	return m
 }
 
-func (m *Maps) draw(d *data.Manager) {
+func (m *Mapset) draw(d *data.Manager) {
 	childPos := image.Point{0, 0}
 
 	var b bool
@@ -64,9 +64,9 @@ func (m *Maps) draw(d *data.Manager) {
 		mapExists = true
 	}
 
-	g.WindowV(fmt.Sprintf("Mapset: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
+	g.WindowV(fmt.Sprintf("Mapsetet: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
-			g.Menu("Mapset", g.Layout{
+			g.Menu("Mapsetet", g.Layout{
 				g.MenuItem("New Map...", func() {
 					newMapPopup = true
 				}),
@@ -107,7 +107,7 @@ func (m *Maps) draw(d *data.Manager) {
 			}),
 		}),
 		g.Custom(func() {
-			if imgui.BeginTabBarV("Maps", int(g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown)) {
+			if imgui.BeginTabBarV("Mapset", int(g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown)) {
 				for mapIndex, v := range m.maps {
 					if imgui.BeginTabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, 0) {
 						m.currentMapIndex = mapIndex
@@ -250,7 +250,7 @@ func (m *Maps) draw(d *data.Manager) {
 	})
 }
 
-func (m *Maps) handleMapMouse(p image.Point, which int, dm *data.Manager) {
+func (m *Mapset) handleMapMouse(p image.Point, which int, dm *data.Manager) {
 	sm := m.CurrentMap()
 
 	scale := float64(m.zoom)
@@ -272,7 +272,7 @@ func (m *Maps) handleMapMouse(p image.Point, which int, dm *data.Manager) {
 	}
 }
 
-func (m *Maps) createMapTexture(index int, sm *sdata.Map, dm *data.Manager) {
+func (m *Mapset) createMapTexture(index int, sm *sdata.Map, dm *data.Manager) {
 	mT := MapTexture{}
 	scale := float64(m.zoom)
 	tWidth := int(dm.AnimationsConfig.TileWidth)
@@ -363,15 +363,15 @@ func (m *Maps) createMapTexture(index int, sm *sdata.Map, dm *data.Manager) {
 	m.mapTextures[index] = mT
 }
 
-func (m *Maps) saveAll() {
+func (m *Mapset) saveAll() {
 	log.Println("TODO: Save all maps in file")
 }
 
-func (m *Maps) close() {
+func (m *Mapset) close() {
 	log.Println("TODO: Issue close of map")
 }
 
-func (m *Maps) resizeMap(u, d, l, r, t, b int) {
+func (m *Mapset) resizeMap(u, d, l, r, t, b int) {
 	cm := m.CurrentMap()
 	nH := cm.Get().Height + u + d
 	nW := cm.Get().Width + l + r
@@ -420,7 +420,7 @@ func (m *Maps) resizeMap(u, d, l, r, t, b int) {
 	cm.Set(newMap)
 }
 
-func (m *Maps) cloneMap(t *sdata.Map) *sdata.Map {
+func (m *Mapset) cloneMap(t *sdata.Map) *sdata.Map {
 	clone := m.createMap(
 		t.Name,
 		t.Description,
@@ -445,7 +445,7 @@ func (m *Maps) cloneMap(t *sdata.Map) *sdata.Map {
 	return clone
 }
 
-func (m *Maps) createMap(name, desc, lore string, darkness, resettime int, h, w, d int) *sdata.Map {
+func (m *Mapset) createMap(name, desc, lore string, darkness, resettime int, h, w, d int) *sdata.Map {
 	// Make a new map according to the given dimensions
 	newMap := &sdata.Map{
 		Name:        name,
@@ -470,7 +470,7 @@ func (m *Maps) createMap(name, desc, lore string, darkness, resettime int, h, w,
 	return newMap
 }
 
-func (m *Maps) deleteMap(index int) {
+func (m *Mapset) deleteMap(index int) {
 	if index >= len(m.maps) || index < 0 {
 		return
 	}
@@ -483,7 +483,7 @@ func (m *Maps) deleteMap(index int) {
 	}
 }
 
-func (m *Maps) CurrentMap() *UnReMap {
+func (m *Mapset) CurrentMap() *UnReMap {
 	if m.currentMapIndex < 0 || m.currentMapIndex >= len(m.maps) {
 		return nil
 	}

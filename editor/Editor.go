@@ -20,7 +20,7 @@ type Editor struct {
 	selectedArchetype string
 	isRunning         bool
 	showSplash        bool
-	mapsMap           map[string]*Maps
+	mapsets           map[string]*Mapset
 	imageTextures     map[string]ImageTexture
 	//
 	openMapCWD, openMapFilename string
@@ -35,7 +35,7 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.dataManager = dataManager
 	e.isRunning = true
 	e.archetypesMode = true
-	e.mapsMap = make(map[string]*Maps)
+	e.mapsets = make(map[string]*Mapset)
 	e.imageTextures = make(map[string]ImageTexture)
 	e.openMapCWD = dataManager.MapsPath
 
@@ -63,7 +63,7 @@ func (e *Editor) loop() {
 
 	g.MainMenuBar(g.Layout{
 		g.Menu("File", g.Layout{
-			g.MenuItem("Open Mapset...", func() {
+			g.MenuItem("Open Mapsetet...", func() {
 				openMapPopup = true
 			}),
 			g.Separator(),
@@ -75,29 +75,29 @@ func (e *Editor) loop() {
 	}).Build()
 
 	if openMapPopup {
-		g.OpenPopup("Open Mapset...")
+		g.OpenPopup("Open Mapsetet...")
 	}
 
-	g.PopupModalV("Open Mapset...", nil, g.WindowFlagsNoResize, g.Layout{
+	g.PopupModalV("Open Mapsetet...", nil, g.WindowFlagsNoResize, g.Layout{
 		g.Label("Select a file"),
 		widgets.FileBrowser(&e.openMapCWD, &e.openMapFilename, nil),
 		g.Line(
 			g.Button("Cancel", func() { g.CloseCurrentPopup() }),
 			g.Button("Open", func() {
 				fullPath := path.Join(e.openMapCWD, e.openMapFilename)
-				dMaps, err := e.dataManager.LoadMap(fullPath)
+				dMapset, err := e.dataManager.LoadMap(fullPath)
 				if err != nil {
 					// TODO: Popup some sort of error!
 					log.Errorln(err)
 				} else {
-					e.mapsMap[fullPath] = NewMaps(fullPath, dMaps)
+					e.mapsets[fullPath] = NewMapset(fullPath, dMapset)
 				}
 				g.CloseCurrentPopup()
 			}),
 		),
 	}).Build()
 
-	for _, m := range e.mapsMap {
+	for _, m := range e.mapsets {
 		m.draw(e.dataManager)
 	}
 	e.drawArchetypes()
