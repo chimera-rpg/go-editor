@@ -64,14 +64,14 @@ func (m *Maps) draw(d *data.Manager) {
 		mapExists = true
 	}
 
-	g.WindowV(fmt.Sprintf("Maps: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
+	g.WindowV(fmt.Sprintf("Mapset: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
-			g.Menu("Maps", g.Layout{
+			g.Menu("Mapset", g.Layout{
 				g.MenuItem("New Map...", func() {
 					newMapPopup = true
 				}),
 				g.Separator(),
-				g.MenuItem("Save", func() { m.saveAll() }),
+				g.MenuItem("Save All", func() { m.saveAll() }),
 				g.Separator(),
 				g.MenuItem("Close", func() { m.close() }),
 			}),
