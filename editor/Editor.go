@@ -8,8 +8,8 @@ import (
 	"path"
 
 	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/giu/imgui"
 	"github.com/chimera-rpg/go-editor/data"
+	"github.com/chimera-rpg/go-editor/widgets"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,6 +22,8 @@ type Editor struct {
 	showSplash        bool
 	mapsMap           map[string]*Maps
 	imageTextures     map[string]ImageTexture
+	//
+	openMapCWD, openMapFilename string
 }
 
 type ImageTexture struct {
@@ -35,6 +37,7 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.archetypesMode = true
 	e.mapsMap = make(map[string]*Maps)
 	e.imageTextures = make(map[string]ImageTexture)
+	e.openMapCWD = dataManager.MapsPath
 
 	return
 }
@@ -48,14 +51,6 @@ func (e *Editor) Start() {
 	e.masterWindow = g.NewMasterWindow("Editor", 800, 600, 0, nil)
 	e.showSplash = true
 
-	fullPath := path.Join(e.dataManager.MapsPath, "ChamberOfOrigins.map.yaml")
-	dMaps, err := e.dataManager.LoadMap(fullPath)
-	if err != nil {
-		log.Errorln(err)
-	} else {
-		e.mapsMap["ChamberOfOrigins.map.yaml"] = NewMaps("ChamberOfOrigins.map.yaml", dMaps)
-	}
-
 	e.masterWindow.Main(func() { e.loop() })
 }
 
@@ -64,10 +59,12 @@ func (e *Editor) loop() {
 		os.Exit(0)
 	}
 
+	var openMapPopup bool
+
 	g.MainMenuBar(g.Layout{
 		g.Menu("File", g.Layout{
-			g.MenuItem("Open Map", func() {
-				imgui.OpenPopup("Open Map...")
+			g.MenuItem("Open Mapset...", func() {
+				openMapPopup = true
 			}),
 			g.Separator(),
 			g.MenuItem("Exit", func() { e.isRunning = false }),
@@ -77,11 +74,26 @@ func (e *Editor) loop() {
 		}),
 	}).Build()
 
-	g.PopupModal("Open Map...", g.Layout{
+	if openMapPopup {
+		g.OpenPopup("Open Mapset...")
+	}
+
+	g.PopupModalV("Open Mapset...", nil, g.WindowFlagsNoResize, g.Layout{
 		g.Label("Select a file"),
+		widgets.FileBrowser(&e.openMapCWD, &e.openMapFilename, nil),
 		g.Line(
-			g.Button("Cancel", func() { imgui.CloseCurrentPopup() }),
-			g.Button("Open", nil),
+			g.Button("Cancel", func() { g.CloseCurrentPopup() }),
+			g.Button("Open", func() {
+				fullPath := path.Join(e.openMapCWD, e.openMapFilename)
+				dMaps, err := e.dataManager.LoadMap(fullPath)
+				if err != nil {
+					// TODO: Popup some sort of error!
+					log.Errorln(err)
+				} else {
+					e.mapsMap["ChamberOfOrigins.map.yaml"] = NewMaps("ChamberOfOrigins.map.yaml", dMaps)
+				}
+				g.CloseCurrentPopup()
+			}),
 		),
 	}).Build()
 
@@ -113,9 +125,9 @@ func (e *Editor) drawArchetypes() {
 		archs := e.dataManager.GetArchetypes()
 		for _, archName := range archs {
 			var flags g.TreeNodeFlags
-			flags = imgui.TreeNodeFlagsLeaf | imgui.TreeNodeFlagsSpanFullWidth
+			flags = g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
 			if archName == e.selectedArchetype {
-				flags |= imgui.TreeNodeFlagsSelected
+				flags |= g.TreeNodeFlagsSelected
 			}
 			items = append(items, g.TreeNode("", flags, g.Layout{
 				g.Custom(func(name string) func() {
@@ -178,7 +190,7 @@ func (e *Editor) drawArchetypes() {
 					}),
 				})
 			}
-			items = append(items, g.Row(g.TreeNode(archFile, imgui.TreeNodeFlagsCollapsingHeader|imgui.TreeNodeFlagsDefaultOpen, archItems)))
+			items = append(items, g.Row(g.TreeNode(archFile, g.TreeNodeFlagsCollapsingHeader|g.TreeNodeFlagsDefaultOpen, archItems)))
 		}
 	}
 	var b bool
