@@ -64,7 +64,7 @@ func (m *Mapset) draw(d *data.Manager) {
 		mapExists = true
 	}
 
-	g.WindowV(fmt.Sprintf("Mapsetet: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
+	g.WindowV(fmt.Sprintf("Mapset: %s", m.filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
 			g.Menu("Mapsetet", g.Layout{
 				g.MenuItem("New Map...", func() {
