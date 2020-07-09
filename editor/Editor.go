@@ -90,7 +90,7 @@ func (e *Editor) loop() {
 					// TODO: Popup some sort of error!
 					log.Errorln(err)
 				} else {
-					e.mapsMap["ChamberOfOrigins.map.yaml"] = NewMaps("ChamberOfOrigins.map.yaml", dMaps)
+					e.mapsMap[fullPath] = NewMaps(fullPath, dMaps)
 				}
 				g.CloseCurrentPopup()
 			}),
