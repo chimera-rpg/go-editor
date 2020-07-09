@@ -20,8 +20,8 @@ type Editor struct {
 	selectedArchetype string
 	isRunning         bool
 	showSplash        bool
-	mapsets           map[string]*Mapset
-	archsets          map[string]*Archset
+	mapsets           []*Mapset
+	archsets          []*Archset
 	imageTextures     map[string]ImageTexture
 	//
 	openMapCWD, openMapFilename string
@@ -36,8 +36,6 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.dataManager = dataManager
 	e.isRunning = true
 	e.archetypesMode = true
-	e.mapsets = make(map[string]*Mapset)
-	e.archsets = make(map[string]*Archset)
 	e.imageTextures = make(map[string]ImageTexture)
 	e.openMapCWD = dataManager.MapsPath
 
@@ -97,7 +95,7 @@ func (e *Editor) loop() {
 					// TODO: Popup some sort of error!
 					log.Errorln(err)
 				} else {
-					e.mapsets[fullPath] = NewMapset(fullPath, dMapset)
+					e.mapsets = append(e.mapsets, NewMapset(fullPath, dMapset))
 				}
 				g.CloseCurrentPopup()
 			}),
@@ -111,7 +109,7 @@ func (e *Editor) loop() {
 				g.CloseCurrentPopup()
 			}),
 			g.Button("Okay", func() {
-				e.mapsets["Untitled Map"] = NewMapset("Untitled Map", nil)
+				e.mapsets = append(e.mapsets, NewMapset("Untitled Map", nil))
 				g.CloseCurrentPopup()
 			}),
 		),
