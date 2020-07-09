@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"fmt"
 	_ "image/png"
 	"io/ioutil"
 	"os"
@@ -62,7 +63,7 @@ func (m *Manager) Setup() (err error) {
 	m.animations = make(map[string]sdata.AnimationPre)
 
 	// Read animations config
-	animationsConfigPath := path.Join(m.ArchetypesPath, "config.yaml")
+	animationsConfigPath := filepath.Join(m.ArchetypesPath, "config.yaml")
 	r, err := ioutil.ReadFile(animationsConfigPath)
 	if err != nil {
 		return err
@@ -89,7 +90,7 @@ func (m *Manager) Setup() (err error) {
 
 // GetDataPath gets a path relative to the data path directory.
 func (m *Manager) GetDataPath(parts ...string) string {
-	return path.Join(m.DataPath, path.Clean("/"+path.Join(parts...)))
+	return path.Join(m.DataPath, filepath.Clean(fmt.Sprintf("%c", filepath.Separator)+filepath.Join(parts...)))
 }
 
 func (m *Manager) acquireDataPath() (err error) {
@@ -98,7 +99,7 @@ func (m *Manager) acquireDataPath() (err error) {
 	if dir, err = filepath.Abs(os.Args[0]); err != nil {
 		return
 	}
-	dir = path.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "editor")
+	dir = filepath.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "editor")
 
 	m.DataPath = dir
 	return
@@ -110,7 +111,7 @@ func (m *Manager) acquireMapPath() (err error) {
 	if dir, err = filepath.Abs(os.Args[0]); err != nil {
 		return
 	}
-	dir = path.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "maps")
+	dir = filepath.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "maps")
 
 	m.MapsPath = dir
 	return
@@ -121,7 +122,7 @@ func (m *Manager) acquireArchetypesPath() (err error) {
 	if dir, err = filepath.Abs(os.Args[0]); err != nil {
 		return
 	}
-	dir = path.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "archetypes")
+	dir = filepath.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "archetypes")
 
 	m.ArchetypesPath = dir
 	return
