@@ -9,8 +9,9 @@ import (
 )
 
 type Archset struct {
-	filename string
-	archs    []sdata.Archetype
+	filename    string
+	archs       []sdata.Archetype
+	shouldClose bool
 }
 
 func NewArchset(name string, archs map[string]*sdata.Archetype) *Archset {
@@ -28,5 +29,21 @@ func NewArchset(name string, archs map[string]*sdata.Archetype) *Archset {
 func (a *Archset) draw(d *data.Manager) {
 	var b bool
 
-	g.WindowV(fmt.Sprintf("Archset: %s", a.filename), &b, g.WindowFlagsMenuBar, 210, 430, 300, 400, g.Layout{})
+	var newArchPopup bool
+
+	g.WindowV(fmt.Sprintf("Archset: %s", a.filename), &b, g.WindowFlagsMenuBar, 210, 430, 300, 400, g.Layout{
+		g.MenuBar(g.Layout{
+			g.Menu("Archset", g.Layout{
+				g.MenuItem("New Arch...", func() {
+					newArchPopup = true
+				}),
+				g.Separator(),
+				g.MenuItem("Save All", func() {}),
+				g.Separator(),
+				g.MenuItem("Close", func() {
+					a.shouldClose = true
+				}),
+			}),
+		}),
+	})
 }

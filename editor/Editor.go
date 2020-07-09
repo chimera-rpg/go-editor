@@ -102,12 +102,18 @@ func (e *Editor) loop() {
 		),
 	}).Build()
 
-	for _, m := range e.mapsets {
+	for i, m := range e.mapsets {
 		m.draw(e.dataManager)
+		if m.shouldClose {
+			e.mapsets = append(e.mapsets[:i], e.mapsets[i+1:]...)
+		}
 	}
 
-	for _, a := range e.archsets {
+	for i, a := range e.archsets {
 		a.draw(e.dataManager)
+		if a.shouldClose {
+			e.archsets = append(e.archsets[:i], e.archsets[i+1:]...)
+		}
 	}
 
 	for _, a := range e.animsets {
@@ -248,6 +254,12 @@ func (e *Editor) openArchsetFromArchetype(archName string) {
 	if archFile == nil {
 		log.Errorln(errors.New("Missing archetype file"))
 		return
+	}
+	for _, a := range e.archsets {
+		if a.filename == archFilename {
+			log.Printf("Archset %s already open.", archFilename)
+			return
+		}
 	}
 	e.archsets = append(e.archsets, NewArchset(archFilename, archFile))
 

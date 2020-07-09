@@ -26,6 +26,7 @@ type Mapset struct {
 	newDataName, newName, newDescription, newLore string
 	zoom                                          int32
 	showGrid                                      bool
+	shouldClose                                   bool
 }
 
 type MapTexture struct {
@@ -372,7 +373,7 @@ func (m *Mapset) saveAll() {
 }
 
 func (m *Mapset) close() {
-	log.Println("TODO: Issue close of map")
+	m.shouldClose = true
 }
 
 func (m *Mapset) resizeMap(u, d, l, r, t, b int) {
