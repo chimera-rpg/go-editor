@@ -119,8 +119,12 @@ func (m *Maps) draw(d *data.Manager) {
 						}()
 						// Render content (if texture is ready)
 						if ok && t.texture != nil {
+							var availW, availH float32
 							g.Layout{
-								g.Child(v.Get().Name, false, 0, 0, g.WindowFlagsHorizontalScrollbar, g.Layout{
+								g.Custom(func() {
+									availW, availH = g.GetAvaiableRegion()
+								}),
+								g.Child(v.Get().Name, false, availW, availH-20, g.WindowFlagsHorizontalScrollbar, g.Layout{
 									g.Custom(func() {
 										childPos = g.GetCursorScreenPos()
 									}),
@@ -134,6 +138,7 @@ func (m *Maps) draw(d *data.Manager) {
 										}
 									}),
 								}),
+								g.Label("info bar"),
 							}.Build()
 						}
 						imgui.EndTabItem()
