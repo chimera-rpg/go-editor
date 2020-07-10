@@ -12,11 +12,13 @@ type UnReMap struct {
 
 func NewUnReMap(m *sdata.Map, d string) UnReMap {
 	undoer := undo.NewUndoer(0)
-	undoer.Save(m)
-	return UnReMap{
+	u := UnReMap{
 		undoer:   undoer,
 		dataName: d,
 	}
+	u.Set(m)
+
+	return u
 }
 
 func (u *UnReMap) Set(m *sdata.Map) {

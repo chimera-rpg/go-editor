@@ -14,19 +14,20 @@ import (
 )
 
 type Mapset struct {
-	filename                                      string
-	maps                                          []UnReMap
-	currentMapIndex                               int
-	mapTextures                                   map[int]MapTexture
-	focusedY, focusedX, focusedZ                  int
-	resizeL, resizeR                              int32
-	resizeT, resizeB                              int32
-	resizeU, resizeD                              int32
-	newH, newW, newD                              int32
-	newDataName, newName, newDescription, newLore string
-	zoom                                          int32
-	showGrid                                      bool
-	shouldClose                                   bool
+	filename                     string
+	maps                         []UnReMap
+	currentMapIndex              int
+	mapTextures                  map[int]MapTexture
+	focusedY, focusedX, focusedZ int
+	resizeL, resizeR             int32
+	resizeT, resizeB             int32
+	resizeU, resizeD             int32
+	newH, newW, newD             int32
+	newDataName, newName         string
+	loreEditor, descEditor       imgui.TextEditor
+	zoom                         int32
+	showGrid                     bool
+	shouldClose                  bool
 }
 
 type MapTexture struct {
@@ -44,6 +45,8 @@ func NewMapset(name string, maps map[string]*sdata.Map) *Mapset {
 		newW:        1,
 		newH:        1,
 		newD:        1,
+		loreEditor:  imgui.NewTextEditor(),
+		descEditor:  imgui.NewTextEditor(),
 	}
 
 	for k, v := range maps {
@@ -74,6 +77,8 @@ func (m *Mapset) draw(d *data.Manager) {
 			g.Menu("Mapset", g.Layout{
 				g.MenuItem("New Map...", func() {
 					newMapPopup = true
+					m.descEditor.SetText("")
+					m.loreEditor.SetText("")
 				}),
 				g.Separator(),
 				g.MenuItem("Save All", func() { m.saveAll() }),
@@ -85,8 +90,8 @@ func (m *Mapset) draw(d *data.Manager) {
 					cm := m.CurrentMap()
 					m.newName = cm.Get().Name
 					m.newDataName = cm.DataName()
-					m.newDescription = cm.Get().Description
-					m.newLore = cm.Get().Lore
+					m.descEditor.SetText(cm.Get().Description)
+					m.loreEditor.SetText(cm.Get().Lore)
 					adjustMapPopup = true
 				}),
 				g.MenuItemV("Resize...", false, mapExists, func() {
@@ -193,30 +198,48 @@ func (m *Mapset) draw(d *data.Manager) {
 			g.Label("Create a new map"),
 			g.InputText("Data Name", 0, &m.newDataName),
 			g.InputText("Name", 0, &m.newName),
-			g.InputTextMultiline("Description", &m.newDescription, 0, 0, g.InputTextFlagsAllowTabInput, nil, nil),
-			g.InputTextMultiline("Lore", &m.newLore, 0, 0, g.InputTextFlagsAllowTabInput, nil, nil),
+			g.Custom(func() {
+				availW, _ := g.GetAvaiableRegion()
+				labelV := imgui.CalcTextSize("Description", false, 0)
+				m.descEditor.Render("Description", imgui.Vec2{X: availW - labelV.X - 5, Y: 200}, false)
+				imgui.SameLine()
+				g.Label("Description").Build()
+				m.loreEditor.Render("Lore", imgui.Vec2{X: availW - labelV.X - 5, Y: 200}, false)
+				imgui.SameLine()
+				g.Label("Lore").Build()
+			}),
 			g.SliderInt("Height", &m.newH, 1, 200, "%d"),
 			g.SliderInt("Width ", &m.newW, 1, 200, "%d"),
 			g.SliderInt("Depth ", &m.newD, 1, 200, "%d"),
 			g.Line(
 				g.Button("Create", func() {
 					g.CloseCurrentPopup()
+					lore := m.loreEditor.GetText()
+					desc := m.descEditor.GetText()
 					// TODO: Check if map with same name already exists!
-					newMap := m.createMap(m.newName, m.newDescription, m.newLore, 0, 0, int(m.newH), int(m.newW), int(m.newD))
+					newMap := m.createMap(m.newName, desc, lore, 0, 0, int(m.newH), int(m.newW), int(m.newD))
 					m.maps = append(m.maps, NewUnReMap(newMap, m.newDataName))
-					m.newName, m.newDataName, m.newDescription, m.newLore = "", "", "", ""
+					m.newName, m.newDataName = "", ""
 				}),
 				g.Button("Cancel", func() {
 					g.CloseCurrentPopup()
-					m.newName, m.newDataName, m.newDescription, m.newLore = "", "", "", ""
+					m.newName, m.newDataName = "", ""
 				}),
 			),
 		}),
 		g.PopupModalV("Map Properties", nil, g.WindowFlagsHorizontalScrollbar, g.Layout{
 			g.InputText("Data Name", 0, &m.newDataName),
 			g.InputText("Name", 0, &m.newName),
-			g.InputTextMultiline("Description", &m.newDescription, 0, 0, g.InputTextFlagsAllowTabInput, nil, nil),
-			g.InputTextMultiline("Lore", &m.newLore, 0, 0, g.InputTextFlagsAllowTabInput, nil, nil),
+			g.Custom(func() {
+				availW, availH := g.GetAvaiableRegion()
+				labelV := imgui.CalcTextSize("Description", false, 0)
+				m.descEditor.Render("Description", imgui.Vec2{X: availW - labelV.X - 5, Y: availH/2 - labelV.Y - 3}, false)
+				imgui.SameLine()
+				g.Label("Description").Build()
+				m.loreEditor.Render("Lore", imgui.Vec2{X: availW - labelV.X - 5, Y: availH/2 - labelV.Y - 3}, false)
+				imgui.SameLine()
+				g.Label("Lore").Build()
+			}),
 			g.Line(
 				g.Button("Save", func() {
 					g.CloseCurrentPopup()
@@ -225,17 +248,18 @@ func (m *Mapset) draw(d *data.Manager) {
 
 					clone := m.cloneMap(cm.Get())
 					clone.Name = m.newName
-					clone.Description = m.newDescription
-					clone.Lore = m.newLore
+					clone.Description = m.descEditor.GetText()
+					clone.Lore = m.loreEditor.GetText()
+
 					cm.dataName = m.newDataName
 
 					cm.Set(clone)
 
-					m.newName, m.newDataName, m.newDescription, m.newLore = "", "", "", ""
+					m.newName, m.newDataName = "", ""
 				}),
 				g.Button("Cancel", func() {
 					g.CloseCurrentPopup()
-					m.newName, m.newDataName, m.newDescription, m.newLore = "", "", "", ""
+					m.newName, m.newDataName = "", ""
 				}),
 			),
 		}),
