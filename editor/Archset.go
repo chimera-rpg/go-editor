@@ -5,15 +5,18 @@ import (
 	"path"
 
 	g "github.com/AllenDang/giu"
+	"github.com/AllenDang/giu/imgui"
 	"github.com/chimera-rpg/go-editor/data"
 	sdata "github.com/chimera-rpg/go-server/data"
 )
 
 type Archset struct {
 	filename             string
-	archs                []sdata.Archetype
+	archs                []UnReArch
+	archsSauce           []string
 	shouldClose          bool
 	newDataName, newName string
+	currentArchIndex     int
 }
 
 func NewArchset(name string, archs map[string]*sdata.Archetype) *Archset {
@@ -21,8 +24,8 @@ func NewArchset(name string, archs map[string]*sdata.Archetype) *Archset {
 		filename: name,
 	}
 
-	for _, v := range archs {
-		a.archs = append(a.archs, *v)
+	for k, v := range archs {
+		a.archs = append(a.archs, NewUnReArch(*v, k))
 	}
 
 	a.setDefaults()
@@ -50,6 +53,18 @@ func (a *Archset) draw(d *data.Manager) {
 			}),
 		}),
 		g.Custom(func() {
+			if imgui.BeginTabBarV("Archset", int(g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown)) {
+				for archIndex, arch := range a.archs {
+					if imgui.BeginTabItemV(arch.DataName(), nil, 0) {
+						a.currentArchIndex = archIndex
+						g.InputTextMultiline("Source", arch.GetPendingSource(), 0, 0, 0, nil, nil).Build()
+						imgui.EndTabItem()
+					}
+				}
+				imgui.EndTabBar()
+			}
+		}),
+		g.Custom(func() {
 			if newArchPopup {
 				g.OpenPopup("New Arch")
 			}
@@ -61,9 +76,9 @@ func (a *Archset) draw(d *data.Manager) {
 			g.Line(
 				g.Button("Create", func() {
 					// TODO: Check if arch with the same name already exists
-					//a.archs = append(a.archs, NewUnReArch(sdata.Archetype{
-					// Name: a.newName,
-					// }, a.newDataName))
+					a.archs = append(a.archs, NewUnReArch(sdata.Archetype{
+						Name: sdata.NewStringExpression(a.newName),
+					}, a.newDataName))
 					g.CloseCurrentPopup()
 					a.setDefaults()
 				}),
