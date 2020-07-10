@@ -1,23 +1,25 @@
 package editor
 
 import (
+	"github.com/AllenDang/giu/imgui"
 	sdata "github.com/chimera-rpg/go-server/data"
 	undo "github.com/iomodo/a-simple-undo-redo"
 	"gopkg.in/yaml.v2"
 )
 
 type UnReArch struct {
-	undoer        undo.Undoer
-	source        string
-	pendingSource string
-	dataName      string
+	undoer     undo.Undoer
+	source     string
+	dataName   string
+	textEditor imgui.TextEditor
 }
 
 func NewUnReArch(a sdata.Archetype, d string) UnReArch {
 	undoer := undo.NewUndoer(0)
 	u := UnReArch{
-		undoer:   undoer,
-		dataName: d,
+		undoer:     undoer,
+		dataName:   d,
+		textEditor: imgui.NewTextEditor(),
 	}
 	u.Set(a)
 
@@ -32,7 +34,7 @@ func (u *UnReArch) Set(a sdata.Archetype) error {
 		return err
 	}
 	u.source = string(bytes)
-	u.pendingSource = u.source
+	u.textEditor.SetText(u.source)
 	return nil
 }
 
@@ -53,10 +55,6 @@ func (u *UnReArch) Get() sdata.Archetype {
 
 func (u *UnReArch) GetSource() string {
 	return u.source
-}
-
-func (u *UnReArch) GetPendingSource() *string {
-	return &u.pendingSource
 }
 
 func (u *UnReArch) Undo() {

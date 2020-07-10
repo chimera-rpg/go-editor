@@ -57,7 +57,10 @@ func (a *Archset) draw(d *data.Manager) {
 				for archIndex, arch := range a.archs {
 					if imgui.BeginTabItemV(arch.DataName(), nil, 0) {
 						a.currentArchIndex = archIndex
-						g.InputTextMultiline("Source", arch.GetPendingSource(), 0, 0, 0, nil, nil).Build()
+						arch.textEditor.Render("Source", imgui.Vec2{X: 0, Y: 0}, false)
+						if arch.textEditor.IsTextChanged() {
+							// TODO: Store that we've changed so we can set the tab item flags to show unsaved.
+						}
 						imgui.EndTabItem()
 					}
 				}
