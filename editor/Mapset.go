@@ -56,7 +56,7 @@ func NewMapset(name string, maps map[string]*sdata.Map) *Mapset {
 func (m *Mapset) draw(d *data.Manager) {
 	childPos := image.Point{0, 0}
 
-	var b bool
+	windowOpen := true
 
 	var mapExists bool
 	var resizeMapPopup, newMapPopup, adjustMapPopup, deleteMapPopup bool
@@ -69,7 +69,7 @@ func (m *Mapset) draw(d *data.Manager) {
 	if filename == "" {
 		filename = "Untitled Map"
 	}
-	g.WindowV(fmt.Sprintf("Mapset: %s", filename), &b, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
+	g.WindowV(fmt.Sprintf("Mapset: %s", filename), &windowOpen, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
 			g.Menu("Mapset", g.Layout{
 				g.MenuItem("New Map...", func() {
@@ -253,6 +253,10 @@ func (m *Mapset) draw(d *data.Manager) {
 			),
 		}),
 	})
+
+	if !windowOpen {
+		m.close()
+	}
 }
 
 func (m *Mapset) handleMapMouse(p image.Point, which int, dm *data.Manager) {
