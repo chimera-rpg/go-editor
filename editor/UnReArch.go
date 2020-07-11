@@ -21,6 +21,7 @@ func NewUnReArch(a sdata.Archetype, d string) UnReArch {
 		dataName:   d,
 		textEditor: imgui.NewTextEditor(),
 	}
+	u.textEditor.SetShowWhitespaces(false)
 	u.Set(a)
 
 	return u

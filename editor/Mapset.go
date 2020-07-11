@@ -48,6 +48,8 @@ func NewMapset(name string, maps map[string]*sdata.Map) *Mapset {
 		loreEditor:  imgui.NewTextEditor(),
 		descEditor:  imgui.NewTextEditor(),
 	}
+	m.loreEditor.SetShowWhitespaces(false)
+	m.descEditor.SetShowWhitespaces(false)
 
 	for k, v := range maps {
 		m.maps = append(m.maps, NewUnReMap(v, k))
