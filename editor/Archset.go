@@ -12,7 +12,7 @@ import (
 
 type Archset struct {
 	filename             string
-	archs                []UnReArch
+	archs                []*UnReArch
 	archsSauce           []string
 	shouldClose          bool
 	newDataName, newName string
@@ -55,12 +55,26 @@ func (a *Archset) draw(d *data.Manager) {
 		g.Custom(func() {
 			if imgui.BeginTabBarV("Archset", int(g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown)) {
 				for archIndex, arch := range a.archs {
-					if imgui.BeginTabItemV(arch.DataName(), nil, 0) {
+					var flags g.TabItemFlags
+					if arch.unsaved {
+						flags |= g.TabItemFlagsUnsavedDocument
+					}
+					if imgui.BeginTabItemV(arch.DataName(), nil, int(flags)) {
+						_, availH := g.GetAvaiableRegion()
 						a.currentArchIndex = archIndex
-						arch.textEditor.Render("Source", imgui.Vec2{X: 0, Y: 0}, false)
+						arch.textEditor.Render("Source", imgui.Vec2{X: 0, Y: availH - 20}, false)
 						if arch.textEditor.IsTextChanged() {
-							// TODO: Store that we've changed so we can set the tab item flags to show unsaved.
+							arch.SetUnsaved(true)
 						}
+						g.Line(
+							g.Button("Reset", func() {
+								arch.Reset()
+							}),
+							g.Button("Save", func() {
+								arch.Save()
+								// TODO: Resave current Archset with most recent saved versions of Archs.
+							}),
+						).Build()
 						imgui.EndTabItem()
 					}
 				}
