@@ -9,6 +9,8 @@ github.com/AllenDang/giu v0.0.0-20200709030315-4a692e68f6f3/go.mod h1:I5APP3KkER
 github.com/c-bata/go-prompt v0.2.3/go.mod h1:VzqtzE2ksDBcdln8G7mk2RX9QyGjH+OVqOCSiVIqS34=
 github.com/chimera-rpg/go-common v0.0.0-20200630020335-8066864ae980 h1:nRq27cTGr5hpt2qGjQuHOJLhjuOXOZeNAepbxByL4dI=
 github.com/chimera-rpg/go-common v0.0.0-20200630020335-8066864ae980/go.mod h1:/FwRKhQznOZpTqwkeKsxXiRD2BJVU5hU5B932mDTQnY=
+github.com/chimera-rpg/go-common v0.0.0-20200713092341-17400f3c23bc h1:ie2xDb1X0eeA0Hq2qUhrN7aK2u7KR8miasRY1Zsw4pY=
+github.com/chimera-rpg/go-common v0.0.0-20200713092341-17400f3c23bc/go.mod h1:/FwRKhQznOZpTqwkeKsxXiRD2BJVU5hU5B932mDTQnY=
 github.com/chimera-rpg/go-server v0.0.0-20200630091741-be45a43df3a2 h1:la0T8/6X2QgsW2YmxmCIlPf7U7GGanRZvxwkkTc1SOo=
 github.com/chimera-rpg/go-server v0.0.0-20200630091741-be45a43df3a2/go.mod h1:3OWT+zOEii4NuXSJSf0C40079zIPvrl6jZTUH8dkJp4=
 github.com/chimera-rpg/go-server v0.0.0-20200710060336-40b1a06ce676 h1:YYHCDlYDItuZPeLLWkFNdc+6jWSXfqE6vtMDRnAEtNA=
