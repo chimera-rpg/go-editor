@@ -12,14 +12,17 @@ type UnReArch struct {
 	source     string
 	dataName   string
 	textEditor imgui.TextEditor
+	savedArch  sdata.Archetype
+	unsaved    bool
 }
 
-func NewUnReArch(a sdata.Archetype, d string) UnReArch {
+func NewUnReArch(a sdata.Archetype, d string) *UnReArch {
 	undoer := undo.NewUndoer(0)
-	u := UnReArch{
+	u := &UnReArch{
 		undoer:     undoer,
 		dataName:   d,
 		textEditor: imgui.NewTextEditor(),
+		savedArch:  a,
 	}
 	u.textEditor.SetShowWhitespaces(false)
 	u.Set(a)
@@ -66,6 +69,25 @@ func (u *UnReArch) Redo() {
 	u.undoer.Redo()
 }
 
+func (u *UnReArch) SavedArch() sdata.Archetype {
+	return u.savedArch
+}
+
 func (u *UnReArch) DataName() string {
 	return u.dataName
+}
+
+func (u *UnReArch) SetUnsaved(b bool) {
+	u.unsaved = b
+}
+
+func (u *UnReArch) Save() {
+	u.SetSource(u.textEditor.GetText())
+	u.savedArch = u.Get()
+	u.unsaved = false
+}
+
+func (u *UnReArch) Reset() {
+	u.Set(u.savedArch)
+	u.unsaved = false
 }
