@@ -53,6 +53,16 @@ func (u *UnReArch) SetSource(s string) error {
 	return nil
 }
 
+func (u *UnReArch) SyncSourceToSave() error {
+	bytes, err := yaml.Marshal(u.savedArch)
+	if err != nil {
+		return err
+	}
+	u.source = string(bytes)
+	u.textEditor.SetText(u.source)
+	return nil
+}
+
 func (u *UnReArch) Get() sdata.Archetype {
 	return u.undoer.State().(sdata.Archetype)
 }
@@ -84,10 +94,12 @@ func (u *UnReArch) SetUnsaved(b bool) {
 func (u *UnReArch) Save() {
 	u.SetSource(u.textEditor.GetText())
 	u.savedArch = u.Get()
+	u.SyncSourceToSave()
 	u.unsaved = false
 }
 
 func (u *UnReArch) Reset() {
 	u.Set(u.savedArch)
+	u.SyncSourceToSave()
 	u.unsaved = false
 }
