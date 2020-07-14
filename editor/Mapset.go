@@ -143,11 +143,18 @@ func (m *Mapset) draw() {
 									}),
 									g.ImageButtonV(t.texture, float32(t.width), float32(t.height), image.Point{X: 0, Y: 0}, image.Point{X: 1, Y: 1}, 0, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 255, 255, 255}, nil),
 									g.Custom(func() {
-										if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
+										if g.IsItemHovered() {
 											mousePos := g.GetMousePos()
 											mousePos.X -= childPos.X
 											mousePos.Y -= childPos.Y
-											m.handleMapMouse(mousePos, 0)
+											if g.IsMouseClicked(g.MouseButtonLeft) {
+												p := m.getMapPointFromMouse(mousePos)
+												m.focusedX = p.X
+												m.focusedZ = p.Y
+											} else if g.IsMouseClicked(g.MouseButtonRight) {
+												p := m.getMapPointFromMouse(mousePos)
+												log.Printf("place %s @ %dx%dx%d\n", m.context.selectedArch, m.focusedY, p.X, p.Y)
+											}
 										}
 									}),
 								}),
@@ -286,7 +293,7 @@ func (m *Mapset) draw() {
 	}
 }
 
-func (m *Mapset) handleMapMouse(p image.Point, which int) {
+func (m *Mapset) getMapPointFromMouse(p image.Point) (h image.Point) {
 	dm := m.context.dataManager
 	sm := m.CurrentMap()
 
@@ -304,9 +311,10 @@ func (m *Mapset) handleMapMouse(p image.Point, which int) {
 	nearestX := (hitX+xOffset)/tWidth - 1
 	nearestY := (hitY - yOffset) / tHeight
 	if nearestX >= 0 && nearestX < sm.Get().Width && nearestY >= 0 && nearestY < sm.Get().Depth {
-		m.focusedX = nearestX
-		m.focusedZ = nearestY
+		h.X = nearestX
+		h.Y = nearestY
 	}
+	return
 }
 
 func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
