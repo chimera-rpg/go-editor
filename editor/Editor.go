@@ -9,6 +9,7 @@ import (
 	"path"
 
 	g "github.com/AllenDang/giu"
+	"github.com/AllenDang/giu/imgui"
 	"github.com/chimera-rpg/go-editor/data"
 	"github.com/chimera-rpg/go-editor/widgets"
 	log "github.com/sirupsen/logrus"
@@ -52,6 +53,7 @@ func (e *Editor) Destroy() {
 func (e *Editor) Start() {
 	log.Println("Editor: Start")
 	e.masterWindow = g.NewMasterWindow("Editor", 800, 600, 0, nil)
+	imgui.CurrentIO().SetIniFilename(e.context.dataManager.GetEtcPath("chimera-editor.ini"))
 	e.showSplash = true
 
 	e.masterWindow.Main(func() { e.loop() })

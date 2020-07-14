@@ -24,6 +24,7 @@ import (
 type Manager struct {
 	DataPath            string // Path for client data (fonts, etc.)
 	MapsPath            string // Path for maps
+	EtcPath             string // Path for configuration
 	ArchetypesPath      string // Path for archetypes.
 	images              map[string]image.Image
 	scaledImages        map[float64]map[string]image.Image
@@ -45,6 +46,10 @@ func (m *Manager) Setup() (err error) {
 	// Ensure each exists.
 	if _, err = os.Stat(m.DataPath); err != nil {
 		// DataPath does not exist!
+		return
+	}
+	//
+	if err = m.acquireEtcPath(); err != nil {
 		return
 	}
 	// Acquire our various paths.
@@ -93,6 +98,11 @@ func (m *Manager) GetDataPath(parts ...string) string {
 	return path.Join(m.DataPath, filepath.Clean(fmt.Sprintf("%c", filepath.Separator)+filepath.Join(parts...)))
 }
 
+// GetEtcPath gets a path relative to the etc path directory.
+func (m *Manager) GetEtcPath(parts ...string) string {
+	return path.Join(m.EtcPath, filepath.Clean(fmt.Sprintf("%c", filepath.Separator)+filepath.Join(parts...)))
+}
+
 func (m *Manager) acquireDataPath() (err error) {
 	var dir string
 	// Set our path which should be <parent of cmd>/share/chimera/client.
@@ -102,6 +112,18 @@ func (m *Manager) acquireDataPath() (err error) {
 	dir = filepath.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "editor")
 
 	m.DataPath = dir
+	return
+}
+
+func (m *Manager) acquireEtcPath() (err error) {
+	var dir string
+	// Set our path which should be <parent of cmd>/share/chimera/client.
+	if dir, err = filepath.Abs(os.Args[0]); err != nil {
+		return
+	}
+	dir = filepath.Join(filepath.Dir(filepath.Dir(dir)), "etc", "chimera")
+
+	m.EtcPath = dir
 	return
 }
 
