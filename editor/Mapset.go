@@ -63,8 +63,6 @@ func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapse
 }
 
 func (m *Mapset) draw() {
-	childPos := image.Point{0, 0}
-
 	windowOpen := true
 
 	var mapExists bool
@@ -145,72 +143,11 @@ func (m *Mapset) draw() {
 										g.Custom(func() {
 											availW, availH = g.GetAvaiableRegion()
 										}),
-										g.Child(v.Get().Name, false, availW, availH-20, g.WindowFlagsHorizontalScrollbar, g.Layout{
-											g.Custom(func() {
-												childPos = g.GetCursorScreenPos()
-											}),
-											g.ImageButtonV(t.texture, float32(t.width), float32(t.height), image.Point{X: 0, Y: 0}, image.Point{X: 1, Y: 1}, 0, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 255, 255, 255}, nil),
-											g.Custom(func() {
-												if g.IsItemHovered() {
-													mousePos := g.GetMousePos()
-													mousePos.X -= childPos.X
-													mousePos.Y -= childPos.Y
-													if g.IsMouseClicked(g.MouseButtonLeft) {
-														if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-															m.focusedX = p.X
-															m.focusedZ = p.Y
-														}
-													} else if g.IsMouseClicked(g.MouseButtonRight) {
-														// Bail early if no archetype is selected.
-														if m.context.selectedArch == "" {
-															return
-														}
-														if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-															// Check if we should not insert if top tile is the same.
-															if m.keepSameTile {
-																tiles := m.getTiles(v.Get(), m.focusedY, p.X, p.Y)
-																if tiles != nil && len(*tiles) > 0 {
-																	if (*tiles)[len(*tiles)-1].Arch == m.context.selectedArch {
-																		return
-																	}
-																	for _, a := range (*tiles)[len(*tiles)-1].Archs {
-																		if a == m.context.selectedArch {
-																			return
-																		}
-																	}
-																}
-															}
-															// Otherwise attempt to insert.
-															clone := m.cloneMap(v.Get())
-															if err := m.insertArchetype(clone, m.context.selectedArch, m.focusedY, p.X, p.Y, -1); err != nil {
-																log.Errorln(err)
-																// TODO: Some sort of popup error.
-															} else {
-																v.Set(clone)
-															}
-														}
-													} else if g.IsMouseClicked(g.MouseButtonMiddle) {
-														if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-															clone := m.cloneMap(v.Get())
-															if err := m.removeArchetype(clone, m.focusedY, p.X, p.Y, -1); err != nil {
-																log.Errorln(err)
-																// TODO: Some sort of popup error.
-															} else {
-																v.Set(clone)
-															}
-														}
-													}
-												}
-											}),
-										}),
-										g.Label("info bar"),
-									}, g.Layout{
-										g.Label("archs at tile"),
+										g.Child(v.Get().Name, false, availW, availH-20, g.WindowFlagsHorizontalScrollbar, m.layoutMapView(v, t)),
 									},
+									m.layoutArchsList(v),
 								),
-							}, g.Layout{
-								g.Label("current arch"),
-							}).Build()
+							}, m.layoutSelectedArch(v)).Build()
 						}
 						imgui.EndTabItem()
 					}
@@ -341,6 +278,81 @@ func (m *Mapset) draw() {
 
 	if !windowOpen {
 		m.close()
+	}
+}
+
+func (m *Mapset) layoutMapView(v UnReMap, t MapTexture) g.Layout {
+	childPos := image.Point{0, 0}
+	return g.Layout{
+		g.Custom(func() {
+			childPos = g.GetCursorScreenPos()
+		}),
+		g.ImageButtonV(t.texture, float32(t.width), float32(t.height), image.Point{X: 0, Y: 0}, image.Point{X: 1, Y: 1}, 0, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 255, 255, 255}, nil),
+		g.Custom(func() {
+			if g.IsItemHovered() {
+				mousePos := g.GetMousePos()
+				mousePos.X -= childPos.X
+				mousePos.Y -= childPos.Y
+				if g.IsMouseClicked(g.MouseButtonLeft) {
+					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+						m.focusedX = p.X
+						m.focusedZ = p.Y
+					}
+				} else if g.IsMouseClicked(g.MouseButtonRight) {
+					// Bail early if no archetype is selected.
+					if m.context.selectedArch == "" {
+						return
+					}
+					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+						// Check if we should not insert if top tile is the same.
+						if m.keepSameTile {
+							tiles := m.getTiles(v.Get(), m.focusedY, p.X, p.Y)
+							if tiles != nil && len(*tiles) > 0 {
+								if (*tiles)[len(*tiles)-1].Arch == m.context.selectedArch {
+									return
+								}
+								for _, a := range (*tiles)[len(*tiles)-1].Archs {
+									if a == m.context.selectedArch {
+										return
+									}
+								}
+							}
+						}
+						// Otherwise attempt to insert.
+						clone := m.cloneMap(v.Get())
+						if err := m.insertArchetype(clone, m.context.selectedArch, m.focusedY, p.X, p.Y, -1); err != nil {
+							log.Errorln(err)
+							// TODO: Some sort of popup error.
+						} else {
+							v.Set(clone)
+						}
+					}
+				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
+					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+						clone := m.cloneMap(v.Get())
+						if err := m.removeArchetype(clone, m.focusedY, p.X, p.Y, -1); err != nil {
+							log.Errorln(err)
+							// TODO: Some sort of popup error.
+						} else {
+							v.Set(clone)
+						}
+					}
+				}
+			}
+		}),
+		g.Label("info bar"),
+	}
+}
+
+func (m *Mapset) layoutArchsList(v UnReMap) g.Layout {
+	return g.Layout{
+		g.Label("tile archetypes"),
+	}
+}
+
+func (m *Mapset) layoutSelectedArch(v UnReMap) g.Layout {
+	return g.Layout{
+		g.Label("current archetype"),
 	}
 }
 
