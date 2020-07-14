@@ -30,6 +30,8 @@ type Mapset struct {
 	showGrid                     bool
 	keepSameTile                 bool
 	shouldClose                  bool
+	visitedTiles                 map[image.Point]bool // Coordinates visited during mouse drag.
+	mouseHeld                    map[g.MouseButton]bool
 }
 
 type MapTexture struct {
@@ -51,6 +53,8 @@ func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapse
 		context:      context,
 		loreEditor:   imgui.NewTextEditor(),
 		descEditor:   imgui.NewTextEditor(),
+		visitedTiles: make(map[image.Point]bool),
+		mouseHeld:    make(map[g.MouseButton]bool),
 	}
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)
@@ -293,39 +297,30 @@ func (m *Mapset) layoutMapView(v UnReMap, t MapTexture) g.Layout {
 				mousePos := g.GetMousePos()
 				mousePos.X -= childPos.X
 				mousePos.Y -= childPos.Y
+
+				// RMB
+				if g.IsMouseDown(g.MouseButtonRight) {
+					if _, ok := m.mouseHeld[g.MouseButtonRight]; !ok {
+						m.mouseHeld[g.MouseButtonRight] = true
+					}
+					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+						if _, ok := m.visitedTiles[p]; !ok {
+							err := m.toolInsert(v, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
+							}
+							m.visitedTiles[p] = true
+						}
+					}
+				} else if g.IsMouseReleased(g.MouseButtonRight) {
+					delete(m.mouseHeld, g.MouseButtonRight)
+					m.visitedTiles = make(map[image.Point]bool)
+				}
+
 				if g.IsMouseClicked(g.MouseButtonLeft) {
 					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
 						m.focusedX = p.X
 						m.focusedZ = p.Y
-					}
-				} else if g.IsMouseClicked(g.MouseButtonRight) {
-					// Bail early if no archetype is selected.
-					if m.context.selectedArch == "" {
-						return
-					}
-					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-						// Check if we should not insert if top tile is the same.
-						if m.keepSameTile {
-							tiles := m.getTiles(v.Get(), m.focusedY, p.X, p.Y)
-							if tiles != nil && len(*tiles) > 0 {
-								if (*tiles)[len(*tiles)-1].Arch == m.context.selectedArch {
-									return
-								}
-								for _, a := range (*tiles)[len(*tiles)-1].Archs {
-									if a == m.context.selectedArch {
-										return
-									}
-								}
-							}
-						}
-						// Otherwise attempt to insert.
-						clone := m.cloneMap(v.Get())
-						if err := m.insertArchetype(clone, m.context.selectedArch, m.focusedY, p.X, p.Y, -1); err != nil {
-							log.Errorln(err)
-							// TODO: Some sort of popup error.
-						} else {
-							v.Set(clone)
-						}
 					}
 				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
 					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
@@ -378,6 +373,35 @@ func (m *Mapset) getMapPointFromMouse(p image.Point) (h image.Point, err error) 
 		h.Y = nearestY
 	} else {
 		err = errors.New("Point OOB")
+	}
+	return
+}
+
+func (m *Mapset) toolInsert(v UnReMap, y, x, z int) (err error) {
+	// Bail if no archetype is selected.
+	if m.context.selectedArch == "" {
+		return
+	}
+	// Check if we should not insert if top tile is the same.
+	if m.keepSameTile {
+		tiles := m.getTiles(v.Get(), y, x, z)
+		if tiles != nil && len(*tiles) > 0 {
+			if (*tiles)[len(*tiles)-1].Arch == m.context.selectedArch {
+				return
+			}
+			for _, a := range (*tiles)[len(*tiles)-1].Archs {
+				if a == m.context.selectedArch {
+					return
+				}
+			}
+		}
+	}
+	// Otherwise attempt to insert.
+	clone := m.cloneMap(v.Get())
+	if err := m.insertArchetype(clone, m.context.selectedArch, y, x, z, -1); err != nil {
+		return err
+	} else {
+		v.Set(clone)
 	}
 	return
 }
