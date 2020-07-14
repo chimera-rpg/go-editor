@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -148,12 +149,20 @@ func (m *Mapset) draw() {
 											mousePos.X -= childPos.X
 											mousePos.Y -= childPos.Y
 											if g.IsMouseClicked(g.MouseButtonLeft) {
-												p := m.getMapPointFromMouse(mousePos)
-												m.focusedX = p.X
-												m.focusedZ = p.Y
+												if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+													m.focusedX = p.X
+													m.focusedZ = p.Y
+												}
 											} else if g.IsMouseClicked(g.MouseButtonRight) {
-												p := m.getMapPointFromMouse(mousePos)
-												log.Printf("place %s @ %dx%dx%d\n", m.context.selectedArch, m.focusedY, p.X, p.Y)
+												if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+													clone := m.cloneMap(v.Get())
+													if err := m.insertArchetype(clone, m.context.selectedArch, m.focusedY, p.X, p.Y, -1); err != nil {
+														log.Errorln(err)
+														// TODO: Some sort of popup error.
+													} else {
+														v.Set(clone)
+													}
+												}
 											}
 										}
 									}),
@@ -293,7 +302,7 @@ func (m *Mapset) draw() {
 	}
 }
 
-func (m *Mapset) getMapPointFromMouse(p image.Point) (h image.Point) {
+func (m *Mapset) getMapPointFromMouse(p image.Point) (h image.Point, err error) {
 	dm := m.context.dataManager
 	sm := m.CurrentMap()
 
@@ -313,6 +322,8 @@ func (m *Mapset) getMapPointFromMouse(p image.Point) (h image.Point) {
 	if nearestX >= 0 && nearestX < sm.Get().Width && nearestY >= 0 && nearestY < sm.Get().Depth {
 		h.X = nearestX
 		h.Y = nearestY
+	} else {
+		err = errors.New("Point OOB")
 	}
 	return
 }
@@ -483,12 +494,46 @@ func (m *Mapset) cloneMap(t *sdata.Map) *sdata.Map {
 		for x := 0; x < t.Width; x++ {
 			clone.Tiles[y] = append(clone.Tiles[y], [][]sdata.Archetype{})
 			for z := 0; z < t.Depth; z++ {
-				clone.Tiles[y][x] = append(t.Tiles[y][x], []sdata.Archetype{})
-				clone.Tiles[y][x][z] = t.Tiles[y][x][z]
+				clone.Tiles[y][x] = append(clone.Tiles[y][x], []sdata.Archetype{})
+				for a := 0; a < len(t.Tiles[y][x][z]); a++ {
+					clone.Tiles[y][x][z] = append(clone.Tiles[y][x][z], t.Tiles[y][x][z][a])
+				}
 			}
 		}
 	}
 	return clone
+}
+
+func (m *Mapset) insertArchetype(t *sdata.Map, arch string, y, x, z, pos int) error {
+	tiles := m.getTiles(t, y, x, z)
+	if tiles == nil {
+		return errors.New("tile OOB")
+	}
+
+	if pos == -1 {
+		pos = len(*tiles)
+	}
+	if pos == -1 {
+		pos = 0
+	}
+
+	archetype := sdata.Archetype{
+		Archs: []string{arch},
+	}
+	*tiles = append((*tiles)[:pos], append([]sdata.Archetype{archetype}, (*tiles)[pos:]...)...)
+
+	return nil
+}
+
+func (m *Mapset) getTiles(t *sdata.Map, y, x, z int) *[]sdata.Archetype {
+	if len(t.Tiles) > y && y >= 0 {
+		if len(t.Tiles[y]) > x && x >= 0 {
+			if len(t.Tiles[y][x]) > z && z >= 0 {
+				return &t.Tiles[y][x][z]
+			}
+		}
+	}
+	return nil
 }
 
 func (m *Mapset) createMap(name, desc, lore string, darkness, resettime int, h, w, d int) *sdata.Map {
