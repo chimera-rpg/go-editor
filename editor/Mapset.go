@@ -382,7 +382,7 @@ func (m *Mapset) getMapPointFromMouse(p image.Point) (h image.Point, err error) 
 	hitY := int(float64(p.Y) / scale)
 
 	xOffset := m.focusedY*int(dm.AnimationsConfig.YStep.X) + padding
-	yOffset := m.focusedY*int(dm.AnimationsConfig.YStep.Y) + padding
+	yOffset := m.focusedY*int(dm.AnimationsConfig.YStep.Y) + padding + (sm.Get().Height * int(-dm.AnimationsConfig.YStep.Y))
 
 	nearestX := (hitX+xOffset)/tWidth - 1
 	nearestY := (hitY - yOffset) / tHeight
@@ -453,7 +453,7 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 	dc.Clear()
 
 	startX := padding
-	startY := padding
+	startY := padding + (sm.Height * int(-yStep.Y))
 
 	// Draw archetypes.
 	for y := 0; y < sm.Height; y++ {
@@ -482,7 +482,7 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 		dc.SetLineWidth(1)
 		for y := 0; y < sm.Height; y++ {
 			xOffset := y * int(yStep.X)
-			yOffset := y * int(yStep.Y)
+			yOffset := y * int(-yStep.Y)
 			for x := 0; x < sm.Width; x++ {
 				for z := 0; z < sm.Depth; z++ {
 					oX := float64(x*tWidth+xOffset+startX) * scale
@@ -504,7 +504,7 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 	// Draw selected.
 	{
 		xOffset := m.focusedY * int(yStep.X)
-		yOffset := m.focusedY * int(yStep.Y)
+		yOffset := m.focusedY * int(-yStep.Y)
 		oX := float64(m.focusedX*tWidth+xOffset+startX) * scale
 		oY := float64(m.focusedZ*tHeight-yOffset+startY) * scale
 		oW := float64(tWidth) * scale
