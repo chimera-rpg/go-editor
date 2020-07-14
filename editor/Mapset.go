@@ -28,6 +28,7 @@ type Mapset struct {
 	loreEditor, descEditor       imgui.TextEditor
 	zoom                         int32
 	showGrid                     bool
+	keepSameTile                 bool
 	shouldClose                  bool
 }
 
@@ -39,16 +40,17 @@ type MapTexture struct {
 
 func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapset {
 	m := &Mapset{
-		filename:    name,
-		mapTextures: make(map[int]MapTexture),
-		zoom:        3.0,
-		showGrid:    true,
-		newW:        1,
-		newH:        1,
-		newD:        1,
-		context:     context,
-		loreEditor:  imgui.NewTextEditor(),
-		descEditor:  imgui.NewTextEditor(),
+		filename:     name,
+		mapTextures:  make(map[int]MapTexture),
+		zoom:         3.0,
+		showGrid:     true,
+		keepSameTile: true,
+		newW:         1,
+		newH:         1,
+		newD:         1,
+		context:      context,
+		loreEditor:   imgui.NewTextEditor(),
+		descEditor:   imgui.NewTextEditor(),
 	}
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)
@@ -115,6 +117,9 @@ func (m *Mapset) draw() {
 					deleteMapPopup = true
 				}),
 			}),
+			g.Menu("Settings", g.Layout{
+				g.Checkbox("Keep Same Tile", &m.keepSameTile, nil),
+			}),
 			g.Menu("View", g.Layout{
 				g.Checkbox("Grid", &m.showGrid, nil),
 				g.SliderInt("Zoom", &m.zoom, 1, 8, "%d"),
@@ -155,6 +160,21 @@ func (m *Mapset) draw() {
 												}
 											} else if g.IsMouseClicked(g.MouseButtonRight) {
 												if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+													// Check if we should not insert if top tile is the same.
+													if m.keepSameTile {
+														tiles := m.getTiles(v.Get(), m.focusedY, p.X, p.Y)
+														if tiles != nil && len(*tiles) > 0 {
+															if (*tiles)[len(*tiles)-1].Arch == m.context.selectedArch {
+																return
+															}
+															for _, a := range (*tiles)[len(*tiles)-1].Archs {
+																if a == m.context.selectedArch {
+																	return
+																}
+															}
+														}
+													}
+													// Otherwise attempt to insert.
 													clone := m.cloneMap(v.Get())
 													if err := m.insertArchetype(clone, m.context.selectedArch, m.focusedY, p.X, p.Y, -1); err != nil {
 														log.Errorln(err)
