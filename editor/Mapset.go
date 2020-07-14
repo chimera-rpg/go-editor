@@ -159,6 +159,10 @@ func (m *Mapset) draw() {
 													m.focusedZ = p.Y
 												}
 											} else if g.IsMouseClicked(g.MouseButtonRight) {
+												// Bail early if no archetype is selected.
+												if m.context.selectedArch == "" {
+													return
+												}
 												if p, err := m.getMapPointFromMouse(mousePos); err == nil {
 													// Check if we should not insert if top tile is the same.
 													if m.keepSameTile {
