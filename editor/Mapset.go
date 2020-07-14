@@ -385,9 +385,9 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 		yOffset := y * int(yStep.Y)
 		for x := sm.Width - 1; x >= 0; x-- {
 			for z := 0; z < sm.Depth; z++ {
-				oX := float64(x*tWidth+xOffset+startX) * scale
-				oY := float64(z*tHeight-yOffset+startY) * scale
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
+					oX := float64(x*tWidth+xOffset+startX) * scale
+					oY := float64(z*tHeight-yOffset+startY) * scale
 					if adjustment, ok := dm.AnimationsConfig.Adjustments[dm.GetArchType(&sm.Tiles[y][x][z][t], 0)]; ok {
 						oX += float64(adjustment.X) * scale
 						oY += float64(adjustment.Y) * scale
