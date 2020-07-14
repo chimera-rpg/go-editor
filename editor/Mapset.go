@@ -382,7 +382,7 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 	cHeight := sm.Depth * tHeight
 
 	mT.width = int(float64(cWidth+(sm.Height*int(yStep.X))+padding*2) * scale)
-	mT.height = int(float64(cHeight+(sm.Height*int(yStep.Y))+padding*4) * scale)
+	mT.height = int(float64(cHeight+(sm.Height*int(-yStep.Y))+padding*2) * scale)
 
 	dc := gg.NewContext(int(mT.width), int(mT.height))
 	dc.SetRGB(0.1, 0.1, 0.1)
@@ -394,7 +394,7 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 	// Draw archetypes.
 	for y := 0; y < sm.Height; y++ {
 		xOffset := y * int(yStep.X)
-		yOffset := y * int(yStep.Y)
+		yOffset := y * int(-yStep.Y)
 		for x := sm.Width - 1; x >= 0; x-- {
 			for z := 0; z < sm.Depth; z++ {
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
