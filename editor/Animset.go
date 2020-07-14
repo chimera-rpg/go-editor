@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	g "github.com/AllenDang/giu"
-	"github.com/chimera-rpg/go-editor/data"
 )
 
 type Animset struct {
+	context  *Context
 	filename string
 }
 
-func (a *Animset) draw(d *data.Manager) {
+func (a *Animset) draw() {
 	var b bool
 
 	g.WindowV(fmt.Sprintf("Animset: %s", a.filename), &b, g.WindowFlagsMenuBar, 210, 440, 300, 400, g.Layout{})

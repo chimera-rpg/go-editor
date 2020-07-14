@@ -6,11 +6,11 @@ import (
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
-	"github.com/chimera-rpg/go-editor/data"
 	sdata "github.com/chimera-rpg/go-server/data"
 )
 
 type Archset struct {
+	context              *Context
 	filename             string
 	archs                []*UnReArch
 	archsSauce           []string
@@ -19,9 +19,10 @@ type Archset struct {
 	currentArchIndex     int
 }
 
-func NewArchset(name string, archs map[string]*sdata.Archetype) *Archset {
+func NewArchset(context *Context, name string, archs map[string]*sdata.Archetype) *Archset {
 	a := &Archset{
 		filename: name,
+		context:  context,
 	}
 
 	for k, v := range archs {
@@ -33,7 +34,7 @@ func NewArchset(name string, archs map[string]*sdata.Archetype) *Archset {
 	return a
 }
 
-func (a *Archset) draw(d *data.Manager) {
+func (a *Archset) draw() {
 	windowOpen := true
 
 	var newArchPopup bool

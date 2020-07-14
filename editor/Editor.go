@@ -15,16 +15,15 @@ import (
 )
 
 type Editor struct {
-	masterWindow      *g.MasterWindow
-	dataManager       *data.Manager
-	archetypesMode    bool
-	selectedArchetype string
-	isRunning         bool
-	showSplash        bool
-	mapsets           []*Mapset
-	archsets          []*Archset
-	animsets          []*Animset
-	imageTextures     map[string]ImageTexture
+	masterWindow   *g.MasterWindow
+	archetypesMode bool
+	isRunning      bool
+	showSplash     bool
+	mapsets        []*Mapset
+	archsets       []*Archset
+	animsets       []*Animset
+	imageTextures  map[string]ImageTexture
+	context        Context
 	//
 	openMapCWD, openMapFilename string
 }
@@ -35,7 +34,9 @@ type ImageTexture struct {
 }
 
 func (e *Editor) Setup(dataManager *data.Manager) (err error) {
-	e.dataManager = dataManager
+	e.context = Context{
+		dataManager: dataManager,
+	}
 	e.isRunning = true
 	e.archetypesMode = true
 	e.imageTextures = make(map[string]ImageTexture)
@@ -66,7 +67,7 @@ func (e *Editor) loop() {
 	g.MainMenuBar(g.Layout{
 		g.Menu("File", g.Layout{
 			g.MenuItem("New Mapset", func() {
-				e.mapsets = append(e.mapsets, NewMapset("", nil))
+				e.mapsets = append(e.mapsets, NewMapset(&e.context, "", nil))
 			}),
 			g.MenuItem("Open Mapset...", func() {
 				openMapPopup = true
@@ -90,12 +91,12 @@ func (e *Editor) loop() {
 			g.Button("Cancel", func() { g.CloseCurrentPopup() }),
 			g.Button("Open", func() {
 				fullPath := path.Join(e.openMapCWD, e.openMapFilename)
-				dMapset, err := e.dataManager.LoadMap(fullPath)
+				dMapset, err := e.context.dataManager.LoadMap(fullPath)
 				if err != nil {
 					// TODO: Popup some sort of error!
 					log.Errorln(err)
 				} else {
-					e.mapsets = append(e.mapsets, NewMapset(fullPath, dMapset))
+					e.mapsets = append(e.mapsets, NewMapset(&e.context, fullPath, dMapset))
 				}
 				g.CloseCurrentPopup()
 			}),
@@ -103,21 +104,21 @@ func (e *Editor) loop() {
 	}).Build()
 
 	for i, m := range e.mapsets {
-		m.draw(e.dataManager)
+		m.draw()
 		if m.shouldClose {
 			e.mapsets = append(e.mapsets[:i], e.mapsets[i+1:]...)
 		}
 	}
 
 	for i, a := range e.archsets {
-		a.draw(e.dataManager)
+		a.draw()
 		if a.shouldClose {
 			e.archsets = append(e.archsets[:i], e.archsets[i+1:]...)
 		}
 	}
 
 	for _, a := range e.animsets {
-		a.draw(e.dataManager)
+		a.draw()
 	}
 
 	e.drawArchetypes()
@@ -142,11 +143,11 @@ func (e *Editor) drawArchetypes() {
 
 	var items g.Layout
 	if e.archetypesMode {
-		archs := e.dataManager.GetArchetypes()
+		archs := e.context.dataManager.GetArchetypes()
 		for _, archName := range archs {
 			var flags g.TreeNodeFlags
 			flags = g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
-			if archName == e.selectedArchetype {
+			if archName == e.context.selectedArch {
 				flags |= g.TreeNodeFlagsSelected
 			}
 			items = append(items, g.TreeNode("", flags, g.Layout{
@@ -156,23 +157,23 @@ func (e *Editor) drawArchetypes() {
 							if g.IsMouseDoubleClicked(g.MouseButtonLeft) {
 								e.openArchsetFromArchetype(name)
 							} else if g.IsMouseClicked(g.MouseButtonLeft) {
-								e.selectedArchetype = name
+								e.context.selectedArch = name
 							}
 						}
 					}
 				}(archName)),
 				g.Custom(func(archName string) func() {
 					return func() {
-						arch := e.dataManager.GetArchetype(archName)
+						arch := e.context.dataManager.GetArchetype(archName)
 						if arch == nil {
 							return
 						}
-						anim, face := e.dataManager.GetAnimAndFace(arch, "", "")
-						imageName, err := e.dataManager.GetAnimFaceImage(anim, face)
+						anim, face := e.context.dataManager.GetAnimAndFace(arch, "", "")
+						imageName, err := e.context.dataManager.GetAnimFaceImage(anim, face)
 						if err != nil {
 							return
 						}
-						img := e.dataManager.GetImage(imageName)
+						img := e.context.dataManager.GetImage(imageName)
 						if t, ok := e.imageTextures[imageName]; !ok || t.texture == nil {
 							go func() {
 								rgba := image.NewRGBA(img.Bounds())
@@ -199,10 +200,10 @@ func (e *Editor) drawArchetypes() {
 			}))
 		}
 	} else {
-		archs := e.dataManager.GetArchetypeFiles()
+		archs := e.context.dataManager.GetArchetypeFiles()
 		for _, archFile := range archs {
 			var archItems []g.Widget
-			for archName := range e.dataManager.GetArchetypeFile(archFile) {
+			for archName := range e.context.dataManager.GetArchetypeFile(archFile) {
 				archItems = append(archItems, g.Layout{
 					g.Label(archName),
 					g.ContextMenu(g.Layout{
@@ -245,12 +246,12 @@ func (e *Editor) drawAnimations() {
 }
 
 func (e *Editor) openArchsetFromArchetype(archName string) {
-	archFilename := e.dataManager.LookupArchetypeFile(archName)
+	archFilename := e.context.dataManager.LookupArchetypeFile(archName)
 	if archFilename == "" {
 		log.Errorln(errors.New("No archetype file for arch"))
 		return
 	}
-	archFile := e.dataManager.GetArchetypeFile(archFilename)
+	archFile := e.context.dataManager.GetArchetypeFile(archFilename)
 	if archFile == nil {
 		log.Errorln(errors.New("Missing archetype file"))
 		return
@@ -261,6 +262,6 @@ func (e *Editor) openArchsetFromArchetype(archName string) {
 			return
 		}
 	}
-	e.archsets = append(e.archsets, NewArchset(archFilename, archFile))
+	e.archsets = append(e.archsets, NewArchset(&e.context, archFilename, archFile))
 
 }

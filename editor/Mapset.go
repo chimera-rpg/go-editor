@@ -7,13 +7,13 @@ import (
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
-	"github.com/chimera-rpg/go-editor/data"
 	sdata "github.com/chimera-rpg/go-server/data"
 	"github.com/fogleman/gg"
 	log "github.com/sirupsen/logrus"
 )
 
 type Mapset struct {
+	context                      *Context
 	filename                     string
 	maps                         []UnReMap
 	currentMapIndex              int
@@ -36,7 +36,7 @@ type MapTexture struct {
 	height  int
 }
 
-func NewMapset(name string, maps map[string]*sdata.Map) *Mapset {
+func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapset {
 	m := &Mapset{
 		filename:    name,
 		mapTextures: make(map[int]MapTexture),
@@ -45,6 +45,7 @@ func NewMapset(name string, maps map[string]*sdata.Map) *Mapset {
 		newW:        1,
 		newH:        1,
 		newD:        1,
+		context:     context,
 		loreEditor:  imgui.NewTextEditor(),
 		descEditor:  imgui.NewTextEditor(),
 	}
@@ -58,7 +59,7 @@ func NewMapset(name string, maps map[string]*sdata.Map) *Mapset {
 	return m
 }
 
-func (m *Mapset) draw(d *data.Manager) {
+func (m *Mapset) draw() {
 	childPos := image.Point{0, 0}
 
 	windowOpen := true
@@ -126,7 +127,7 @@ func (m *Mapset) draw(d *data.Manager) {
 						// Generate texture.
 						t, ok := m.mapTextures[mapIndex]
 						go func() {
-							m.createMapTexture(mapIndex, v.Get(), d)
+							m.createMapTexture(mapIndex, v.Get())
 							g.Update()
 						}()
 						// Render content (if texture is ready)
@@ -146,7 +147,7 @@ func (m *Mapset) draw(d *data.Manager) {
 											mousePos := g.GetMousePos()
 											mousePos.X -= childPos.X
 											mousePos.Y -= childPos.Y
-											m.handleMapMouse(mousePos, 0, d)
+											m.handleMapMouse(mousePos, 0)
 										}
 									}),
 								}),
@@ -285,7 +286,8 @@ func (m *Mapset) draw(d *data.Manager) {
 	}
 }
 
-func (m *Mapset) handleMapMouse(p image.Point, which int, dm *data.Manager) {
+func (m *Mapset) handleMapMouse(p image.Point, which int) {
+	dm := m.context.dataManager
 	sm := m.CurrentMap()
 
 	scale := float64(m.zoom)
@@ -307,7 +309,8 @@ func (m *Mapset) handleMapMouse(p image.Point, which int, dm *data.Manager) {
 	}
 }
 
-func (m *Mapset) createMapTexture(index int, sm *sdata.Map, dm *data.Manager) {
+func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
+	dm := m.context.dataManager
 	mT := MapTexture{}
 	scale := float64(m.zoom)
 	tWidth := int(dm.AnimationsConfig.TileWidth)
