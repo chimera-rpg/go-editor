@@ -316,7 +316,25 @@ func (m *Mapset) layoutMapView(v UnReMap, t MapTexture) g.Layout {
 					delete(m.mouseHeld, g.MouseButtonRight)
 					m.visitedTiles = make(map[image.Point]bool)
 				}
-
+				// MMB
+				if g.IsMouseDown(g.MouseButtonMiddle) {
+					if _, ok := m.mouseHeld[g.MouseButtonMiddle]; !ok {
+						m.mouseHeld[g.MouseButtonMiddle] = true
+					}
+					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+						if _, ok := m.visitedTiles[p]; !ok {
+							err := m.toolErase(v, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
+							}
+							m.visitedTiles[p] = true
+						}
+					}
+				} else if g.IsMouseReleased(g.MouseButtonMiddle) {
+					delete(m.mouseHeld, g.MouseButtonMiddle)
+					m.visitedTiles = make(map[image.Point]bool)
+				}
+				// LMB
 				if g.IsMouseClicked(g.MouseButtonLeft) {
 					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
 						m.focusedX = p.X
@@ -399,6 +417,16 @@ func (m *Mapset) toolInsert(v UnReMap, y, x, z int) (err error) {
 	// Otherwise attempt to insert.
 	clone := m.cloneMap(v.Get())
 	if err := m.insertArchetype(clone, m.context.selectedArch, y, x, z, -1); err != nil {
+		return err
+	} else {
+		v.Set(clone)
+	}
+	return
+}
+
+func (m *Mapset) toolErase(v UnReMap, y, x, z int) (err error) {
+	clone := m.cloneMap(v.Get())
+	if err := m.removeArchetype(clone, y, x, z, -1); err != nil {
 		return err
 	} else {
 		v.Set(clone)
