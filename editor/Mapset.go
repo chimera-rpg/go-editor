@@ -163,6 +163,16 @@ func (m *Mapset) draw() {
 														v.Set(clone)
 													}
 												}
+											} else if g.IsMouseClicked(g.MouseButtonMiddle) {
+												if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+													clone := m.cloneMap(v.Get())
+													if err := m.removeArchetype(clone, m.focusedY, p.X, p.Y, -1); err != nil {
+														log.Errorln(err)
+														// TODO: Some sort of popup error.
+													} else {
+														v.Set(clone)
+													}
+												}
 											}
 										}
 									}),
@@ -521,6 +531,27 @@ func (m *Mapset) insertArchetype(t *sdata.Map, arch string, y, x, z, pos int) er
 		Archs: []string{arch},
 	}
 	*tiles = append((*tiles)[:pos], append([]sdata.Archetype{archetype}, (*tiles)[pos:]...)...)
+
+	return nil
+}
+
+func (m *Mapset) removeArchetype(t *sdata.Map, y, x, z, pos int) error {
+	tiles := m.getTiles(t, y, x, z)
+	if tiles == nil {
+		return errors.New("tile OOB")
+	}
+	if pos == -1 {
+		pos = len(*tiles) - 1
+	}
+	if pos == -1 {
+		pos = 0
+	}
+
+	if pos >= len(*tiles) {
+		return errors.New("pos OOB")
+	}
+
+	*tiles = append((*tiles)[:pos], (*tiles)[pos+1:]...)
 
 	return nil
 }
