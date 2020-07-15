@@ -352,6 +352,17 @@ func (m *Mapset) layoutMapView(v UnReMap, t MapTexture) g.Layout {
 					}
 				}
 			}
+			if g.IsKeyDown(342) { // ... alt
+				mouseWheelDelta, mouseWheelHDelta := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+				if mouseWheelDelta != 0 || mouseWheelHDelta != 0 {
+					m.focusedY += int(mouseWheelDelta)
+					if m.focusedY < 0 {
+						m.focusedY = 0
+					} else if m.focusedY >= v.Get().Height {
+						m.focusedY = v.Get().Height - 1
+					}
+				}
+			}
 		}),
 		g.Label("info bar"),
 	}
