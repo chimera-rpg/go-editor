@@ -29,6 +29,8 @@ type Mapset struct {
 	loreEditor, descEditor       imgui.TextEditor
 	zoom                         int32
 	showGrid                     bool
+	showYGrids                   bool
+	onionskin                    bool
 	keepSameTile                 bool
 	shouldClose                  bool
 	visitedTiles                 map[image.Point]bool // Coordinates visited during mouse drag.
@@ -47,6 +49,8 @@ func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapse
 		mapTextures:  make(map[int]MapTexture),
 		zoom:         3.0,
 		showGrid:     true,
+		showYGrids:   false,
+		onionskin:    true,
 		keepSameTile: true,
 		newW:         1,
 		newH:         1,
@@ -124,7 +128,9 @@ func (m *Mapset) draw() {
 				g.Checkbox("Keep Same Tile", &m.keepSameTile, nil),
 			}),
 			g.Menu("View", g.Layout{
+				g.Checkbox("Onionskinning", &m.onionskin, nil),
 				g.Checkbox("Grid", &m.showGrid, nil),
+				g.Checkbox("Y Grids", &m.showYGrids, nil),
 				g.SliderInt("Zoom", &m.zoom, 1, 8, "%d"),
 			}),
 		}),
@@ -466,11 +472,29 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 	dc.SetRGB(0.1, 0.1, 0.1)
 	dc.Clear()
 
+	alphaMask := image.NewAlpha(image.Rectangle{
+		Min: image.Point{0, 0},
+		Max: image.Point{mT.width, mT.height},
+	})
+	adc := gg.NewContextForImage(alphaMask)
+
 	startX := padding
 	startY := padding + (sm.Height * int(-yStep.Y))
 
 	// Draw archetypes.
 	for y := 0; y < sm.Height; y++ {
+		if m.onionskin {
+			if y < m.focusedY {
+				adc.SetRGBA(0, 0, 0, 0.30)
+			} else if y > m.focusedY {
+				adc.SetRGBA(0, 0, 0, 0.15)
+			} else {
+				adc.SetRGBA(0, 0, 0, 1)
+			}
+			adc.Clear()
+			dc.SetMask(adc.AsMask())
+		}
+
 		xOffset := y * int(yStep.X)
 		yOffset := y * int(-yStep.Y)
 		for x := sm.Width - 1; x >= 0; x-- {
@@ -491,6 +515,13 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 		}
 	}
 
+	// Clear our alpha mask to full opacity.
+	if m.onionskin {
+		adc.SetRGBA(0, 0, 0, 1.0)
+		adc.Clear()
+		dc.SetMask(adc.AsMask())
+	}
+
 	// Draw grid.
 	if m.showGrid {
 		dc.SetLineWidth(1)
@@ -503,7 +534,10 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 					oY := float64(z*tHeight-yOffset+startY) * scale
 					oW := float64(tWidth) * scale
 					oH := float64(tHeight) * scale
-					alpha := math.Max(0.0, 0.5-math.Abs(float64(m.focusedY-y))/float64(sm.Height)*2)
+					alpha := 0.0
+					if m.showYGrids {
+						alpha = math.Max(0.0, 0.5-math.Abs(float64(m.focusedY-y))/float64(sm.Height)*2)
+					}
 					if m.focusedY == y {
 						alpha = 1.0
 					}
