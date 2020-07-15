@@ -454,7 +454,7 @@ func (m *Mapset) drawMap(v UnReMap) {
 	canvasWidth := int((cWidth + (sm.Height * int(yStep.X)) + padding*2) * scale)
 	canvasHeight := int((cHeight + (sm.Height * int(-yStep.Y)) + padding*2) * scale)
 
-	imgui.BeginChildV("map", imgui.Vec2{X: float32(canvasWidth), Y: float32(canvasHeight)}, false, 0)
+	imgui.BeginChildV("map", imgui.Vec2{X: float32(canvasWidth), Y: float32(canvasHeight)}, false, imgui.WindowFlagsNoMove)
 
 	startX := padding
 	startY := padding + (sm.Height * int(-yStep.Y))
