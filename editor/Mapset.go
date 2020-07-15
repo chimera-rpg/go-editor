@@ -405,14 +405,24 @@ func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 						m.visitedTiles = make(map[image.Point]bool)
 					}
 				}
-				if g.IsKeyDown(341) {
-					mouseWheelDelta, mouseWheelHDelta := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
-					if mouseWheelDelta != 0 || mouseWheelHDelta != 0 {
+				if g.IsKeyDown(342) { // alt
+					mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+					if mouseWheelDelta != 0 {
 						m.focusedY += int(mouseWheelDelta)
 						if m.focusedY < 0 {
 							m.focusedY = 0
 						} else if m.focusedY >= v.Get().Height {
 							m.focusedY = v.Get().Height - 1
+						}
+					}
+				} else if g.IsKeyDown(341) { // ctrl
+					mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+					if mouseWheelDelta != 0 {
+						m.zoom += int32(mouseWheelDelta)
+						if m.zoom < 1 {
+							m.zoom = 1
+						} else if m.zoom > 8 {
+							m.zoom = 8
 						}
 					}
 				}
