@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"math"
+	"image/draw"
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
 	sdata "github.com/chimera-rpg/go-server/data"
-	"github.com/fogleman/gg"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,7 +18,6 @@ type Mapset struct {
 	filename                     string
 	maps                         []UnReMap
 	currentMapIndex              int
-	mapTextures                  map[int]MapTexture
 	focusedY, focusedX, focusedZ int
 	resizeL, resizeR             int32
 	resizeT, resizeB             int32
@@ -37,16 +35,9 @@ type Mapset struct {
 	mouseHeld                    map[g.MouseButton]bool
 }
 
-type MapTexture struct {
-	texture *g.Texture
-	width   int
-	height  int
-}
-
 func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapset {
 	m := &Mapset{
 		filename:     name,
-		mapTextures:  make(map[int]MapTexture),
 		zoom:         3.0,
 		showGrid:     true,
 		showYGrids:   false,
@@ -139,21 +130,13 @@ func (m *Mapset) draw() {
 				for mapIndex, v := range m.maps {
 					if imgui.BeginTabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, 0) {
 						m.currentMapIndex = mapIndex
-						// Generate texture.
-						t, ok := m.mapTextures[mapIndex]
-						go func() {
-							m.createMapTexture(mapIndex, v.Get())
-							g.Update()
-						}()
-						// Render content (if texture is ready)
-						if ok && t.texture != nil {
-							g.SplitLayout("vsplit", g.DirectionVertical, true, 300, g.Layout{
-								g.SplitLayout("hsplit", g.DirectionHorizontal, true, 300,
-									m.layoutMapView(v, t),
-									m.layoutArchsList(v),
-								),
-							}, m.layoutSelectedArch(v)).Build()
-						}
+						g.SplitLayout("vsplit", g.DirectionVertical, true, 300, g.Layout{
+							g.SplitLayout("hsplit", g.DirectionHorizontal, true, 300,
+								m.layoutMapView(v),
+								m.layoutArchsList(v),
+							),
+						}, m.layoutSelectedArch(v)).Build()
+
 						imgui.EndTabItem()
 					}
 				}
@@ -286,7 +269,7 @@ func (m *Mapset) draw() {
 	}
 }
 
-func (m *Mapset) layoutMapView(v UnReMap, t MapTexture) g.Layout {
+func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 	var availW, availH float32
 	childPos := image.Point{0, 0}
 	childFlags := g.WindowFlagsHorizontalScrollbar
@@ -298,8 +281,8 @@ func (m *Mapset) layoutMapView(v UnReMap, t MapTexture) g.Layout {
 		g.Child(v.Get().Name, false, availW, availH-20, childFlags, g.Layout{
 			g.Custom(func() {
 				childPos = g.GetCursorScreenPos()
+				m.drawMap(v)
 			}),
-			g.ImageButtonV(t.texture, float32(t.width), float32(t.height), image.Point{X: 0, Y: 0}, image.Point{X: 1, Y: 1}, 0, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 255, 255, 255}, nil),
 			g.Custom(func() {
 				if g.IsItemHovered() {
 					mousePos := g.GetMousePos()
@@ -454,10 +437,13 @@ func (m *Mapset) toolErase(v UnReMap, y, x, z int) (err error) {
 	return
 }
 
-func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
+func (m *Mapset) drawMap(v UnReMap) {
+	sm := v.Get()
+
+	pos := g.GetCursorScreenPos()
+	canvas := g.GetCanvas()
 	dm := m.context.dataManager
-	mT := MapTexture{}
-	scale := float64(m.zoom)
+	scale := int(m.zoom)
 	tWidth := int(dm.AnimationsConfig.TileWidth)
 	tHeight := int(dm.AnimationsConfig.TileHeight)
 	yStep := dm.AnimationsConfig.YStep
@@ -465,34 +451,29 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 	cWidth := sm.Width * tWidth
 	cHeight := sm.Depth * tHeight
 
-	mT.width = int(float64(cWidth+(sm.Height*int(yStep.X))+padding*2) * scale)
-	mT.height = int(float64(cHeight+(sm.Height*int(-yStep.Y))+padding*2) * scale)
+	canvasWidth := int((cWidth + (sm.Height * int(yStep.X)) + padding*2) * scale)
+	canvasHeight := int((cHeight + (sm.Height * int(-yStep.Y)) + padding*2) * scale)
 
-	dc := gg.NewContext(int(mT.width), int(mT.height))
-	dc.SetRGB(0.1, 0.1, 0.1)
-	dc.Clear()
-
-	alphaMask := image.NewAlpha(image.Rectangle{
-		Min: image.Point{0, 0},
-		Max: image.Point{mT.width, mT.height},
-	})
-	adc := gg.NewContextForImage(alphaMask)
+	imgui.BeginChildV("map", imgui.Vec2{X: float32(canvasWidth), Y: float32(canvasHeight)}, false, 0)
 
 	startX := padding
 	startY := padding + (sm.Height * int(-yStep.Y))
 
+	col := color.RGBA{0, 0, 0, 255}
+	canvas.AddRectFilled(pos, pos.Add(image.Pt(canvasWidth, canvasHeight)), col, 0, 0)
+
+	col = color.RGBA{255, 255, 255, 255}
 	// Draw archetypes.
 	for y := 0; y < sm.Height; y++ {
 		if m.onionskin {
+			// TODO: adjust alpha based upon distance of y from focusedY
 			if y < m.focusedY {
-				adc.SetRGBA(0, 0, 0, 0.30)
+				col.A = 200
 			} else if y > m.focusedY {
-				adc.SetRGBA(0, 0, 0, 0.15)
+				col.A = 50
 			} else {
-				adc.SetRGBA(0, 0, 0, 1)
+				col.A = 255
 			}
-			adc.Clear()
-			dc.SetMask(adc.AsMask())
 		}
 
 		xOffset := y * int(yStep.X)
@@ -500,50 +481,43 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 		for x := sm.Width - 1; x >= 0; x-- {
 			for z := 0; z < sm.Depth; z++ {
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
-					oX := float64(x*tWidth+xOffset+startX) * scale
-					oY := float64(z*tHeight-yOffset+startY) * scale
+					oX := pos.X + (x*tWidth+xOffset+startX)*scale
+					oY := pos.Y + (z*tHeight-yOffset+startY)*scale
 					if adjustment, ok := dm.AnimationsConfig.Adjustments[dm.GetArchType(&sm.Tiles[y][x][z][t], 0)]; ok {
-						oX += float64(adjustment.X) * scale
-						oY += float64(adjustment.Y) * scale
+						oX += int(adjustment.X) * scale
+						oY += int(adjustment.Y) * scale
 					}
-					img, _ := dm.GetArchImage(&sm.Tiles[y][x][z][t], scale)
-					if img != nil {
-						dc.DrawImage(img, int(oX), int(oY))
+
+					if t, err := m.GetArchTexture(&sm.Tiles[y][x][z][t], float64(scale)); err == nil {
+						canvas.AddImageV(t.texture, image.Pt(oX, oY), image.Pt(oX+int(t.width), oY+int(t.height)), image.Pt(0, 0), image.Pt(1, 1), col)
+					} else {
+						//log.Println(err)
 					}
 				}
 			}
 		}
 	}
 
-	// Clear our alpha mask to full opacity.
-	if m.onionskin {
-		adc.SetRGBA(0, 0, 0, 1.0)
-		adc.Clear()
-		dc.SetMask(adc.AsMask())
-	}
-
 	// Draw grid.
 	if m.showGrid {
-		dc.SetLineWidth(1)
 		for y := 0; y < sm.Height; y++ {
 			xOffset := y * int(yStep.X)
 			yOffset := y * int(-yStep.Y)
+			col.A = 0
+			if m.showYGrids {
+				// TODO: fade out based upon distance from focusedY
+				col.A = 50
+			}
+			if m.focusedY == y {
+				col.A = 150
+			}
 			for x := 0; x < sm.Width; x++ {
 				for z := 0; z < sm.Depth; z++ {
-					oX := float64(x*tWidth+xOffset+startX) * scale
-					oY := float64(z*tHeight-yOffset+startY) * scale
-					oW := float64(tWidth) * scale
-					oH := float64(tHeight) * scale
-					alpha := 0.0
-					if m.showYGrids {
-						alpha = math.Max(0.0, 0.5-math.Abs(float64(m.focusedY-y))/float64(sm.Height)*2)
-					}
-					if m.focusedY == y {
-						alpha = 1.0
-					}
-					dc.DrawRectangle(oX, oY, oW, oH)
-					dc.SetRGBA(0.9, 0.9, 0.9, alpha)
-					dc.Stroke()
+					oX := pos.X + (x*tWidth+xOffset+startX)*scale
+					oY := pos.Y + (z*tHeight-yOffset+startY)*scale
+					oW := (tWidth) * scale
+					oH := (tHeight) * scale
+					canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0, 0.5)
 				}
 			}
 		}
@@ -553,25 +527,58 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 	{
 		xOffset := m.focusedY * int(yStep.X)
 		yOffset := m.focusedY * int(-yStep.Y)
-		oX := float64(m.focusedX*tWidth+xOffset+startX) * scale
-		oY := float64(m.focusedZ*tHeight-yOffset+startY) * scale
-		oW := float64(tWidth) * scale
-		oH := float64(tHeight) * scale
-		dc.DrawRectangle(oX, oY, oW, oH)
-		dc.SetLineWidth(2)
-		dc.SetRGBA(0, 0, 0, 0.85)
-		dc.StrokePreserve()
-		dc.SetLineWidth(1)
-		dc.SetRGBA(1, 0, 0, 0.85)
-		dc.Stroke()
+		oX := pos.X + (m.focusedX*tWidth+xOffset+startX)*scale
+		oY := pos.Y + (m.focusedZ*tHeight-yOffset+startY)*scale
+		oW := (tWidth) * scale
+		oH := (tHeight) * scale
+
+		col = color.RGBA{255, 0, 0, 255}
+		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0, 2)
 	}
 
-	var err error
-	mT.texture, err = g.NewTextureFromRgba(dc.Image().(*image.RGBA))
+	imgui.EndChild()
+}
+
+func (m *Mapset) GetArchTexture(a *sdata.Archetype, scale float64) (it ImageTexture, err error) {
+	// Urgh...
+	anim, face := m.context.dataManager.GetAnimAndFace(a, "", "")
+
+	imageName, err := m.context.dataManager.GetAnimFaceImage(anim, face)
 	if err != nil {
-		log.Fatalln(err)
+		return it, err
 	}
-	m.mapTextures[index] = mT
+
+	if _, ok := m.context.scaledImageTextures[scale]; !ok {
+		m.context.scaledImageTextures[scale] = make(map[string]ImageTexture)
+	}
+	if tex, ok := m.context.scaledImageTextures[scale][imageName]; !ok {
+		img, err := m.context.dataManager.GetArchImage(a, scale)
+		if err != nil {
+			return it, err
+		}
+		m.context.scaledImageTextures[scale][imageName] = ImageTexture{}
+		go func() {
+			rgba := image.NewRGBA(img.Bounds())
+			draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
+			tex, err := g.NewTextureFromRgba(rgba)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			m.context.scaledImageTextures[scale][imageName] = ImageTexture{
+				texture: tex,
+				width:   float32(img.Bounds().Max.X),
+				height:  float32(img.Bounds().Max.Y),
+			}
+			g.Update()
+		}()
+		return it, errors.New("pending texture")
+	} else {
+		if tex.texture == nil {
+			return tex, errors.New("unready texture")
+		}
+		return tex, nil
+	}
+	return it, errors.New("no such texture")
 }
 
 func (m *Mapset) saveAll() {

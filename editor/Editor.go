@@ -23,7 +23,6 @@ type Editor struct {
 	mapsets        []*Mapset
 	archsets       []*Archset
 	animsets       []*Animset
-	imageTextures  map[string]ImageTexture
 	context        Context
 	//
 	openMapCWD, openMapFilename string
@@ -36,11 +35,12 @@ type ImageTexture struct {
 
 func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.context = Context{
-		dataManager: dataManager,
+		dataManager:         dataManager,
+		imageTextures:       make(map[string]ImageTexture),
+		scaledImageTextures: make(map[float64]map[string]ImageTexture),
 	}
 	e.isRunning = true
 	e.archetypesMode = true
-	e.imageTextures = make(map[string]ImageTexture)
 	e.openMapCWD = dataManager.MapsPath
 
 	return
@@ -176,7 +176,7 @@ func (e *Editor) drawArchetypes() {
 							return
 						}
 						img := e.context.dataManager.GetImage(imageName)
-						if t, ok := e.imageTextures[imageName]; !ok || t.texture == nil {
+						if t, ok := e.context.imageTextures[imageName]; !ok || t.texture == nil {
 							go func() {
 								rgba := image.NewRGBA(img.Bounds())
 								draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
@@ -184,7 +184,7 @@ func (e *Editor) drawArchetypes() {
 								if err != nil {
 									log.Fatalln(err)
 								}
-								e.imageTextures[imageName] = ImageTexture{
+								e.context.imageTextures[imageName] = ImageTexture{
 									texture: tex,
 									width:   float32(img.Bounds().Max.X),
 									height:  float32(img.Bounds().Max.Y),

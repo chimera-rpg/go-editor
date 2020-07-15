@@ -2,7 +2,7 @@ module github.com/chimera-rpg/go-editor
 
 go 1.14
 
-replace github.com/AllenDang/giu => github.com/kettek/giu v0.0.0-20200714234413-b7948939e7f0
+replace github.com/AllenDang/giu => github.com/kettek/giu v0.0.0-20200715064841-7e52a46d95cc
 
 require (
 	github.com/AllenDang/giu v0.0.0-20200709030315-4a692e68f6f3
