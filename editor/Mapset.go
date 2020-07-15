@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
@@ -502,12 +503,12 @@ func (m *Mapset) createMapTexture(index int, sm *sdata.Map) {
 					oY := float64(z*tHeight-yOffset+startY) * scale
 					oW := float64(tWidth) * scale
 					oH := float64(tHeight) * scale
-					dc.DrawRectangle(oX, oY, oW, oH)
-					if y == m.focusedY {
-						dc.SetRGB(0.9, 0.9, 0.9)
-					} else {
-						dc.SetRGBA(0.9, 0.9, 0.9, 0.1)
+					alpha := math.Max(0.0, 0.5-math.Abs(float64(m.focusedY-y))/float64(sm.Height)*2)
+					if m.focusedY == y {
+						alpha = 1.0
 					}
+					dc.DrawRectangle(oX, oY, oW, oH)
+					dc.SetRGBA(0.9, 0.9, 0.9, alpha)
 					dc.Stroke()
 				}
 			}
