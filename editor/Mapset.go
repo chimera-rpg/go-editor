@@ -333,7 +333,7 @@ func (m *Mapset) draw() {
 func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 	var availW, availH float32
 	childPos := image.Point{0, 0}
-	childFlags := g.WindowFlagsHorizontalScrollbar
+	childFlags := g.WindowFlagsHorizontalScrollbar | imgui.WindowFlagsNoMove
 
 	return g.Layout{
 		g.Custom(func() {
@@ -595,7 +595,7 @@ func (m *Mapset) drawMap(v UnReMap) {
 	canvasWidth := int((cWidth + (sm.Height * int(yStep.X)) + padding*2) * scale)
 	canvasHeight := int((cHeight + (sm.Height * int(-yStep.Y)) + padding*2) * scale)
 
-	imgui.BeginChildV("map", imgui.Vec2{X: float32(canvasWidth), Y: float32(canvasHeight)}, false, imgui.WindowFlagsNoMove)
+	imgui.BeginChildV("map", imgui.Vec2{X: float32(canvasWidth), Y: float32(canvasHeight)}, false, imgui.WindowFlagsNoMove|imgui.WindowFlagsNoMouseInputs)
 
 	startX := padding
 	startY := padding + (sm.Height * int(-yStep.Y))
