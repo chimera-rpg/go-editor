@@ -33,7 +33,16 @@ type Mapset struct {
 	shouldClose                  bool
 	visitedTiles                 map[image.Point]bool // Coordinates visited during mouse drag.
 	mouseHeld                    map[g.MouseButton]bool
+	toolBinds                    map[g.MouseButton]int
 }
+
+const (
+	noTool = iota
+	selectTool
+	insertTool
+	pickTool
+	eraseTool
+)
 
 func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapset {
 	m := &Mapset{
@@ -51,9 +60,14 @@ func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapse
 		descEditor:   imgui.NewTextEditor(),
 		visitedTiles: make(map[image.Point]bool),
 		mouseHeld:    make(map[g.MouseButton]bool),
+		toolBinds:    make(map[g.MouseButton]int),
 	}
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)
+
+	m.bindMouseToTool(g.MouseButtonLeft, selectTool)
+	m.bindMouseToTool(g.MouseButtonMiddle, eraseTool)
+	m.bindMouseToTool(g.MouseButtonRight, insertTool)
 
 	for k, v := range maps {
 		m.maps = append(m.maps, NewUnReMap(v, k))
@@ -76,6 +90,8 @@ func (m *Mapset) draw() {
 	if filename == "" {
 		filename = "Untitled Map"
 	}
+	toolWidth, _ := g.CalcTextSize("_________")
+
 	g.WindowV(fmt.Sprintf("Mapset: %s", filename), &windowOpen, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
 			g.Menu("Mapset", g.Layout{
@@ -124,6 +140,51 @@ func (m *Mapset) draw() {
 				g.Checkbox("Y Grids", &m.showYGrids, nil),
 				g.SliderInt("Zoom", &m.zoom, 1, 8, "%d"),
 			}),
+		}),
+		g.Custom(func() {
+			imgui.SelectableV(fmt.Sprintf("select (%s)", m.getToolButtonString(selectTool)), m.isToolBound(selectTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
+			if g.IsItemHovered() {
+				if g.IsMouseClicked(g.MouseButtonLeft) {
+					m.bindMouseToTool(g.MouseButtonLeft, selectTool)
+				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
+					m.bindMouseToTool(g.MouseButtonMiddle, selectTool)
+				} else if g.IsMouseClicked(g.MouseButtonRight) {
+					m.bindMouseToTool(g.MouseButtonRight, selectTool)
+				}
+			}
+			imgui.SameLine()
+			imgui.SelectableV(fmt.Sprintf("insert (%s)", m.getToolButtonString(insertTool)), m.isToolBound(insertTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
+			if g.IsItemHovered() {
+				if g.IsMouseClicked(g.MouseButtonLeft) {
+					m.bindMouseToTool(g.MouseButtonLeft, insertTool)
+				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
+					m.bindMouseToTool(g.MouseButtonMiddle, insertTool)
+				} else if g.IsMouseClicked(g.MouseButtonRight) {
+					m.bindMouseToTool(g.MouseButtonRight, insertTool)
+				}
+			}
+			imgui.SameLine()
+			imgui.SelectableV(fmt.Sprintf("pick (%s)", m.getToolButtonString(pickTool)), m.isToolBound(pickTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
+			if g.IsItemHovered() {
+				if g.IsMouseClicked(g.MouseButtonLeft) {
+					m.bindMouseToTool(g.MouseButtonLeft, pickTool)
+				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
+					m.bindMouseToTool(g.MouseButtonMiddle, pickTool)
+				} else if g.IsMouseClicked(g.MouseButtonRight) {
+					m.bindMouseToTool(g.MouseButtonRight, pickTool)
+				}
+			}
+			imgui.SameLine()
+			imgui.SelectableV(fmt.Sprintf("erase (%s)", m.getToolButtonString(eraseTool)), m.isToolBound(eraseTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
+			if g.IsItemHovered() {
+				if g.IsMouseClicked(g.MouseButtonLeft) {
+					m.bindMouseToTool(g.MouseButtonLeft, eraseTool)
+				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
+					m.bindMouseToTool(g.MouseButtonMiddle, eraseTool)
+				} else if g.IsMouseClicked(g.MouseButtonRight) {
+					m.bindMouseToTool(g.MouseButtonRight, eraseTool)
+				}
+			}
 		}),
 		g.Custom(func() {
 			if imgui.BeginTabBarV("Mapset", int(g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown)) {
@@ -296,7 +357,7 @@ func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 						}
 						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
 							if _, ok := m.visitedTiles[p]; !ok {
-								err := m.toolInsert(v, m.focusedY, p.X, p.Y)
+								err := m.handleMouseTool(g.MouseButtonRight, m.focusedY, p.X, p.Y)
 								if err != nil {
 									log.Errorln(err)
 								}
@@ -314,7 +375,7 @@ func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 						}
 						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
 							if _, ok := m.visitedTiles[p]; !ok {
-								err := m.toolErase(v, m.focusedY, p.X, p.Y)
+								err := m.handleMouseTool(g.MouseButtonMiddle, m.focusedY, p.X, p.Y)
 								if err != nil {
 									log.Errorln(err)
 								}
@@ -326,21 +387,22 @@ func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 						m.visitedTiles = make(map[image.Point]bool)
 					}
 					// LMB
-					if g.IsMouseClicked(g.MouseButtonLeft) {
-						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-							m.focusedX = p.X
-							m.focusedZ = p.Y
+					if g.IsMouseDown(g.MouseButtonLeft) {
+						if _, ok := m.mouseHeld[g.MouseButtonLeft]; !ok {
+							m.mouseHeld[g.MouseButtonLeft] = true
 						}
-					} else if g.IsMouseClicked(g.MouseButtonMiddle) {
 						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-							clone := m.cloneMap(v.Get())
-							if err := m.removeArchetype(clone, m.focusedY, p.X, p.Y, -1); err != nil {
-								log.Errorln(err)
-								// TODO: Some sort of popup error.
-							} else {
-								v.Set(clone)
+							if _, ok := m.visitedTiles[p]; !ok {
+								err := m.handleMouseTool(g.MouseButtonLeft, m.focusedY, p.X, p.Y)
+								if err != nil {
+									log.Errorln(err)
+								}
+								m.visitedTiles[p] = true
 							}
 						}
+					} else if g.IsMouseReleased(g.MouseButtonLeft) {
+						delete(m.mouseHeld, g.MouseButtonLeft)
+						m.visitedTiles = make(map[image.Point]bool)
 					}
 				}
 				if g.IsKeyDown(341) {
@@ -395,6 +457,75 @@ func (m *Mapset) getMapPointFromMouse(p image.Point) (h image.Point, err error) 
 	} else {
 		err = errors.New("Point OOB")
 	}
+	return
+}
+
+func (m *Mapset) bindMouseToTool(btn g.MouseButton, toolIndex int) {
+	// Remove old btn bind.
+	delete(m.toolBinds, btn)
+	// Find and remove binding for this tool.
+	for k, v := range m.toolBinds {
+		if v == toolIndex {
+			delete(m.toolBinds, k)
+		}
+	}
+	// Set btn bind to this one.
+	m.toolBinds[btn] = toolIndex
+}
+
+func (m *Mapset) getMouseTool(btn g.MouseButton) int {
+	if toolIndex, ok := m.toolBinds[btn]; ok {
+		return toolIndex
+	}
+	return noTool
+}
+
+func (m *Mapset) isToolBound(toolIndex int) bool {
+	for _, v := range m.toolBinds {
+		if v == toolIndex {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *Mapset) getToolButtonString(toolIndex int) string {
+	for k, v := range m.toolBinds {
+		if v == toolIndex {
+			if k == g.MouseButtonLeft {
+				return "L"
+			} else if k == g.MouseButtonMiddle {
+				return "M"
+			} else if k == g.MouseButtonRight {
+				return "R"
+			}
+		}
+	}
+	return "_"
+}
+
+func (m *Mapset) handleMouseTool(btn g.MouseButton, y, x, z int) error {
+	if toolIndex, ok := m.toolBinds[btn]; ok {
+		if m.currentMapIndex < 0 || m.currentMapIndex >= len(m.maps) {
+			return errors.New("no current map")
+		}
+		cm := m.maps[m.currentMapIndex]
+
+		if toolIndex == insertTool {
+			return m.toolInsert(cm, y, x, z)
+		} else if toolIndex == selectTool {
+			return m.toolSelect(cm, y, x, z)
+		} else if toolIndex == eraseTool {
+			return m.toolErase(cm, y, x, z)
+		}
+	}
+	return nil
+}
+
+func (m *Mapset) toolSelect(v UnReMap, y, x, z int) (err error) {
+	m.focusedY = y
+	m.focusedX = x
+	m.focusedZ = z
 	return
 }
 
