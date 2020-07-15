@@ -140,15 +140,9 @@ func (m *Mapset) draw() {
 						}()
 						// Render content (if texture is ready)
 						if ok && t.texture != nil {
-							var availW, availH float32
 							g.SplitLayout("vsplit", g.DirectionVertical, true, 300, g.Layout{
 								g.SplitLayout("hsplit", g.DirectionHorizontal, true, 300,
-									g.Layout{
-										g.Custom(func() {
-											availW, availH = g.GetAvaiableRegion()
-										}),
-										g.Child(v.Get().Name, false, availW, availH-20, g.WindowFlagsHorizontalScrollbar, m.layoutMapView(v, t)),
-									},
+									m.layoutMapView(v, t),
 									m.layoutArchsList(v),
 								),
 							}, m.layoutSelectedArch(v)).Build()
@@ -286,85 +280,93 @@ func (m *Mapset) draw() {
 }
 
 func (m *Mapset) layoutMapView(v UnReMap, t MapTexture) g.Layout {
+	var availW, availH float32
 	childPos := image.Point{0, 0}
+	childFlags := g.WindowFlagsHorizontalScrollbar
+
 	return g.Layout{
 		g.Custom(func() {
-			childPos = g.GetCursorScreenPos()
+			availW, availH = g.GetAvaiableRegion()
 		}),
-		g.ImageButtonV(t.texture, float32(t.width), float32(t.height), image.Point{X: 0, Y: 0}, image.Point{X: 1, Y: 1}, 0, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 255, 255, 255}, nil),
-		g.Custom(func() {
-			if g.IsItemHovered() {
-				mousePos := g.GetMousePos()
-				mousePos.X -= childPos.X
-				mousePos.Y -= childPos.Y
+		g.Child(v.Get().Name, false, availW, availH-20, childFlags, g.Layout{
+			g.Custom(func() {
+				childPos = g.GetCursorScreenPos()
+			}),
+			g.ImageButtonV(t.texture, float32(t.width), float32(t.height), image.Point{X: 0, Y: 0}, image.Point{X: 1, Y: 1}, 0, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 255, 255, 255}, nil),
+			g.Custom(func() {
+				if g.IsItemHovered() {
+					mousePos := g.GetMousePos()
+					mousePos.X -= childPos.X
+					mousePos.Y -= childPos.Y
 
-				// RMB
-				if g.IsMouseDown(g.MouseButtonRight) {
-					if _, ok := m.mouseHeld[g.MouseButtonRight]; !ok {
-						m.mouseHeld[g.MouseButtonRight] = true
-					}
-					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-						if _, ok := m.visitedTiles[p]; !ok {
-							err := m.toolInsert(v, m.focusedY, p.X, p.Y)
-							if err != nil {
-								log.Errorln(err)
+					// RMB
+					if g.IsMouseDown(g.MouseButtonRight) {
+						if _, ok := m.mouseHeld[g.MouseButtonRight]; !ok {
+							m.mouseHeld[g.MouseButtonRight] = true
+						}
+						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+							if _, ok := m.visitedTiles[p]; !ok {
+								err := m.toolInsert(v, m.focusedY, p.X, p.Y)
+								if err != nil {
+									log.Errorln(err)
+								}
+								m.visitedTiles[p] = true
 							}
-							m.visitedTiles[p] = true
 						}
+					} else if g.IsMouseReleased(g.MouseButtonRight) {
+						delete(m.mouseHeld, g.MouseButtonRight)
+						m.visitedTiles = make(map[image.Point]bool)
 					}
-				} else if g.IsMouseReleased(g.MouseButtonRight) {
-					delete(m.mouseHeld, g.MouseButtonRight)
-					m.visitedTiles = make(map[image.Point]bool)
-				}
-				// MMB
-				if g.IsMouseDown(g.MouseButtonMiddle) {
-					if _, ok := m.mouseHeld[g.MouseButtonMiddle]; !ok {
-						m.mouseHeld[g.MouseButtonMiddle] = true
-					}
-					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-						if _, ok := m.visitedTiles[p]; !ok {
-							err := m.toolErase(v, m.focusedY, p.X, p.Y)
-							if err != nil {
-								log.Errorln(err)
+					// MMB
+					if g.IsMouseDown(g.MouseButtonMiddle) {
+						if _, ok := m.mouseHeld[g.MouseButtonMiddle]; !ok {
+							m.mouseHeld[g.MouseButtonMiddle] = true
+						}
+						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+							if _, ok := m.visitedTiles[p]; !ok {
+								err := m.toolErase(v, m.focusedY, p.X, p.Y)
+								if err != nil {
+									log.Errorln(err)
+								}
+								m.visitedTiles[p] = true
 							}
-							m.visitedTiles[p] = true
+						}
+					} else if g.IsMouseReleased(g.MouseButtonMiddle) {
+						delete(m.mouseHeld, g.MouseButtonMiddle)
+						m.visitedTiles = make(map[image.Point]bool)
+					}
+					// LMB
+					if g.IsMouseClicked(g.MouseButtonLeft) {
+						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+							m.focusedX = p.X
+							m.focusedZ = p.Y
+						}
+					} else if g.IsMouseClicked(g.MouseButtonMiddle) {
+						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
+							clone := m.cloneMap(v.Get())
+							if err := m.removeArchetype(clone, m.focusedY, p.X, p.Y, -1); err != nil {
+								log.Errorln(err)
+								// TODO: Some sort of popup error.
+							} else {
+								v.Set(clone)
+							}
 						}
 					}
-				} else if g.IsMouseReleased(g.MouseButtonMiddle) {
-					delete(m.mouseHeld, g.MouseButtonMiddle)
-					m.visitedTiles = make(map[image.Point]bool)
 				}
-				// LMB
-				if g.IsMouseClicked(g.MouseButtonLeft) {
-					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-						m.focusedX = p.X
-						m.focusedZ = p.Y
-					}
-				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
-					if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-						clone := m.cloneMap(v.Get())
-						if err := m.removeArchetype(clone, m.focusedY, p.X, p.Y, -1); err != nil {
-							log.Errorln(err)
-							// TODO: Some sort of popup error.
-						} else {
-							v.Set(clone)
+				if g.IsKeyDown(341) {
+					mouseWheelDelta, mouseWheelHDelta := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+					if mouseWheelDelta != 0 || mouseWheelHDelta != 0 {
+						m.focusedY += int(mouseWheelDelta)
+						if m.focusedY < 0 {
+							m.focusedY = 0
+						} else if m.focusedY >= v.Get().Height {
+							m.focusedY = v.Get().Height - 1
 						}
 					}
 				}
-			}
-			if g.IsKeyDown(342) { // ... alt
-				mouseWheelDelta, mouseWheelHDelta := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
-				if mouseWheelDelta != 0 || mouseWheelHDelta != 0 {
-					m.focusedY += int(mouseWheelDelta)
-					if m.focusedY < 0 {
-						m.focusedY = 0
-					} else if m.focusedY >= v.Get().Height {
-						m.focusedY = v.Get().Height - 1
-					}
-				}
-			}
+			}),
+			g.Label("info bar"),
 		}),
-		g.Label("info bar"),
 	}
 }
 
