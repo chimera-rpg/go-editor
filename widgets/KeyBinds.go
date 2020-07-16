@@ -5,9 +5,8 @@ import (
 )
 
 type KeyBindsWidget struct {
-	onWindowFocused, onWindowHovered bool
-	onItemActive, onItemHovered      bool
-	widgets                          []g.Widget
+	flags   KeyBindsFlags
+	widgets []g.Widget
 }
 
 type KeyBindsFlags uint8
@@ -22,25 +21,22 @@ const (
 
 func KeyBinds(flags KeyBindsFlags, widgets ...g.Widget) *KeyBindsWidget {
 	return &KeyBindsWidget{
-		onWindowFocused: flags&KeyBindsFlagWindowFocused != 0,
-		onWindowHovered: flags&KeyBindsFlagWindowHovered != 0,
-		onItemActive:    flags&KeyBindsFlagItemActive != 0,
-		onItemHovered:   flags&KeyBindsFlagItemHovered != 0,
-		widgets:         widgets,
+		flags:   flags,
+		widgets: widgets,
 	}
 }
 
 func (k *KeyBindsWidget) Build() {
-	if k.onWindowFocused && !g.IsWindowFocused(g.FocusedFlagsChildWindows) {
+	if k.flags&KeyBindsFlagWindowFocused != 0 && !g.IsWindowFocused(g.FocusedFlagsChildWindows) {
 		return
 	}
-	if k.onWindowHovered && !g.IsWindowHovered(g.HoveredFlagsChildWindows) {
+	if k.flags&KeyBindsFlagWindowHovered != 0 && !g.IsWindowHovered(g.HoveredFlagsChildWindows) {
 		return
 	}
-	if k.onItemActive && !g.IsItemActive() {
+	if k.flags&KeyBindsFlagItemActive != 0 && !g.IsItemActive() {
 		return
 	}
-	if k.onItemHovered && !g.IsItemHovered() {
+	if k.flags&KeyBindsFlagItemHovered != 0 && !g.IsItemHovered() {
 		return
 	}
 
@@ -89,17 +85,17 @@ func (k *KeyBindsWidget) Build() {
 		keyBindWidget, isKeyBind := w.(*KeyBindWidget)
 
 		if isKeyBind {
-			if keyBindWidget.onPressed {
+			if keyBindWidget.flags&KeyBindFlagPressed != 0 {
 				if len(keyBindWidget.keys) == len(pressedKeys) && len(keyBindWidget.modifiers) == len(downModifiers) {
 					keyBindWidget.Build()
 				}
 			}
-			if keyBindWidget.onDown {
+			if keyBindWidget.flags&KeyBindFlagDown != 0 {
 				if len(keyBindWidget.keys) == len(downKeys) && len(keyBindWidget.modifiers) == len(downModifiers) {
 					keyBindWidget.Build()
 				}
 			}
-			if keyBindWidget.onReleased {
+			if keyBindWidget.flags&KeyBindFlagReleased != 0 {
 				if len(keyBindWidget.keys) == len(releasedKeys) && len(keyBindWidget.modifiers) == len(downModifiers) {
 					keyBindWidget.Build()
 				}
@@ -111,12 +107,10 @@ func (k *KeyBindsWidget) Build() {
 }
 
 type KeyBindWidget struct {
-	onPressed  bool
-	onDown     bool
-	onReleased bool
-	modifiers  []int
-	keys       []int
-	cb         func()
+	flags     KeyBindFlags
+	modifiers []int
+	keys      []int
+	cb        func()
 }
 
 type KeyBindFlags uint8
@@ -130,12 +124,10 @@ const (
 
 func KeyBind(flags KeyBindFlags, modifiers []int, keys []int, cb func()) *KeyBindWidget {
 	return &KeyBindWidget{
-		onPressed:  flags&KeyBindFlagPressed != 0,
-		onDown:     flags&KeyBindFlagDown != 0,
-		onReleased: flags&KeyBindFlagReleased != 0,
-		modifiers:  modifiers,
-		keys:       keys,
-		cb:         cb,
+		flags:     flags,
+		modifiers: modifiers,
+		keys:      keys,
+		cb:        cb,
 	}
 }
 
@@ -165,19 +157,19 @@ func (k *KeyBindWidget) Build() {
 		return true
 	}
 
-	if k.onPressed {
+	if k.flags&KeyBindFlagPressed != 0 {
 		if keysDown(k.modifiers) && keysPressed(k.keys) {
 			k.cb()
 		}
 	}
 
-	if k.onDown {
+	if k.flags&KeyBindFlagDown != 0 {
 		if keysDown(k.modifiers) && keysDown(k.keys) {
 			k.cb()
 		}
 	}
 
-	if k.onReleased {
+	if k.flags&KeyBindFlagReleased != 0 {
 		if keysDown(k.modifiers) && keysReleased(k.keys) {
 			k.cb()
 		}
