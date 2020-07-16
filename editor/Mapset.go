@@ -324,6 +324,23 @@ func (m *Mapset) draw() {
 				}),
 			),
 		}),
+		widgets.KeyBinds(widgets.KeyBindsFlagWindowFocused,
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(340, 341), widgets.Keys(90), func() {
+				if cm := m.CurrentMap(); cm != nil {
+					cm.Redo()
+				}
+			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(341), widgets.Keys(90), func() {
+				if cm := m.CurrentMap(); cm != nil {
+					cm.Undo()
+				}
+			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(341), widgets.Keys(89), func() {
+				if cm := m.CurrentMap(); cm != nil {
+					cm.Redo()
+				}
+			}),
+		),
 	})
 
 	if !windowOpen {
@@ -409,8 +426,8 @@ func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 			}),
 			g.Label("info bar"),
 		}),
-		widgets.KeyBinds(0,
-			widgets.KeyBind(widgets.KeyBindFlagDown, []int{342}, func() {
+		widgets.KeyBinds(widgets.KeyBindsFlagItemHovered,
+			widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(342), func() {
 				mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
 				if mouseWheelDelta != 0 {
 					m.focusedY += int(mouseWheelDelta)
@@ -421,7 +438,7 @@ func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 					}
 				}
 			}),
-			widgets.KeyBind(widgets.KeyBindFlagDown, []int{341}, func() {
+			widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(341), func() {
 				mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
 				if mouseWheelDelta != 0 {
 					m.zoom += int32(mouseWheelDelta)
