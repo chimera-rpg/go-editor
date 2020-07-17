@@ -176,6 +176,63 @@ func (k *KeyBindWidget) Build() {
 	}
 }
 
+type Key int
+
 func Keys(keys ...int) []int {
 	return keys
 }
+
+const (
+	Key0 = iota + 48
+	Key1
+	Key2
+	Key3
+	Key4
+	Key5
+	Key6
+	Key7
+	Key8
+	Key9
+)
+const (
+	KeyA = iota + 65
+	KeyB
+	KeyC
+	KeyD
+	KeyE
+	KeyF
+	KeyG
+	KeyH
+	KeyI
+	KeyJ
+	KeyK
+	KeyL
+	KeyM
+	KeyN
+	KeyO
+	KeyP
+	KeyQ
+	KeyR
+	KeyS
+	KeyT
+	KeyU
+	KeyV
+	KeyW
+	KeyX
+	KeyY
+	KeyZ
+)
+const (
+	KeyLeftShift = iota + 340
+	KeyLeftControl
+	KeyLeftAlt
+	KeyLeftSuper
+	KeyRightShift
+	KeyRightControl
+	KeyRightAlt
+	KeyRightSuper
+	KeyMenu
+	KeyShift   = KeyLeftShift
+	KeyAlt     = KeyLeftAlt
+	KeyControl = KeyLeftControl
+)
