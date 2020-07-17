@@ -626,31 +626,37 @@ func (m *Mapset) drawMap(v UnReMap) {
 
 	col = color.RGBA{255, 255, 255, 255}
 	// Draw archetypes.
-	for y := 0; y < sm.Height; y++ {
-		if m.onionskin {
-			// TODO: adjust alpha based upon distance of y from focusedY
-			if y < m.focusedY {
-				col.A = 200
-			} else if y > m.focusedY {
-				col.A = 50
-			} else {
-				col.A = 255
-			}
-		}
-
-		xOffset := y * int(yStep.X)
-		yOffset := y * int(-yStep.Y)
+	for z := 0; z < sm.Depth; z++ {
 		for x := sm.Width - 1; x >= 0; x-- {
-			for z := 0; z < sm.Depth; z++ {
+			for y := 0; y < sm.Height; y++ {
+				if m.onionskin {
+					// TODO: adjust alpha based upon distance of y from focusedY
+					if y < m.focusedY {
+						col.A = 200
+					} else if y > m.focusedY {
+						col.A = 50
+					} else {
+						col.A = 255
+					}
+				}
+
+				xOffset := y * int(yStep.X)
+				yOffset := y * int(-yStep.Y)
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
 					oX := pos.X + (x*tWidth+xOffset+startX)*scale
 					oY := pos.Y + (z*tHeight-yOffset+startY)*scale
+					_, _, oD := dm.GetArchDimensions(&sm.Tiles[y][x][z][t])
 					if adjustment, ok := dm.AnimationsConfig.Adjustments[dm.GetArchType(&sm.Tiles[y][x][z][t], 0)]; ok {
 						oX += int(adjustment.X) * scale
 						oY += int(adjustment.Y) * scale
 					}
 
 					if t, err := m.GetArchTexture(&sm.Tiles[y][x][z][t], float64(scale)); err == nil {
+						if oD > 1 {
+							oY -= int(t.height)
+							oY += int(oD/2) * tHeight * scale
+						}
+						//log.Printf("y %d\n", oY)
 						canvas.AddImageV(t.texture, image.Pt(oX, oY), image.Pt(oX+int(t.width), oY+int(t.height)), image.Pt(0, 0), image.Pt(1, 1), col)
 					} else {
 						//log.Println(err)
