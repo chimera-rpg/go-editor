@@ -98,10 +98,10 @@ func (m *Mapset) draw() {
 	// Block mousewheel scrolling if alt or ctrl is held.
 	m.blockScroll = false
 	widgets.KeyBinds(0,
-		widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(341), nil, func() {
+		widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyAlt), nil, func() {
 			m.blockScroll = true
 		}),
-		widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(342), nil, func() {
+		widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyControl), nil, func() {
 			m.blockScroll = true
 		}),
 	).Build()
@@ -338,17 +338,17 @@ func (m *Mapset) draw() {
 			),
 		}),
 		widgets.KeyBinds(widgets.KeyBindsFlagWindowFocused,
-			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(340, 341), widgets.Keys(90), func() {
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyShift, widgets.KeyControl), widgets.Keys(widgets.KeyZ), func() {
 				if cm := m.CurrentMap(); cm != nil {
 					cm.Redo()
 				}
 			}),
-			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(341), widgets.Keys(90), func() {
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyControl), widgets.Keys(widgets.KeyZ), func() {
 				if cm := m.CurrentMap(); cm != nil {
 					cm.Undo()
 				}
 			}),
-			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(341), widgets.Keys(89), func() {
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyControl), widgets.Keys(widgets.KeyY), func() {
 				if cm := m.CurrentMap(); cm != nil {
 					cm.Redo()
 				}
@@ -443,7 +443,7 @@ func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 			g.Label("info bar"),
 		}),
 		widgets.KeyBinds(widgets.KeyBindsFlagItemHovered,
-			widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(342), func() {
+			widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyAlt), func() {
 				mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
 				if mouseWheelDelta != 0 {
 					m.focusedY += int(mouseWheelDelta)
@@ -454,7 +454,7 @@ func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 					}
 				}
 			}),
-			widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(341), func() {
+			widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyControl), func() {
 				mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
 				if mouseWheelDelta != 0 {
 					m.zoom += int32(mouseWheelDelta)
