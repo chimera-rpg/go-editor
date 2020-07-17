@@ -705,10 +705,10 @@ func (m *Mapset) drawMap(v UnReMap) {
 			col.A = 0
 			if m.showYGrids {
 				// TODO: fade out based upon distance from focusedY
-				col.A = 50
+				col.A = 15
 			}
 			if m.focusedY == y {
-				col.A = 150
+				col.A = 50
 			}
 			for x := 0; x < sm.Width; x++ {
 				for z := 0; z < sm.Depth; z++ {
