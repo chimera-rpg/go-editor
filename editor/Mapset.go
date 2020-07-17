@@ -36,6 +36,7 @@ type Mapset struct {
 	visitedTiles                 map[image.Point]bool // Coordinates visited during mouse drag.
 	mouseHeld                    map[g.MouseButton]bool
 	toolBinds                    map[g.MouseButton]int
+	blockScroll                  bool // Block map scrolling (true if ctrl or alt is held)
 }
 
 const (
@@ -93,6 +94,17 @@ func (m *Mapset) draw() {
 		filename = "Untitled Map"
 	}
 	toolWidth, _ := g.CalcTextSize("_________")
+
+	// Block mousewheel scrolling if alt or ctrl is held.
+	m.blockScroll = false
+	widgets.KeyBinds(0,
+		widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(341), nil, func() {
+			m.blockScroll = true
+		}),
+		widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(342), nil, func() {
+			m.blockScroll = true
+		}),
+	).Build()
 
 	g.WindowV(fmt.Sprintf("Mapset: %s", filename), &windowOpen, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
@@ -353,6 +365,9 @@ func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 	var availW, availH float32
 	childPos := image.Point{0, 0}
 	childFlags := g.WindowFlagsHorizontalScrollbar | imgui.WindowFlagsNoMove
+	if m.blockScroll {
+		childFlags |= imgui.WindowFlagsNoScrollWithMouse
+	}
 
 	return g.Layout{
 		g.Custom(func() {
