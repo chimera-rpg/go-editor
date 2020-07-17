@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"sort"
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
@@ -599,6 +600,14 @@ func (m *Mapset) toolErase(v UnReMap, y, x, z int) (err error) {
 	return
 }
 
+type archDrawable struct {
+	z    int
+	x, y int
+	w, h int
+	t    ImageTexture
+	c    color.RGBA
+}
+
 func (m *Mapset) drawMap(v UnReMap) {
 	sm := v.Get()
 
@@ -625,45 +634,79 @@ func (m *Mapset) drawMap(v UnReMap) {
 	canvas.AddRectFilled(pos, pos.Add(image.Pt(canvasWidth, canvasHeight)), col, 0, 0)
 
 	col = color.RGBA{255, 255, 255, 255}
+	var drawables []archDrawable
 	// Draw archetypes.
-	for z := 0; z < sm.Depth; z++ {
+	for y := 0; y < sm.Height; y++ {
+		if m.onionskin {
+			// TODO: adjust alpha based upon distance of y from focusedY
+			if y < m.focusedY {
+				col.A = 200
+			} else if y > m.focusedY {
+				col.A = 50
+			} else {
+				col.A = 255
+			}
+		}
+		xOffset := y * int(yStep.X)
+		yOffset := y * int(-yStep.Y)
 		for x := sm.Width - 1; x >= 0; x-- {
-			for y := 0; y < sm.Height; y++ {
-				if m.onionskin {
-					// TODO: adjust alpha based upon distance of y from focusedY
-					if y < m.focusedY {
-						col.A = 200
-					} else if y > m.focusedY {
-						col.A = 50
-					} else {
-						col.A = 255
-					}
-				}
-
-				xOffset := y * int(yStep.X)
-				yOffset := y * int(-yStep.Y)
+			for z := 0; z < sm.Depth; z++ {
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
 					oX := pos.X + (x*tWidth+xOffset+startX)*scale
 					oY := pos.Y + (z*tHeight-yOffset+startY)*scale
-					_, _, oD := dm.GetArchDimensions(&sm.Tiles[y][x][z][t])
+					_, oW, oD := dm.GetArchDimensions(&sm.Tiles[y][x][z][t])
 					if adjustment, ok := dm.AnimationsConfig.Adjustments[dm.GetArchType(&sm.Tiles[y][x][z][t], 0)]; ok {
 						oX += int(adjustment.X) * scale
 						oY += int(adjustment.Y) * scale
 					}
 
+					// calc render z
+					indexZ := z
+					indexX := x
+					indexY := y
+					if oW > 1 {
+						indexX -= int(oW) / 2
+						if indexX < 0 {
+							indexX = 0
+						}
+					}
+					if oD > 1 {
+						indexZ += int(oD) / 2
+						if indexZ > sm.Depth {
+							indexZ = sm.Depth
+						}
+					}
+					zIndex := indexY*sm.Width + indexZ*sm.Width*sm.Depth - indexX + t
+
 					if t, err := m.GetArchTexture(&sm.Tiles[y][x][z][t], float64(scale)); err == nil {
 						if oD > 1 {
 							oY -= int(t.height)
-							oY += int(oD/2) * tHeight * scale
+							oY += (int(oD/2)*tHeight + tHeight/4) * scale
 						}
-						//log.Printf("y %d\n", oY)
-						canvas.AddImageV(t.texture, image.Pt(oX, oY), image.Pt(oX+int(t.width), oY+int(t.height)), image.Pt(0, 0), image.Pt(1, 1), col)
+						drawables = append(drawables, archDrawable{
+							z: zIndex,
+							x: oX,
+							y: oY,
+							w: oX + int(t.width),
+							h: oY + int(t.height),
+							c: col,
+							t: t,
+						})
 					} else {
 						//log.Println(err)
 					}
 				}
 			}
 		}
+	}
+
+	// Sort our drawables.
+	sort.Slice(drawables, func(i, j int) bool {
+		return drawables[i].z < drawables[j].z
+	})
+	// Render them.
+	for _, d := range drawables {
+		canvas.AddImageV(d.t.texture, image.Pt(d.x, d.y), image.Pt(d.w, d.h), image.Pt(0, 0), image.Pt(1, 1), d.c)
 	}
 
 	// Draw grid.
