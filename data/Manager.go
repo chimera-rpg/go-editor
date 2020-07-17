@@ -15,6 +15,8 @@ import (
 
 	"github.com/nfnt/resize"
 
+	"github.com/imdario/mergo"
+
 	cdata "github.com/chimera-rpg/go-common/data"
 	sdata "github.com/chimera-rpg/go-server/data"
 	"gopkg.in/yaml.v2"
@@ -29,9 +31,9 @@ type Manager struct {
 	images              map[string]image.Image
 	scaledImages        map[float64]map[string]image.Image
 	animations          map[string]sdata.AnimationPre
-	archetypes          map[string]*sdata.Archetype
+	archetypes          map[string]*sdata.Archetype // Parsed archetypes
 	archetypesOrder     []string
-	archetypeFiles      map[string]map[string]*sdata.Archetype
+	archetypeFiles      map[string][]string
 	AnimationsConfig    cdata.AnimationsConfig
 	archetypeFilesOrder []string
 	animationFiles      map[string]map[string]struct{}
@@ -63,7 +65,7 @@ func (m *Manager) Setup() (err error) {
 	m.images = make(map[string]image.Image)
 	m.scaledImages = make(map[float64]map[string]image.Image)
 	m.archetypes = make(map[string]*sdata.Archetype)
-	m.archetypeFiles = make(map[string]map[string]*sdata.Archetype)
+	m.archetypeFiles = make(map[string][]string)
 	m.animationFiles = make(map[string]map[string]struct{})
 	m.animations = make(map[string]sdata.AnimationPre)
 
@@ -80,6 +82,7 @@ func (m *Manager) Setup() (err error) {
 	if err = m.LoadArchetypes(); err != nil {
 		return
 	}
+	log.Printf("Loaded %d archetypes\n", len(m.archetypes))
 
 	if err = m.LoadAnimations(); err != nil {
 		return
@@ -198,12 +201,12 @@ func (m *Manager) LoadArchetypeFile(fpath string) error {
 	shortpath := filepath.ToSlash(fpath[len(m.ArchetypesPath)+1:])
 	shortpath = shortpath[0 : len(shortpath)-len(".arch.yaml")]
 
-	m.archetypeFiles[shortpath] = archetypesMap
 	m.archetypeFilesOrder = append(m.archetypeFilesOrder, shortpath)
 
 	for k, a := range archetypesMap {
 		m.archetypes[k] = a
 		m.archetypesOrder = append(m.archetypesOrder, k)
+		m.archetypeFiles[shortpath] = append(m.archetypeFiles[shortpath], k)
 	}
 
 	return nil
@@ -295,15 +298,15 @@ func (m *Manager) GetArchetypeFiles() []string {
 	return m.archetypeFilesOrder
 }
 
-func (m *Manager) GetArchetypeFile(f string) map[string]*sdata.Archetype {
+func (m *Manager) GetArchetypeFile(f string) []string {
 	return m.archetypeFiles[f]
 }
 
 func (m *Manager) LookupArchetypeFile(a string) string {
-	for k, v := range m.archetypeFiles {
-		for ak, _ := range v {
+	for _, v := range m.archetypeFiles {
+		for _, ak := range v {
 			if ak == a {
-				return k
+				return ak
 			}
 		}
 	}
@@ -414,6 +417,46 @@ func (m *Manager) GetArchType(a *sdata.Archetype, atype cdata.ArchetypeType) cda
 	return atype
 }
 
+func (m *Manager) GetArchDimensions(a *sdata.Archetype) (uint8, uint8, uint8) {
+	var h, w, d uint8
+	h, w, d = 0, 0, 0
+
+	m.rGetArchDimensions(a, &h, &w, &d)
+
+	if h == 0 {
+		h = 1
+	}
+	if w == 0 {
+		w = 1
+	}
+	if d == 0 {
+		d = 1
+	}
+
+	return h, w, d
+}
+func (m *Manager) rGetArchDimensions(a *sdata.Archetype, h, w, d *uint8) {
+	if *h == 0 && a.Height != 0 {
+		*h = a.Height
+	}
+	if *w == 0 && a.Width != 0 {
+		*w = a.Width
+	}
+	if *d == 0 && a.Depth != 0 {
+		*d = a.Depth
+	}
+	if *h != 0 && *w != 0 && *d != 0 {
+		return
+	}
+
+	archs := append(a.Archs, a.Arch)
+	for _, name := range archs {
+		if o := m.GetArchetype(name); o != nil {
+			m.rGetArchDimensions(o, h, w, d)
+		}
+	}
+}
+
 func (m *Manager) GetArchImage(a *sdata.Archetype, scale float64) (img image.Image, err error) {
 	anim, face := m.GetAnimAndFace(a, "", "")
 
@@ -429,4 +472,13 @@ func (m *Manager) GetArchImage(a *sdata.Archetype, scale float64) (img image.Ima
 
 	// Didn't find anything, return missing image...
 	return
+}
+
+func (m *Manager) cloneArchetype(archetype *sdata.Archetype) (nArchetype *sdata.Archetype) {
+	nArchetype = &sdata.Archetype{}
+	if err := mergo.Merge(nArchetype, archetype); err != nil {
+		log.Printf("%+v", err)
+		return nil
+	}
+	return nArchetype
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/AllenDang/giu/imgui"
 	"github.com/chimera-rpg/go-editor/data"
 	"github.com/chimera-rpg/go-editor/widgets"
+	sdata "github.com/chimera-rpg/go-server/data"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -205,7 +206,7 @@ func (e *Editor) drawArchetypes() {
 		archs := e.context.dataManager.GetArchetypeFiles()
 		for _, archFile := range archs {
 			var archItems []g.Widget
-			for archName := range e.context.dataManager.GetArchetypeFile(archFile) {
+			for _, archName := range e.context.dataManager.GetArchetypeFile(archFile) {
 				archItems = append(archItems, g.Layout{
 					g.Label(archName),
 					g.ContextMenu(g.Layout{
@@ -264,6 +265,12 @@ func (e *Editor) openArchsetFromArchetype(archName string) {
 			return
 		}
 	}
-	e.archsets = append(e.archsets, NewArchset(&e.context, archFilename, archFile))
-
+	archMap := make(map[string]*sdata.Archetype)
+	for _, archName := range archFile {
+		arch := e.context.dataManager.GetArchetype(archName)
+		if arch != nil {
+			archMap[archName] = arch
+		}
+	}
+	e.archsets = append(e.archsets, NewArchset(&e.context, archFilename, archMap))
 }
