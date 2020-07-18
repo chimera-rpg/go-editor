@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/AllenDang/giu v0.0.0-20200716024418-c752001bb77c
 	github.com/chimera-rpg/go-common v0.0.0-20200713092341-17400f3c23bc
-	github.com/chimera-rpg/go-server v0.0.0-20200717010332-64cf9bbb67e4
+	github.com/chimera-rpg/go-server v0.0.0-20200718103432-88b4d652973d
 	github.com/fogleman/gg v1.3.0
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200707082815-5321531c36a2 // indirect
 	github.com/go-resty/resty/v2 v2.3.0 // indirect
