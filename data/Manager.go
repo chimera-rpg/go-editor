@@ -165,6 +165,19 @@ func (m *Manager) LoadMap(filepath string) (maps map[string]*sdata.Map, err erro
 	return
 }
 
+func (m *Manager) SaveMap(filepath string, maps map[string]*sdata.Map) (err error) {
+	out, err := yaml.Marshal(maps)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(filepath, out, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *Manager) LoadArchetypes() error {
 	err := filepath.Walk(m.ArchetypesPath, func(file string, info os.FileInfo, err error) error {
 		if err != nil {
