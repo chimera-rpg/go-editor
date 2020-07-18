@@ -18,7 +18,7 @@ import (
 type Mapset struct {
 	context                      *Context
 	filename                     string
-	maps                         []UnReMap
+	maps                         []*UnReMap
 	currentMapIndex              int
 	focusedY, focusedX, focusedZ int
 	resizeL, resizeR             int32
@@ -37,6 +37,7 @@ type Mapset struct {
 	mouseHeld                    map[g.MouseButton]bool
 	toolBinds                    map[g.MouseButton]int
 	blockScroll                  bool // Block map scrolling (true if ctrl or alt is held)
+	unsaved                      bool
 }
 
 const (
@@ -106,7 +107,12 @@ func (m *Mapset) draw() {
 		}),
 	).Build()
 
-	g.WindowV(fmt.Sprintf("Mapset: %s", filename), &windowOpen, g.WindowFlagsMenuBar, 210, 30, 300, 400, g.Layout{
+	windowFlags := g.WindowFlagsMenuBar
+
+	if m.Unsaved() {
+		windowFlags |= g.WindowFlagsUnsavedDocument
+	}
+	g.WindowV(fmt.Sprintf("Mapset: %s", filename), &windowOpen, windowFlags, 210, 30, 300, 400, g.Layout{
 		g.MenuBar(g.Layout{
 			g.Menu("Mapset", g.Layout{
 				g.MenuItem("New Map...", func() {
@@ -203,7 +209,12 @@ func (m *Mapset) draw() {
 		g.Custom(func() {
 			if imgui.BeginTabBarV("Mapset", int(g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown)) {
 				for mapIndex, v := range m.maps {
-					if imgui.BeginTabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, 0) {
+					var flags g.TabItemFlags
+					if v.Unsaved() {
+						flags |= g.TabItemFlagsUnsavedDocument
+					}
+
+					if imgui.BeginTabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, int(flags)) {
 						m.currentMapIndex = mapIndex
 						g.SplitLayout("vsplit", g.DirectionVertical, true, 300, g.Layout{
 							g.SplitLayout("hsplit", g.DirectionHorizontal, true, 300,
@@ -307,7 +318,7 @@ func (m *Mapset) draw() {
 					//
 					cm := m.CurrentMap()
 
-					clone := m.cloneMap(cm.Get())
+					clone := cm.Clone()
 					clone.Name = m.newName
 					clone.Description = m.descEditor.GetText()
 					clone.Lore = m.loreEditor.GetText()
@@ -361,7 +372,7 @@ func (m *Mapset) draw() {
 	}
 }
 
-func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
+func (m *Mapset) layoutMapView(v *UnReMap) g.Layout {
 	var availW, availH float32
 	childPos := image.Point{0, 0}
 	childFlags := g.WindowFlagsHorizontalScrollbar | imgui.WindowFlagsNoMove
@@ -469,13 +480,13 @@ func (m *Mapset) layoutMapView(v UnReMap) g.Layout {
 	}
 }
 
-func (m *Mapset) layoutArchsList(v UnReMap) g.Layout {
+func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
 	return g.Layout{
 		g.Label("tile archetypes"),
 	}
 }
 
-func (m *Mapset) layoutSelectedArch(v UnReMap) g.Layout {
+func (m *Mapset) layoutSelectedArch(v *UnReMap) g.Layout {
 	return g.Layout{
 		g.Label("current archetype"),
 	}
@@ -569,14 +580,14 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, y, x, z int) error {
 	return nil
 }
 
-func (m *Mapset) toolSelect(v UnReMap, y, x, z int) (err error) {
+func (m *Mapset) toolSelect(v *UnReMap, y, x, z int) (err error) {
 	m.focusedY = y
 	m.focusedX = x
 	m.focusedZ = z
 	return
 }
 
-func (m *Mapset) toolInsert(v UnReMap, y, x, z int) (err error) {
+func (m *Mapset) toolInsert(v *UnReMap, y, x, z int) (err error) {
 	// Bail if no archetype is selected.
 	if m.context.selectedArch == "" {
 		return
@@ -596,22 +607,20 @@ func (m *Mapset) toolInsert(v UnReMap, y, x, z int) (err error) {
 		}
 	}
 	// Otherwise attempt to insert.
-	clone := m.cloneMap(v.Get())
+	clone := v.Clone()
 	if err := m.insertArchetype(clone, m.context.selectedArch, y, x, z, -1); err != nil {
 		return err
-	} else {
-		v.Set(clone)
 	}
+	v.Set(clone)
 	return
 }
 
-func (m *Mapset) toolErase(v UnReMap, y, x, z int) (err error) {
-	clone := m.cloneMap(v.Get())
+func (m *Mapset) toolErase(v *UnReMap, y, x, z int) (err error) {
+	clone := v.Clone()
 	if err := m.removeArchetype(clone, y, x, z, -1); err != nil {
 		return err
-	} else {
-		v.Set(clone)
 	}
+	v.Set(clone)
 	return
 }
 
@@ -623,7 +632,7 @@ type archDrawable struct {
 	c    color.RGBA
 }
 
-func (m *Mapset) drawMap(v UnReMap) {
+func (m *Mapset) drawMap(v *UnReMap) {
 	sm := v.Get()
 
 	pos := g.GetCursorScreenPos()
@@ -796,7 +805,22 @@ func (m *Mapset) GetArchTexture(a *sdata.Archetype, scale float64) (it ImageText
 }
 
 func (m *Mapset) saveAll() {
-	log.Println("TODO: Save all maps in file")
+	maps := make(map[string]*sdata.Map)
+	for _, v := range m.maps {
+		if v.Unsaved() {
+			v.Save()
+		}
+		maps[v.DataName()] = v.SavedMap()
+	}
+	err := m.context.dataManager.SaveMap(m.filename, maps)
+	if err != nil {
+		m.unsaved = true
+		log.Println(err)
+		// TODO: Report error to the user.
+		return
+	}
+	m.unsaved = false
+	// TODO: Some sort of UI notification.
 }
 
 func (m *Mapset) close() {
@@ -850,33 +874,6 @@ func (m *Mapset) resizeMap(u, d, l, r, t, b int) {
 		}
 	}
 	cm.Set(newMap)
-}
-
-func (m *Mapset) cloneMap(t *sdata.Map) *sdata.Map {
-	clone := m.createMap(
-		t.Name,
-		t.Description,
-		t.Lore,
-		t.Darkness,
-		t.ResetTime,
-		t.Height,
-		t.Width,
-		t.Depth,
-	)
-	// Create the new map according to dimensions.
-	for y := 0; y < t.Height; y++ {
-		clone.Tiles = append(clone.Tiles, [][][]sdata.Archetype{})
-		for x := 0; x < t.Width; x++ {
-			clone.Tiles[y] = append(clone.Tiles[y], [][]sdata.Archetype{})
-			for z := 0; z < t.Depth; z++ {
-				clone.Tiles[y][x] = append(clone.Tiles[y][x], []sdata.Archetype{})
-				for a := 0; a < len(t.Tiles[y][x][z]); a++ {
-					clone.Tiles[y][x][z] = append(clone.Tiles[y][x][z], t.Tiles[y][x][z][a])
-				}
-			}
-		}
-	}
-	return clone
 }
 
 func (m *Mapset) insertArchetype(t *sdata.Map, arch string, y, x, z, pos int) error {
@@ -974,5 +971,17 @@ func (m *Mapset) CurrentMap() *UnReMap {
 	if m.currentMapIndex < 0 || m.currentMapIndex >= len(m.maps) {
 		return nil
 	}
-	return &m.maps[m.currentMapIndex]
+	return m.maps[m.currentMapIndex]
+}
+
+func (m *Mapset) Unsaved() bool {
+	if m.unsaved {
+		return true
+	}
+	for _, v := range m.maps {
+		if v.Unsaved() {
+			return true
+		}
+	}
+	return false
 }
