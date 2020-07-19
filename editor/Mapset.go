@@ -364,6 +364,52 @@ func (m *Mapset) draw() {
 					cm.Redo()
 				}
 			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyLeft), func() {
+				if m.focusedX > 0 {
+					m.focusedX -= 1
+				}
+			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyRight), func() {
+				if cm := m.CurrentMap(); cm != nil {
+					if m.focusedX < cm.Get().Width-1 {
+						m.focusedX += 1
+					}
+				}
+			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyUp), func() {
+				if m.focusedZ > 0 {
+					m.focusedZ -= 1
+				}
+			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyDown), func() {
+				if cm := m.CurrentMap(); cm != nil {
+					if m.focusedZ < cm.Get().Depth-1 {
+						m.focusedZ += 1
+					}
+				}
+			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyAlt), widgets.Keys(widgets.KeyUp), func() {
+				if cm := m.CurrentMap(); cm != nil {
+					if m.focusedY < cm.Get().Height-1 {
+						m.focusedY += 1
+					}
+				}
+			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyAlt), widgets.Keys(widgets.KeyDown), func() {
+				if m.focusedY > 0 {
+					m.focusedY -= 1
+				}
+			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyA), func() {
+				if cm := m.CurrentMap(); cm != nil {
+					m.toolInsert(cm, m.focusedY, m.focusedX, m.focusedZ)
+				}
+			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyD), func() {
+				if cm := m.CurrentMap(); cm != nil {
+					m.toolErase(cm, m.focusedY, m.focusedX, m.focusedZ)
+				}
+			}),
 		),
 	})
 
