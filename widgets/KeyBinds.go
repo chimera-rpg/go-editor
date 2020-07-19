@@ -223,6 +223,22 @@ const (
 	KeyZ
 )
 const (
+	KeyEscape = iota + 256
+	KeyEnter
+	KeyTab
+	KeyBackspace
+	KeyInsert
+	KeyDelete
+	KeyRight
+	KeyLeft
+	KeyDown
+	KeyUp
+	KeyPageUp
+	KeyPageDown
+	KeyHome
+	KeyEnd
+)
+const (
 	KeyLeftShift = iota + 340
 	KeyLeftControl
 	KeyLeftAlt
