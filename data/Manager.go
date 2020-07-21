@@ -436,16 +436,6 @@ func (m *Manager) GetArchDimensions(a *sdata.Archetype) (uint8, uint8, uint8) {
 
 	m.rGetArchDimensions(a, &h, &w, &d)
 
-	if h == 0 {
-		h = 1
-	}
-	if w == 0 {
-		w = 1
-	}
-	if d == 0 {
-		d = 1
-	}
-
 	return h, w, d
 }
 func (m *Manager) rGetArchDimensions(a *sdata.Archetype, h, w, d *uint8) {
