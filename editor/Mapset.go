@@ -724,7 +724,7 @@ func (m *Mapset) drawMap(v *UnReMap) {
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
 					oX := pos.X + (x*tWidth+xOffset+startX)*scale
 					oY := pos.Y + (z*tHeight-yOffset+startY)*scale
-					_, _, oD := dm.GetArchDimensions(&sm.Tiles[y][x][z][t])
+					oH, _, oD := dm.GetArchDimensions(&sm.Tiles[y][x][z][t])
 					if adjustment, ok := dm.AnimationsConfig.Adjustments[dm.GetArchType(&sm.Tiles[y][x][z][t], 0)]; ok {
 						oX += int(adjustment.X) * scale
 						oY += int(adjustment.Y) * scale
@@ -737,9 +737,8 @@ func (m *Mapset) drawMap(v *UnReMap) {
 					zIndex := (indexZ * sm.Height * sm.Width) + (sm.Depth * indexY) - (indexX) + t
 
 					if t, err := m.GetArchTexture(&sm.Tiles[y][x][z][t], float64(scale)); err == nil {
-						if oD > 1 {
-							oY -= int(t.height)
-							oY += (int(oD/2)*tHeight + tHeight/4) * scale
+						if (oH > 1 || oD > 1) && int(t.height) > tHeight*scale {
+							oY -= int(t.height) - (tHeight * scale)
 						}
 						drawables = append(drawables, archDrawable{
 							z: zIndex,
