@@ -4,8 +4,8 @@ go 1.14
 
 require (
 	github.com/AllenDang/giu v0.0.0-20200716024418-c752001bb77c
-	github.com/chimera-rpg/go-common v0.0.0-20200730115515-f7e16a48b7d4
-	github.com/chimera-rpg/go-server v0.0.0-20200730120807-4590af2d749e
+	github.com/chimera-rpg/go-common v0.0.0-20200730121818-2a002ed5a30f
+	github.com/chimera-rpg/go-server v0.0.0-20200801112441-ebc77f8ffd38
 	github.com/fogleman/gg v1.3.0
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200707082815-5321531c36a2 // indirect
 	github.com/go-resty/resty/v2 v2.3.0 // indirect
@@ -17,6 +17,6 @@ require (
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
 	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
-	golang.org/x/sys v0.0.0-20200728102440-3e129f6d46b1 // indirect
+	golang.org/x/sys v0.0.0-20200803210538-64077c9b5642 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )
