@@ -206,29 +206,7 @@ func (m *Mapset) draw() {
 				}
 			}
 		}),
-		g.Custom(func() {
-			if imgui.BeginTabBarV("Mapset", int(g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown)) {
-				for mapIndex, v := range m.maps {
-					var flags g.TabItemFlags
-					if v.Unsaved() {
-						flags |= g.TabItemFlagsUnsavedDocument
-					}
-
-					if imgui.BeginTabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, int(flags)) {
-						m.currentMapIndex = mapIndex
-						g.SplitLayout("vsplit", g.DirectionVertical, true, 300, g.Layout{
-							g.SplitLayout("hsplit", g.DirectionHorizontal, true, 300,
-								m.layoutMapView(v),
-								m.layoutArchsList(v),
-							),
-						}, m.layoutSelectedArch(v)).Build()
-
-						imgui.EndTabItem()
-					}
-				}
-				imgui.EndTabBar()
-			}
-		}),
+		m.layoutMapTabs(),
 		g.Custom(func() {
 			if resizeMapPopup {
 				g.OpenPopup("Resize Map")
@@ -416,6 +394,31 @@ func (m *Mapset) draw() {
 	if !windowOpen {
 		m.close()
 	}
+}
+
+func (m *Mapset) layoutMapTabs() g.Layout {
+	var tabs g.Layout
+	for mapIndex, v := range m.maps {
+		var flags g.TabItemFlags
+		if v.Unsaved() {
+			flags |= g.TabItemFlagsUnsavedDocument
+		}
+
+		tab := g.TabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, flags, g.Layout{
+			g.Custom(func() {
+				m.currentMapIndex = mapIndex
+			}),
+			g.SplitLayout("vsplit", g.DirectionVertical, true, 300, g.Layout{
+				g.SplitLayout("hsplit", g.DirectionHorizontal, true, 300,
+					m.layoutMapView(v),
+					m.layoutArchsList(v),
+				),
+			}, m.layoutSelectedArch(v)),
+		})
+
+		tabs = append(tabs, tab)
+	}
+	return g.Layout{g.TabBarV("Mapset", g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown, tabs)}
 }
 
 func (m *Mapset) layoutMapView(v *UnReMap) g.Layout {
