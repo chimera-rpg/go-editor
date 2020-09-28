@@ -21,6 +21,8 @@ github.com/chimera-rpg/go-common v0.0.0-20200730121818-2a002ed5a30f h1:9dhvnsFaK
 github.com/chimera-rpg/go-common v0.0.0-20200730121818-2a002ed5a30f/go.mod h1:/FwRKhQznOZpTqwkeKsxXiRD2BJVU5hU5B932mDTQnY=
 github.com/chimera-rpg/go-common v0.0.0-20200813232907-ae1a84804103 h1:MXkMn+5iaDJ7DQ2NzdCObAIZ+ZaAK3/cK5e+H4nRsC0=
 github.com/chimera-rpg/go-common v0.0.0-20200813232907-ae1a84804103/go.mod h1:/FwRKhQznOZpTqwkeKsxXiRD2BJVU5hU5B932mDTQnY=
+github.com/chimera-rpg/go-common v0.0.0-20200928103030-2b0a1bca1b5a h1:bHga50u2jyXsTfQitqxrbGjpB+rqHJOYNDRecnCb6Pg=
+github.com/chimera-rpg/go-common v0.0.0-20200928103030-2b0a1bca1b5a/go.mod h1:/FwRKhQznOZpTqwkeKsxXiRD2BJVU5hU5B932mDTQnY=
 github.com/chimera-rpg/go-server v0.0.0-20200630091741-be45a43df3a2 h1:la0T8/6X2QgsW2YmxmCIlPf7U7GGanRZvxwkkTc1SOo=
 github.com/chimera-rpg/go-server v0.0.0-20200630091741-be45a43df3a2/go.mod h1:3OWT+zOEii4NuXSJSf0C40079zIPvrl6jZTUH8dkJp4=
 github.com/chimera-rpg/go-server v0.0.0-20200710060336-40b1a06ce676 h1:YYHCDlYDItuZPeLLWkFNdc+6jWSXfqE6vtMDRnAEtNA=
@@ -37,6 +39,8 @@ github.com/chimera-rpg/go-server v0.0.0-20200801112441-ebc77f8ffd38 h1:TUDUdPmYi
 github.com/chimera-rpg/go-server v0.0.0-20200801112441-ebc77f8ffd38/go.mod h1:VOTIJ88ZrUmwZr7JTIk57rPUtvXWag1gzRLO6BjzucY=
 github.com/chimera-rpg/go-server v0.0.0-20200813233337-9dfa1293204b h1:WfC5zjZdHQ2jnIucJFvFYP4YmtNOhxMqlQ5pV28CVZY=
 github.com/chimera-rpg/go-server v0.0.0-20200813233337-9dfa1293204b/go.mod h1:riCZBmuDoQsW7fnd2Qwi7bbU/IwbXxrKq31Dtlnraz4=
+github.com/chimera-rpg/go-server v0.0.0-20200928103228-0bf1d5cf2a0d h1:5TcTPoF0jhXlujPa4Itgd58HosavqsSTK0WeP0qc/ts=
+github.com/chimera-rpg/go-server v0.0.0-20200928103228-0bf1d5cf2a0d/go.mod h1:QzElU7qMqKm54ph7jvWHr/6iNxE2yx0wIBHKJjTZF18=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -102,6 +106,8 @@ golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 h1:DZhuSZLsGlFL4CmhA8BcRA
 golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de h1:ikNHVSjEfnvz6sxdSPCaPt572qowuyMDMJLLm3Db3ig=
 golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
+golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a h1:vclmkQCjlDX5OydZ9wv8rBCcS0QyQY66Mpf/7BZbInM=
+golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/image v0.0.0-20200618115811-c13761719519 h1:1e2ufUJNM3lCHEY5jIgac/7UTjd6cgJNdatjPdFWf34=
 golang.org/x/image v0.0.0-20200618115811-c13761719519/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
@@ -126,6 +132,8 @@ golang.org/x/sys v0.0.0-20200803210538-64077c9b5642 h1:B6caxRw+hozq68X2MY7jEpZh/
 golang.org/x/sys v0.0.0-20200803210538-64077c9b5642/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200812155832-6a926be9bd1d h1:QQrM/CCYEzTs91GZylDCQjGHudbPTxF/1fvXdVh5lMo=
 golang.org/x/sys v0.0.0-20200812155832-6a926be9bd1d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200926100807-9d91bd62050c h1:38q6VNPWR010vN82/SB121GujZNIfAUb4YttE2rhGuc=
+golang.org/x/sys v0.0.0-20200926100807-9d91bd62050c/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
