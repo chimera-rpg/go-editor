@@ -18,6 +18,7 @@ import (
 type Editor struct {
 	masterWindow   *g.MasterWindow
 	archetypesMode bool
+	isLoaded       bool
 	isRunning      bool
 	showSplash     bool
 	mapsets        []*Mapset
@@ -38,9 +39,15 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 		dataManager:   dataManager,
 		imageTextures: make(map[string]*ImageTexture),
 	}
+	e.isLoaded = false
 	e.isRunning = true
 	e.archetypesMode = true
+	e.showSplash = true
 	e.openMapCWD = dataManager.MapsPath
+
+	e.masterWindow = g.NewMasterWindow("Editor", 800, 600, 0, nil)
+	g.Context.GetRenderer().SetTextureMagFilter(g.TextureFilterNearest)
+	imgui.CurrentIO().SetIniFilename(e.context.dataManager.GetEtcPath("chimera-editor.ini"))
 
 	for imagePath, img := range dataManager.GetImages() {
 		//e.context.imageTexturesLock.Lock()
@@ -64,6 +71,7 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 				it.texture = tex
 			}
 		}
+		e.isLoaded = true
 	}()
 
 	return nil
@@ -75,10 +83,6 @@ func (e *Editor) Destroy() {
 
 func (e *Editor) Start() {
 	log.Println("Editor: Start")
-	e.masterWindow = g.NewMasterWindow("Editor", 800, 600, 0, nil)
-	g.Context.GetRenderer().SetTextureMagFilter(g.TextureFilterNearest)
-	imgui.CurrentIO().SetIniFilename(e.context.dataManager.GetEtcPath("chimera-editor.ini"))
-	e.showSplash = true
 
 	e.masterWindow.Main(func() { e.loop() })
 }
@@ -89,6 +93,14 @@ func (e *Editor) loop() {
 	}
 
 	var openMapPopup bool
+
+	if !e.isLoaded {
+		g.OpenPopup("Loading...")
+		g.PopupModalV("Loading...", nil, g.WindowFlagsNoResize, g.Layout{
+			g.Label("Now loading files..."),
+		}).Build()
+		return
+	}
 
 	g.MainMenuBar(g.Layout{
 		g.Menu("File", g.Layout{
