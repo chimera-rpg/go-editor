@@ -5,7 +5,6 @@ import (
 	"image"
 	"image/draw"
 	"os"
-
 	"path"
 
 	g "github.com/AllenDang/giu"
@@ -36,15 +35,38 @@ type ImageTexture struct {
 
 func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.context = Context{
-		dataManager:         dataManager,
-		imageTextures:       make(map[string]ImageTexture),
-		scaledImageTextures: make(map[float64]map[string]ImageTexture),
+		dataManager:   dataManager,
+		imageTextures: make(map[string]*ImageTexture),
 	}
 	e.isRunning = true
 	e.archetypesMode = true
 	e.openMapCWD = dataManager.MapsPath
 
-	return
+	for imagePath, img := range dataManager.GetImages() {
+		//e.context.imageTexturesLock.Lock()
+		e.context.imageTextures[imagePath] = &ImageTexture{
+			texture: nil,
+			width:   float32(img.Bounds().Max.X),
+			height:  float32(img.Bounds().Max.Y),
+		}
+		//e.context.imageTexturesLock.Unlock()
+	}
+
+	go func() {
+		for imagePath, img := range dataManager.GetImages() {
+			rgba := image.NewRGBA(img.Bounds())
+			draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
+			tex, err := g.NewTextureFromRgba(rgba)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			if it, ok := e.context.imageTextures[imagePath]; ok {
+				it.texture = tex
+			}
+		}
+	}()
+
+	return nil
 }
 
 func (e *Editor) Destroy() {
@@ -54,6 +76,7 @@ func (e *Editor) Destroy() {
 func (e *Editor) Start() {
 	log.Println("Editor: Start")
 	e.masterWindow = g.NewMasterWindow("Editor", 800, 600, 0, nil)
+	e.masterWindow.SetTextureMagFilter(g.TextureFilterNearest)
 	imgui.CurrentIO().SetIniFilename(e.context.dataManager.GetEtcPath("chimera-editor.ini"))
 	e.showSplash = true
 
@@ -176,25 +199,14 @@ func (e *Editor) drawArchetypes() {
 						if err != nil {
 							return
 						}
-						img := e.context.dataManager.GetImage(imageName)
-						if t, ok := e.context.imageTextures[imageName]; !ok || t.texture == nil {
-							go func() {
-								rgba := image.NewRGBA(img.Bounds())
-								draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
-								tex, err := g.NewTextureFromRgba(rgba)
-								if err != nil {
-									log.Fatalln(err)
-								}
-								e.context.imageTextures[imageName] = ImageTexture{
-									texture: tex,
-									width:   float32(img.Bounds().Max.X),
-									height:  float32(img.Bounds().Max.Y),
-								}
-								g.Update()
-							}()
-						} else {
+						//e.context.imageTexturesLock.Lock()
+						t, ok := e.context.imageTextures[imageName]
+						//e.context.imageTexturesLock.Unlock()
+						if ok {
 							g.SameLine()
-							g.Image(t.texture, t.width, t.height).Build()
+							if t.texture != nil {
+								g.Image(t.texture, t.width, t.height).Build()
+							}
 						}
 					}
 				}(archName)),

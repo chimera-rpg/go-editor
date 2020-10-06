@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
 	"sort"
 
 	g "github.com/AllenDang/giu"
@@ -677,7 +676,7 @@ type archDrawable struct {
 	z    int
 	x, y int
 	w, h int
-	t    ImageTexture
+	t    *ImageTexture
 	c    color.RGBA
 }
 
@@ -739,18 +738,24 @@ func (m *Mapset) drawMap(v *UnReMap) {
 					indexY := y
 					zIndex := (indexZ * sm.Height * sm.Width) + (sm.Depth * indexY) - (indexX) + t
 
-					if t, err := m.GetArchTexture(&sm.Tiles[y][x][z][t], float64(scale)); err == nil {
-						if (oH > 1 || oD > 1) && int(t.height) > tHeight*scale {
-							oY -= int(t.height) - (tHeight * scale)
+					anim, face := m.context.dataManager.GetAnimAndFace(&sm.Tiles[y][x][z][t], "", "")
+					imageName, err := m.context.dataManager.GetAnimFaceImage(anim, face)
+					if err != nil {
+						continue
+					}
+
+					if tex, ok := m.context.imageTextures[imageName]; ok {
+						if (oH > 1 || oD > 1) && int(tex.height*float32(scale)) > tHeight*scale {
+							oY -= int(tex.height*float32(scale)) - (tHeight * scale)
 						}
 						drawables = append(drawables, archDrawable{
 							z: zIndex,
 							x: oX,
 							y: oY,
-							w: oX + int(t.width),
-							h: oY + int(t.height),
+							w: oX + int(tex.width)*scale,
+							h: oY + int(tex.height)*scale,
 							c: col,
-							t: t,
+							t: tex,
 						})
 					} else {
 						//log.Println(err)
@@ -808,48 +813,6 @@ func (m *Mapset) drawMap(v *UnReMap) {
 	}
 
 	imgui.EndChild()
-}
-
-func (m *Mapset) GetArchTexture(a *sdata.Archetype, scale float64) (it ImageTexture, err error) {
-	// Urgh...
-	anim, face := m.context.dataManager.GetAnimAndFace(a, "", "")
-
-	imageName, err := m.context.dataManager.GetAnimFaceImage(anim, face)
-	if err != nil {
-		return it, err
-	}
-
-	if _, ok := m.context.scaledImageTextures[scale]; !ok {
-		m.context.scaledImageTextures[scale] = make(map[string]ImageTexture)
-	}
-	if tex, ok := m.context.scaledImageTextures[scale][imageName]; !ok {
-		img, err := m.context.dataManager.GetArchImage(a, scale)
-		if err != nil {
-			return it, err
-		}
-		m.context.scaledImageTextures[scale][imageName] = ImageTexture{}
-		go func() {
-			rgba := image.NewRGBA(img.Bounds())
-			draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
-			tex, err := g.NewTextureFromRgba(rgba)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			m.context.scaledImageTextures[scale][imageName] = ImageTexture{
-				texture: tex,
-				width:   float32(img.Bounds().Max.X),
-				height:  float32(img.Bounds().Max.Y),
-			}
-			g.Update()
-		}()
-		return it, errors.New("pending texture")
-	} else {
-		if tex.texture == nil {
-			return tex, errors.New("unready texture")
-		}
-		return tex, nil
-	}
-	return it, errors.New("no such texture")
 }
 
 func (m *Mapset) saveAll() {
