@@ -349,6 +349,10 @@ func (m *Manager) GetAnimFaceImage(anim, face string) (string, error) {
 	return f[0].Image, nil
 }
 
+func (m *Manager) GetImages() map[string]image.Image {
+	return m.images
+}
+
 func (m *Manager) GetImage(i string) image.Image {
 	return m.images[i]
 }
