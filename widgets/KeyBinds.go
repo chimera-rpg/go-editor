@@ -41,7 +41,7 @@ func (k *KeyBindsWidget) Build() {
 	}
 
 	// Collect all bound keys.
-	boundKeys := make(map[int]struct{})
+	boundKeys := make(map[g.Key]struct{})
 	for _, w := range k.widgets {
 		keyBindWidget, isKeyBind := w.(*KeyBindWidget)
 		if isKeyBind {
@@ -51,7 +51,7 @@ func (k *KeyBindsWidget) Build() {
 		}
 	}
 	// Collect all bound modifiers.
-	boundModifiers := make(map[int]struct{})
+	boundModifiers := make(map[g.Key]struct{})
 	for _, w := range k.widgets {
 		keyBindWidget, isKeyBind := w.(*KeyBindWidget)
 		if isKeyBind {
@@ -62,14 +62,14 @@ func (k *KeyBindsWidget) Build() {
 	}
 
 	// Get all released and pressed keys so as to reduce keybind collisions.
-	var downModifiers []int
+	var downModifiers []g.Key
 	for key := range boundModifiers {
 		if g.IsKeyDown(key) {
 			downModifiers = append(downModifiers, key)
 		}
 	}
 
-	var pressedKeys, releasedKeys, downKeys []int
+	var pressedKeys, releasedKeys, downKeys []g.Key
 	for key := range boundKeys {
 		if g.IsKeyPressed(key) {
 			pressedKeys = append(pressedKeys, key)
@@ -108,8 +108,8 @@ func (k *KeyBindsWidget) Build() {
 
 type KeyBindWidget struct {
 	flags     KeyBindFlags
-	modifiers []int
-	keys      []int
+	modifiers []g.Key
+	keys      []g.Key
 	cb        func()
 }
 
@@ -122,7 +122,7 @@ const (
 	KeyBindFlagDown
 )
 
-func KeyBind(flags KeyBindFlags, modifiers []int, keys []int, cb func()) *KeyBindWidget {
+func KeyBind(flags KeyBindFlags, modifiers []g.Key, keys []g.Key, cb func()) *KeyBindWidget {
 	return &KeyBindWidget{
 		flags:     flags,
 		modifiers: modifiers,
@@ -132,7 +132,7 @@ func KeyBind(flags KeyBindFlags, modifiers []int, keys []int, cb func()) *KeyBin
 }
 
 func (k *KeyBindWidget) Build() {
-	keysDown := func(keys []int) bool {
+	keysDown := func(keys []g.Key) bool {
 		for _, key := range keys {
 			if !g.IsKeyDown(key) {
 				return false
@@ -140,7 +140,7 @@ func (k *KeyBindWidget) Build() {
 		}
 		return true
 	}
-	keysPressed := func(keys []int) bool {
+	keysPressed := func(keys []g.Key) bool {
 		for _, key := range keys {
 			if !g.IsKeyPressed(key) {
 				return false
@@ -148,7 +148,7 @@ func (k *KeyBindWidget) Build() {
 		}
 		return true
 	}
-	keysReleased := func(keys []int) bool {
+	keysReleased := func(keys []g.Key) bool {
 		for _, key := range keys {
 			if !g.IsKeyReleased(key) {
 				return false
@@ -176,9 +176,7 @@ func (k *KeyBindWidget) Build() {
 	}
 }
 
-type Key int
-
-func Keys(keys ...int) []int {
+func Keys(keys ...g.Key) []g.Key {
 	return keys
 }
 
