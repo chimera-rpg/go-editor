@@ -12,6 +12,8 @@ github.com/AllenDang/giu v0.0.0-20200716024418-c752001bb77c h1:Oye8NAeSTsVU1jAcI
 github.com/AllenDang/giu v0.0.0-20200716024418-c752001bb77c/go.mod h1:I5APP3KkERnp+ERQVVaGOrUcSrgvt0s2lEh4+ap6SdI=
 github.com/AllenDang/giu v0.0.0-20201005103243-6ab94dc5d167 h1:0bOdt80mpOcR0mSq+malTHCE5nMig7AjJeY3j4/kJDE=
 github.com/AllenDang/giu v0.0.0-20201005103243-6ab94dc5d167/go.mod h1:I5APP3KkERnp+ERQVVaGOrUcSrgvt0s2lEh4+ap6SdI=
+github.com/AllenDang/giu v0.0.0-20201006120015-658692bcb90b h1:B6j58v5RGzsWUN45y2DLT9tP22LoRUBFw8KbM8ygf+c=
+github.com/AllenDang/giu v0.0.0-20201006120015-658692bcb90b/go.mod h1:I5APP3KkERnp+ERQVVaGOrUcSrgvt0s2lEh4+ap6SdI=
 github.com/c-bata/go-prompt v0.2.3/go.mod h1:VzqtzE2ksDBcdln8G7mk2RX9QyGjH+OVqOCSiVIqS34=
 github.com/chimera-rpg/go-common v0.0.0-20200630020335-8066864ae980 h1:nRq27cTGr5hpt2qGjQuHOJLhjuOXOZeNAepbxByL4dI=
 github.com/chimera-rpg/go-common v0.0.0-20200630020335-8066864ae980/go.mod h1:/FwRKhQznOZpTqwkeKsxXiRD2BJVU5hU5B932mDTQnY=
