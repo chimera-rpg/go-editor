@@ -76,7 +76,7 @@ func (e *Editor) Destroy() {
 func (e *Editor) Start() {
 	log.Println("Editor: Start")
 	e.masterWindow = g.NewMasterWindow("Editor", 800, 600, 0, nil)
-	e.masterWindow.SetTextureMagFilter(g.TextureFilterNearest)
+	g.Context.GetRenderer().SetTextureMagFilter(g.TextureFilterNearest)
 	imgui.CurrentIO().SetIniFilename(e.context.dataManager.GetEtcPath("chimera-editor.ini"))
 	e.showSplash = true
 
