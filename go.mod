@@ -2,8 +2,10 @@ module github.com/chimera-rpg/go-editor
 
 go 1.14
 
+replace github.com/AllenDang/giu => github.com/kettek/giu v0.0.0-20201006064532-e83f8a5fd9d3
+
 require (
-	github.com/AllenDang/giu v0.0.0-20200716024418-c752001bb77c
+	github.com/AllenDang/giu v0.0.0-20201005103243-6ab94dc5d167
 	github.com/chimera-rpg/go-common v0.0.0-20200928103030-2b0a1bca1b5a
 	github.com/chimera-rpg/go-server v0.0.0-20200928103228-0bf1d5cf2a0d
 	github.com/fogleman/gg v1.3.0
@@ -16,7 +18,6 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
-	golang.org/x/sys v0.0.0-20200926100807-9d91bd62050c // indirect
+	golang.org/x/net v0.0.0-20201002202402-0a1ea396d57c // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )
