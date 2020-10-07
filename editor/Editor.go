@@ -116,6 +116,11 @@ func (e *Editor) loop() {
 		g.Menu("Misc", g.Layout{
 			g.Button("Button", nil),
 		}),
+		widgets.KeyBinds(0,
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyControl), widgets.Keys(widgets.KeyO), func() {
+				openMapPopup = true
+			}),
+		),
 	}).Build()
 
 	if openMapPopup {
