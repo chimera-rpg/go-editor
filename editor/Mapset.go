@@ -21,6 +21,10 @@ type Mapset struct {
 	maps                         []*UnReMap
 	currentMapIndex              int
 	focusedY, focusedX, focusedZ int
+	selectedYStart, selectedYEnd int
+	selectedXStart, selectedXEnd int
+	selectedZStart, selectedZEnd int
+	selectedCoords               SelectedCoords
 	resizeL, resizeR             int32
 	resizeT, resizeB             int32
 	resizeU, resizeD             int32
@@ -76,6 +80,8 @@ func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapse
 	for k, v := range maps {
 		m.maps = append(m.maps, NewUnReMap(v, k))
 	}
+
+	m.selectedCoords.Clear()
 
 	return m
 }
@@ -631,6 +637,9 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, y, x, z int) error {
 }
 
 func (m *Mapset) toolSelect(v *UnReMap, y, x, z int) (err error) {
+	// TODO: Check if Shift or Ctrl is held!
+	m.selectedCoords.Clear()
+	m.selectedCoords.Select(y, x, z)
 	m.focusedY = y
 	m.focusedX = x
 	m.focusedZ = z
@@ -802,6 +811,22 @@ func (m *Mapset) drawMap(v *UnReMap) {
 	}
 
 	// Draw selected.
+	{
+		for yxz := range m.selectedCoords.Get() {
+			y, x, z := yxz[0], yxz[1], yxz[2]
+			xOffset := y * int(yStep.X)
+			yOffset := y * int(-yStep.Y)
+			oX := pos.X + (x*tWidth+xOffset+startX)*scale
+			oY := pos.Y + (z*tHeight-yOffset+startY)*scale
+			oW := (tWidth) * scale
+			oH := (tHeight) * scale
+
+			col = color.RGBA{255, 0, 255, 255}
+			canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0, 2)
+		}
+	}
+
+	// Draw focused.
 	{
 		xOffset := m.focusedY * int(yStep.X)
 		yOffset := m.focusedY * int(-yStep.Y)
