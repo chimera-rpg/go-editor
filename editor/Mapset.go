@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"sort"
 
 	g "github.com/AllenDang/giu"
@@ -402,17 +403,19 @@ func (m *Mapset) layoutMapTabs() g.Layout {
 		if v.Unsaved() {
 			flags |= g.TabItemFlagsUnsavedDocument
 		}
-
 		tab := g.TabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, flags, g.Layout{
 			g.Custom(func() {
 				m.currentMapIndex = mapIndex
+				availW, availH := g.GetAvaiableRegion()
+				defaultW := float32(math.Round(float64(availW - availW/4)))
+				defaultH := float32(math.Round(float64(availH - availH/4)))
+				g.SplitLayout("vsplit", g.DirectionVertical, true, defaultH, g.Layout{
+					g.SplitLayout("hsplit", g.DirectionHorizontal, true, defaultW,
+						m.layoutMapView(v),
+						m.layoutArchsList(v),
+					),
+				}, m.layoutSelectedArch(v)).Build()
 			}),
-			g.SplitLayout("vsplit", g.DirectionVertical, true, 300, g.Layout{
-				g.SplitLayout("hsplit", g.DirectionHorizontal, true, 300,
-					m.layoutMapView(v),
-					m.layoutArchsList(v),
-				),
-			}, m.layoutSelectedArch(v)),
 		})
 
 		tabs = append(tabs, tab)
@@ -499,7 +502,6 @@ func (m *Mapset) layoutMapView(v *UnReMap) g.Layout {
 					}
 				}
 			}),
-			g.Label("info bar"),
 		}),
 		widgets.KeyBinds(widgets.KeyBindsFlagItemHovered,
 			widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyAlt), func() {
