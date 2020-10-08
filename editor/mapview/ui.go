@@ -390,7 +390,7 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 
 					p, err := m.getMapPointFromMouse(mousePos)
 					if err != nil {
-						log.Errorln(err)
+						//log.Errorln(err)
 						return
 					}
 
