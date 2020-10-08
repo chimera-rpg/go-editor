@@ -622,8 +622,18 @@ func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
 }
 
 func (m *Mapset) layoutSelectedArch(v *UnReMap) g.Layout {
+	sm := m.CurrentMap()
+
+	archs := sm.GetArchs(m.focusedY, m.focusedX, m.focusedZ)
+	if m.focusedI >= 0 && m.focusedI < len(archs) {
+		arch := archs[m.focusedI]
+		archName := m.context.dataManager.GetArchName(&arch, "")
+		return g.Layout{
+			g.Label(archName),
+		}
+	}
 	return g.Layout{
-		g.Label("current archetype"),
+		g.Label("no archetype selected"),
 	}
 }
 
