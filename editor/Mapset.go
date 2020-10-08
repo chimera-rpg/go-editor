@@ -21,6 +21,7 @@ type Mapset struct {
 	maps                         []*UnReMap
 	currentMapIndex              int
 	focusedY, focusedX, focusedZ int
+	focusedI                     int
 	selectedYStart, selectedYEnd int
 	selectedXStart, selectedXEnd int
 	selectedZStart, selectedZEnd int
@@ -543,49 +544,79 @@ func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
 	// Collect the entire Y "stack" as separate lists.
 	for y := sm.Get().Height - 1; y >= 0; y-- {
 		var items g.Layout
+		func(y int) {
+			archs := sm.GetArchs(y, m.focusedX, m.focusedZ)
+			if len(archs) > 0 {
+				for index, arch := range archs {
+					func(index int, arch sdata.Archetype) {
+						archName := m.context.dataManager.GetArchName(&arch, "")
+						var flags g.TreeNodeFlags
+						flags = g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
+						if index == m.focusedI && m.focusedY == y {
+							flags |= g.TreeNodeFlagsSelected
+						}
+						items = append(items, g.TreeNode("", flags, g.Layout{
+							g.Custom(func() {
+								if g.IsItemHovered() {
+									if g.IsMouseDoubleClicked(g.MouseButtonLeft) {
+										//e.openArchsetFromArchetype(name)
+									} else if g.IsMouseClicked(g.MouseButtonLeft) {
+										m.focusedI = index
+										m.focusedY = y
+									}
+								}
+							}),
+							g.Custom(func() {
+								anim, face := m.context.dataManager.GetAnimAndFace(&arch, "", "")
+								imageName, err := m.context.dataManager.GetAnimFaceImage(anim, face)
+								if err == nil {
+									if tex, ok := m.context.imageTextures[imageName]; ok {
+										g.SameLine()
+										if tex.texture != nil {
+											g.Image(tex.texture, tex.width, tex.height).Build()
+										}
+										return
+									}
+								}
+								g.SameLine()
+								g.Dummy(float32(m.context.dataManager.AnimationsConfig.TileWidth), float32(m.context.dataManager.AnimationsConfig.TileHeight))
+							}),
+							g.Custom(func() {
+								//imgui.PushStyleColor(imgui.StyleColorText, g.ToVec4Color(color.RGBA{255, 0, 0, 255}))
+								g.SameLine()
+							}),
+							g.Label(archName),
+							g.Custom(func() {
+								//imgui.PopStyleColorV(1)
+							}),
+						}))
+					}(index, arch)
+				}
+			} else {
+				var flags g.TreeNodeFlags
+				flags = g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
+				items = append(items, g.TreeNode("", flags, g.Layout{
+					g.Custom(func() {
+						g.SameLine()
+						g.Dummy(float32(m.context.dataManager.AnimationsConfig.TileWidth), float32(m.context.dataManager.AnimationsConfig.TileHeight))
+					}),
+					g.Custom(func() { g.SameLine() }),
+					g.Label("-"),
+				}))
+			}
+		}(y)
 
-		for _, arch := range sm.GetArchs(y, m.focusedX, m.focusedZ) {
-			archName := m.context.dataManager.GetArchName(&arch, "")
-			var flags g.TreeNodeFlags
-			flags = g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
-			/*if archName == e.context.selectedArch {
-				flags |= g.TreeNodeFlagsSelected
-			}*/
-			items = append(items, g.TreeNode("", flags, g.Layout{
-				g.Custom(func(name string) func() {
-					return func() {
-						if g.IsItemHovered() {
-							if g.IsMouseDoubleClicked(g.MouseButtonLeft) {
-								//e.openArchsetFromArchetype(name)
-							} else if g.IsMouseClicked(g.MouseButtonLeft) {
-								//e.context.selectedArch = name
-							}
-						}
-					}
-				}(archName)),
-				g.Custom(func(arch sdata.Archetype) func() {
-					return func() {
-						anim, face := m.context.dataManager.GetAnimAndFace(&arch, "", "")
-						imageName, err := m.context.dataManager.GetAnimFaceImage(anim, face)
-						if err != nil {
-							return
-						}
-						if tex, ok := m.context.imageTextures[imageName]; ok {
-							g.SameLine()
-							if tex.texture != nil {
-								g.Image(tex.texture, tex.width, tex.height).Build()
-							}
-						} else {
-							g.SameLine()
-							g.Dummy(float32(m.context.dataManager.AnimationsConfig.TileWidth), float32(m.context.dataManager.AnimationsConfig.TileHeight))
-						}
-					}
-				}(arch)),
-				g.Custom(func() { g.SameLine() }),
-				g.Label(archName),
+		if y == m.focusedY {
+			yItems = append(yItems, g.Custom(func() {
+				imgui.PushStyleColor(imgui.StyleColorText, g.ToVec4Color(color.RGBA{32, 128, 255, 255}))
 			}))
 		}
 		yItems = append(yItems, g.TreeNode(fmt.Sprintf("%d", y), g.TreeNodeFlagsDefaultOpen|g.TreeNodeFlagsSpanFullWidth, items))
+		if y == m.focusedY {
+			yItems = append(yItems, g.Custom(func() {
+				imgui.PopStyleColor()
+			}))
+		}
 	}
 	return yItems
 }
