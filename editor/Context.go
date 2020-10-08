@@ -11,3 +11,15 @@ type Context struct {
 	cursorArch    []string
 	imageTextures map[string]*data.ImageTexture
 }
+
+func (c *Context) DataManager() *data.Manager {
+	return c.dataManager
+}
+
+func (c *Context) ImageTextures() map[string]*data.ImageTexture {
+	return c.imageTextures
+}
+
+func (c *Context) SelectedArch() string {
+	return c.selectedArch
+}

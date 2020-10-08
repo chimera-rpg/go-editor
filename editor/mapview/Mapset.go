@@ -1,4 +1,4 @@
-package editor
+package mapview
 
 import (
 	"errors"
@@ -17,9 +17,9 @@ import (
 )
 
 type Mapset struct {
-	context                      *Context
+	context                      Context
 	filename                     string
-	maps                         []*UnReMap
+	maps                         []*data.UnReMap
 	currentMapIndex              int
 	focusedY, focusedX, focusedZ int
 	focusedI                     int
@@ -38,7 +38,7 @@ type Mapset struct {
 	showYGrids                   bool
 	onionskin                    bool
 	keepSameTile                 bool
-	shouldClose                  bool
+	ShouldClose                  bool
 	visitedTiles                 map[image.Point]bool // Coordinates visited during mouse drag.
 	mouseHeld                    map[g.MouseButton]bool
 	toolBinds                    map[g.MouseButton]int
@@ -54,7 +54,7 @@ const (
 	eraseTool
 )
 
-func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapset {
+func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {
 	m := &Mapset{
 		filename:     name,
 		zoom:         3.0,
@@ -80,7 +80,7 @@ func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapse
 	m.bindMouseToTool(g.MouseButtonRight, insertTool)
 
 	for k, v := range maps {
-		m.maps = append(m.maps, NewUnReMap(v, k))
+		m.maps = append(m.maps, data.NewUnReMap(v, k))
 	}
 
 	m.selectedCoords.Clear()
@@ -88,7 +88,7 @@ func NewMapset(context *Context, name string, maps map[string]*sdata.Map) *Mapse
 	return m
 }
 
-func (m *Mapset) draw() {
+func (m *Mapset) Draw() {
 	windowOpen := true
 
 	var mapExists bool
@@ -276,7 +276,7 @@ func (m *Mapset) draw() {
 					desc := m.descEditor.GetText()
 					// TODO: Check if map with same name already exists!
 					newMap := m.createMap(m.newName, desc, lore, 0, 0, int(m.newH), int(m.newW), int(m.newD))
-					m.maps = append(m.maps, NewUnReMap(newMap, m.newDataName))
+					m.maps = append(m.maps, data.NewUnReMap(newMap, m.newDataName))
 					m.newName, m.newDataName = "", ""
 				}),
 				g.Button("Cancel", func() {
@@ -309,7 +309,7 @@ func (m *Mapset) draw() {
 					clone.Description = m.descEditor.GetText()
 					clone.Lore = m.loreEditor.GetText()
 
-					cm.dataName = m.newDataName
+					cm.SetDataName(m.newDataName)
 
 					cm.Set(clone)
 
@@ -407,7 +407,7 @@ func (m *Mapset) draw() {
 func (m *Mapset) layoutMapTabs() g.Layout {
 	var tabs g.Layout
 	for mapIndex, v := range m.maps {
-		func(mapIndex int, v *UnReMap) {
+		func(mapIndex int, v *data.UnReMap) {
 			var flags g.TabItemFlags
 			if v.Unsaved() {
 				flags |= g.TabItemFlagsUnsavedDocument
@@ -433,7 +433,7 @@ func (m *Mapset) layoutMapTabs() g.Layout {
 	return g.Layout{g.TabBarV("Mapset", g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown, tabs)}
 }
 
-func (m *Mapset) layoutMapView(v *UnReMap) g.Layout {
+func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 	var availW, availH float32
 	childPos := image.Point{0, 0}
 	childFlags := g.WindowFlagsHorizontalScrollbar | imgui.WindowFlagsNoMove
@@ -540,7 +540,8 @@ func (m *Mapset) layoutMapView(v *UnReMap) g.Layout {
 	}
 }
 
-func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
+func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
+	dm := m.context.DataManager()
 	sm := m.CurrentMap()
 
 	var yItems g.Layout
@@ -552,7 +553,7 @@ func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
 			if len(archs) > 0 {
 				for index, arch := range archs {
 					func(index int, arch sdata.Archetype) {
-						archName := m.context.dataManager.GetArchName(&arch, "")
+						archName := dm.GetArchName(&arch, "")
 						var flags g.TreeNodeFlags
 						flags = g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
 						if index == m.focusedI && m.focusedY == y {
@@ -570,10 +571,10 @@ func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
 								}
 							}),
 							g.Custom(func() {
-								anim, face := m.context.dataManager.GetAnimAndFace(&arch, "", "")
-								imageName, err := m.context.dataManager.GetAnimFaceImage(anim, face)
+								anim, face := dm.GetAnimAndFace(&arch, "", "")
+								imageName, err := dm.GetAnimFaceImage(anim, face)
 								if err == nil {
-									if tex, ok := m.context.imageTextures[imageName]; ok {
+									if tex, ok := m.context.ImageTextures()[imageName]; ok {
 										g.SameLine()
 										if tex.Texture != nil {
 											g.Image(tex.Texture, tex.Width, tex.Height).Build()
@@ -582,7 +583,7 @@ func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
 									}
 								}
 								g.SameLine()
-								g.Dummy(float32(m.context.dataManager.AnimationsConfig.TileWidth), float32(m.context.dataManager.AnimationsConfig.TileHeight))
+								g.Dummy(float32(dm.AnimationsConfig.TileWidth), float32(dm.AnimationsConfig.TileHeight))
 							}),
 							g.Custom(func() {
 								//imgui.PushStyleColor(imgui.StyleColorText, g.ToVec4Color(color.RGBA{255, 0, 0, 255}))
@@ -601,7 +602,7 @@ func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
 				items = append(items, g.TreeNode("", flags, g.Layout{
 					g.Custom(func() {
 						g.SameLine()
-						g.Dummy(float32(m.context.dataManager.AnimationsConfig.TileWidth), float32(m.context.dataManager.AnimationsConfig.TileHeight))
+						g.Dummy(float32(dm.AnimationsConfig.TileWidth), float32(dm.AnimationsConfig.TileHeight))
 					}),
 					g.Custom(func() { g.SameLine() }),
 					g.Label("-"),
@@ -626,13 +627,14 @@ func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
 	return yItems
 }
 
-func (m *Mapset) layoutSelectedArch(v *UnReMap) g.Layout {
+func (m *Mapset) layoutSelectedArch(v *data.UnReMap) g.Layout {
 	sm := m.CurrentMap()
+	dm := m.context.DataManager()
 
 	archs := sm.GetArchs(m.focusedY, m.focusedX, m.focusedZ)
 	if m.focusedI >= 0 && m.focusedI < len(archs) {
 		arch := archs[m.focusedI]
-		archName := m.context.dataManager.GetArchName(&arch, "")
+		archName := dm.GetArchName(&arch, "")
 		return g.Layout{
 			g.Label(archName),
 		}
@@ -643,7 +645,7 @@ func (m *Mapset) layoutSelectedArch(v *UnReMap) g.Layout {
 }
 
 func (m *Mapset) getMapPointFromMouse(p image.Point) (h image.Point, err error) {
-	dm := m.context.dataManager
+	dm := m.context.DataManager()
 	sm := m.CurrentMap()
 
 	scale := float64(m.zoom)
@@ -730,7 +732,7 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, y, x, z int) error {
 	return nil
 }
 
-func (m *Mapset) toolSelect(v *UnReMap, y, x, z int) (err error) {
+func (m *Mapset) toolSelect(v *data.UnReMap, y, x, z int) (err error) {
 	// TODO: Check if Shift or Ctrl is held!
 	m.selectedCoords.Clear()
 	m.selectedCoords.Select(y, x, z)
@@ -740,20 +742,20 @@ func (m *Mapset) toolSelect(v *UnReMap, y, x, z int) (err error) {
 	return
 }
 
-func (m *Mapset) toolInsert(v *UnReMap, y, x, z int) (err error) {
+func (m *Mapset) toolInsert(v *data.UnReMap, y, x, z int) (err error) {
 	// Bail if no archetype is selected.
-	if m.context.selectedArch == "" {
+	if m.context.SelectedArch() == "" {
 		return
 	}
 	// Check if we should not insert if top tile is the same.
 	if m.keepSameTile {
 		tiles := m.getTiles(v.Get(), y, x, z)
 		if tiles != nil && len(*tiles) > 0 {
-			if (*tiles)[len(*tiles)-1].Arch == m.context.selectedArch {
+			if (*tiles)[len(*tiles)-1].Arch == m.context.SelectedArch() {
 				return
 			}
 			for _, a := range (*tiles)[len(*tiles)-1].Archs {
-				if a == m.context.selectedArch {
+				if a == m.context.SelectedArch() {
 					return
 				}
 			}
@@ -761,14 +763,14 @@ func (m *Mapset) toolInsert(v *UnReMap, y, x, z int) (err error) {
 	}
 	// Otherwise attempt to insert.
 	clone := v.Clone()
-	if err := m.insertArchetype(clone, m.context.selectedArch, y, x, z, -1); err != nil {
+	if err := m.insertArchetype(clone, m.context.SelectedArch(), y, x, z, -1); err != nil {
 		return err
 	}
 	v.Set(clone)
 	return
 }
 
-func (m *Mapset) toolErase(v *UnReMap, y, x, z int) (err error) {
+func (m *Mapset) toolErase(v *data.UnReMap, y, x, z int) (err error) {
 	clone := v.Clone()
 	if err := m.removeArchetype(clone, y, x, z, -1); err != nil {
 		return err
@@ -785,12 +787,12 @@ type archDrawable struct {
 	c    color.RGBA
 }
 
-func (m *Mapset) drawMap(v *UnReMap) {
+func (m *Mapset) drawMap(v *data.UnReMap) {
 	sm := v.Get()
 
 	pos := g.GetCursorScreenPos()
 	canvas := g.GetCanvas()
-	dm := m.context.dataManager
+	dm := m.context.DataManager()
 	scale := int(m.zoom)
 	tWidth := int(dm.AnimationsConfig.TileWidth)
 	tHeight := int(dm.AnimationsConfig.TileHeight)
@@ -843,13 +845,13 @@ func (m *Mapset) drawMap(v *UnReMap) {
 					indexY := y
 					zIndex := (indexZ * sm.Height * sm.Width) + (sm.Depth * indexY) - (indexX) + t
 
-					anim, face := m.context.dataManager.GetAnimAndFace(&sm.Tiles[y][x][z][t], "", "")
-					imageName, err := m.context.dataManager.GetAnimFaceImage(anim, face)
+					anim, face := dm.GetAnimAndFace(&sm.Tiles[y][x][z][t], "", "")
+					imageName, err := dm.GetAnimFaceImage(anim, face)
 					if err != nil {
 						continue
 					}
 
-					if tex, ok := m.context.imageTextures[imageName]; ok {
+					if tex, ok := m.context.ImageTextures()[imageName]; ok {
 						if (oH > 1 || oD > 1) && int(tex.Height*float32(scale)) > tHeight*scale {
 							oY -= int(tex.Height*float32(scale)) - (tHeight * scale)
 						}
@@ -960,7 +962,7 @@ func (m *Mapset) saveAll() {
 		}
 		maps[v.DataName()] = v.SavedMap()
 	}
-	err := m.context.dataManager.SaveMap(m.filename, maps)
+	err := m.context.DataManager().SaveMap(m.filename, maps)
 	if err != nil {
 		m.unsaved = true
 		log.Println(err)
@@ -972,7 +974,7 @@ func (m *Mapset) saveAll() {
 }
 
 func (m *Mapset) close() {
-	m.shouldClose = true
+	m.ShouldClose = true
 }
 
 func (m *Mapset) resizeMap(u, d, l, r, t, b int) {
@@ -1115,7 +1117,7 @@ func (m *Mapset) deleteMap(index int) {
 	}
 }
 
-func (m *Mapset) CurrentMap() *UnReMap {
+func (m *Mapset) CurrentMap() *data.UnReMap {
 	if m.currentMapIndex < 0 || m.currentMapIndex >= len(m.maps) {
 		return nil
 	}

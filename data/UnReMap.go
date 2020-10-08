@@ -1,4 +1,4 @@
-package editor
+package data
 
 import (
 	sdata "github.com/chimera-rpg/go-server/data"
@@ -68,6 +68,10 @@ func (u *UnReMap) Reset() {
 
 func (u *UnReMap) DataName() string {
 	return u.dataName
+}
+
+func (u *UnReMap) SetDataName(s string) {
+	u.dataName = s
 }
 
 func (u *UnReMap) Clone() *sdata.Map {

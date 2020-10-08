@@ -1,4 +1,4 @@
-package editor
+package mapview
 
 // SelectedCoords is a simple structure that provides functionality to select/unselect arbitrary coordinates.
 type SelectedCoords struct {

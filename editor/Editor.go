@@ -10,6 +10,7 @@ import (
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
 	"github.com/chimera-rpg/go-editor/data"
+	"github.com/chimera-rpg/go-editor/editor/mapview"
 	"github.com/chimera-rpg/go-editor/widgets"
 	sdata "github.com/chimera-rpg/go-server/data"
 	log "github.com/sirupsen/logrus"
@@ -21,7 +22,7 @@ type Editor struct {
 	isLoaded       bool
 	isRunning      bool
 	showSplash     bool
-	mapsets        []*Mapset
+	mapsets        []*mapview.Mapset
 	archsets       []*Archset
 	animsets       []*Animset
 	context        Context
@@ -100,7 +101,7 @@ func (e *Editor) loop() {
 	g.MainMenuBar(g.Layout{
 		g.Menu("File", g.Layout{
 			g.MenuItem("New Mapset", func() {
-				e.mapsets = append(e.mapsets, NewMapset(&e.context, "", nil))
+				e.mapsets = append(e.mapsets, mapview.NewMapset(&e.context, "", nil))
 			}),
 			g.MenuItem("Open Mapset...", func() {
 				openMapPopup = true
@@ -134,7 +135,7 @@ func (e *Editor) loop() {
 					// TODO: Popup some sort of error!
 					log.Errorln(err)
 				} else {
-					e.mapsets = append(e.mapsets, NewMapset(&e.context, fullPath, dMapset))
+					e.mapsets = append(e.mapsets, mapview.NewMapset(&e.context, fullPath, dMapset))
 				}
 				g.CloseCurrentPopup()
 			}),
@@ -142,8 +143,8 @@ func (e *Editor) loop() {
 	}).Build()
 
 	for i, m := range e.mapsets {
-		m.draw()
-		if m.shouldClose {
+		m.Draw()
+		if m.ShouldClose {
 			e.mapsets = append(e.mapsets[:i], e.mapsets[i+1:]...)
 		}
 	}
