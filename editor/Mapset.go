@@ -444,7 +444,7 @@ func (m *Mapset) layoutMapView(v *UnReMap) g.Layout {
 		g.Custom(func() {
 			availW, availH = g.GetAvaiableRegion()
 		}),
-		g.Child(v.Get().Name, false, availW, availH-20, childFlags, g.Layout{
+		g.Child(v.Get().Name, false, availW, availH, childFlags, g.Layout{
 			g.Custom(func() {
 				childPos = g.GetCursorScreenPos()
 				m.drawMap(v)
