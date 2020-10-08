@@ -107,47 +107,42 @@ func (m *Manager) GetEtcPath(parts ...string) string {
 }
 
 func (m *Manager) acquireDataPath() (err error) {
-	var dir string
-	// Set our path which should be <parent of cmd>/share/chimera/client.
-	if dir, err = filepath.Abs(os.Args[0]); err != nil {
-		return
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
 	}
-	dir = filepath.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "editor")
 
-	m.DataPath = dir
+	m.DataPath = filepath.Join(cwd, "share", "chimera", "editor")
 	return
 }
 
 func (m *Manager) acquireEtcPath() (err error) {
-	var dir string
-	// Set our path which should be <parent of cmd>/share/chimera/client.
-	if dir, err = filepath.Abs(os.Args[0]); err != nil {
-		return
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
 	}
-	dir = filepath.Join(filepath.Dir(filepath.Dir(dir)), "etc", "chimera")
 
-	m.EtcPath = dir
+	m.EtcPath = filepath.Join(cwd, "etc", "chimera")
 	return
 }
 
 func (m *Manager) acquireMapPath() (err error) {
-	var dir string
-	// Set our path which should be <parent of cmd>/share/chimera/client.
-	if dir, err = filepath.Abs(os.Args[0]); err != nil {
-		return
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
 	}
-	dir = filepath.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "maps")
 
-	m.MapsPath = dir
+	m.MapsPath = filepath.Join(cwd, "share", "chimera", "maps")
 	return
 }
 
 func (m *Manager) acquireArchetypesPath() (err error) {
 	var dir string
-	if dir, err = filepath.Abs(os.Args[0]); err != nil {
-		return
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
 	}
-	dir = filepath.Join(filepath.Dir(filepath.Dir(dir)), "share", "chimera", "archetypes")
+	dir = filepath.Join(cwd, "share", "chimera", "archetypes")
 
 	m.ArchetypesPath = dir
 	return
