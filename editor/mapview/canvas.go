@@ -157,6 +157,10 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 	{
 		for yxz := range m.selectedCoords.Get() {
 			y, x, z := yxz[0], yxz[1], yxz[2]
+			if m.focusedY == y && m.focusedX == x && m.focusedZ == z {
+				continue
+			}
+
 			xOffset := y * int(yStep.X)
 			yOffset := y * int(-yStep.Y)
 			oX := pos.X + (x*tWidth+xOffset+startX)*scale
@@ -164,8 +168,8 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 			oW := (tWidth) * scale
 			oH := (tHeight) * scale
 
-			col = color.RGBA{255, 0, 255, 255}
-			canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0, 2)
+			col = color.RGBA{255, 255, 32, 100}
+			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0)
 		}
 	}
 
@@ -178,8 +182,8 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 		oW := (tWidth) * scale
 		oH := (tHeight) * scale
 
-		col = color.RGBA{255, 0, 0, 255}
-		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0, 2)
+		col = color.RGBA{255, 0, 0, 128}
+		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0, 1)
 	}
 
 	imgui.EndChild()
