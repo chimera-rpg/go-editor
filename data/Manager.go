@@ -429,6 +429,36 @@ func (m *Manager) GetArchType(a *sdata.Archetype, atype cdata.ArchetypeType) cda
 	return atype
 }
 
+func (m *Manager) GetArchName(a *sdata.Archetype, name string) string {
+	aString, _ := a.Name.GetString()
+	if name == "" && aString != "" {
+		name = aString
+	}
+
+	if name == "" {
+		if a.Arch != "" {
+			o := m.GetArchetype(a.Arch)
+			if o != nil {
+				name = m.GetArchName(o, name)
+				if name != "" {
+					return name
+				}
+			}
+		}
+		for _, archName := range a.Archs {
+			o := m.GetArchetype(archName)
+			if o != nil {
+				name = m.GetArchName(o, name)
+				if name != "" {
+					return name
+				}
+			}
+		}
+	}
+
+	return name
+}
+
 func (m *Manager) GetArchDimensions(a *sdata.Archetype) (uint8, uint8, uint8) {
 	var h, w, d uint8
 	h, w, d = 0, 0, 0
