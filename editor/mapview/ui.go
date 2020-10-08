@@ -481,7 +481,9 @@ func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
 		func(y int) {
 			archs := sm.GetArchs(y, m.focusedX, m.focusedZ)
 			if len(archs) > 0 {
-				for index, arch := range archs {
+				for i := range archs {
+					index := len(archs) - 1 - i
+					arch := archs[index]
 					func(index int, arch sdata.Archetype) {
 						archName := dm.GetArchName(&arch, "")
 						var flags g.TreeNodeFlags
