@@ -318,12 +318,12 @@ func (m *Mapset) Draw() {
 			}),
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyA), func() {
 				if cm := m.CurrentMap(); cm != nil {
-					m.toolInsert(cm, m.focusedY, m.focusedX, m.focusedZ)
+					m.toolInsert(3, cm, m.focusedY, m.focusedX, m.focusedZ)
 				}
 			}),
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyD), func() {
 				if cm := m.CurrentMap(); cm != nil {
-					m.toolErase(cm, m.focusedY, m.focusedX, m.focusedZ)
+					m.toolErase(3, cm, m.focusedY, m.focusedX, m.focusedZ)
 				}
 			}),
 		),
@@ -386,57 +386,80 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 					mousePos.X -= childPos.X
 					mousePos.Y -= childPos.Y
 
+					p, err := m.getMapPointFromMouse(mousePos)
+					if err != nil {
+						log.Errorln(err)
+						return
+					}
+
+					var state ButtonState
 					// RMB
 					if g.IsMouseDown(g.MouseButtonRight) {
+						state = 2
 						if _, ok := m.mouseHeld[g.MouseButtonRight]; !ok {
 							m.mouseHeld[g.MouseButtonRight] = true
+							state = 1
 						}
-						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-							if _, ok := m.visitedTiles[p]; !ok {
-								err := m.handleMouseTool(g.MouseButtonRight, m.focusedY, p.X, p.Y)
-								if err != nil {
-									log.Errorln(err)
-								}
-								m.visitedTiles[p] = true
+						if _, ok := m.visitedTiles[p]; !ok {
+							err := m.handleMouseTool(g.MouseButtonRight, state, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
 							}
+							m.visitedTiles[p] = true
 						}
 					} else if g.IsMouseReleased(g.MouseButtonRight) {
+						state = 0
+						err := m.handleMouseTool(g.MouseButtonRight, state, m.focusedY, p.X, p.Y)
+						if err != nil {
+							log.Errorln(err)
+						}
+
 						delete(m.mouseHeld, g.MouseButtonRight)
 						m.visitedTiles = make(map[image.Point]bool)
 					}
 					// MMB
 					if g.IsMouseDown(g.MouseButtonMiddle) {
+						state = 2
 						if _, ok := m.mouseHeld[g.MouseButtonMiddle]; !ok {
 							m.mouseHeld[g.MouseButtonMiddle] = true
+							state = 1
 						}
-						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-							if _, ok := m.visitedTiles[p]; !ok {
-								err := m.handleMouseTool(g.MouseButtonMiddle, m.focusedY, p.X, p.Y)
-								if err != nil {
-									log.Errorln(err)
-								}
-								m.visitedTiles[p] = true
+						if _, ok := m.visitedTiles[p]; !ok {
+							err := m.handleMouseTool(g.MouseButtonMiddle, state, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
 							}
+							m.visitedTiles[p] = true
 						}
 					} else if g.IsMouseReleased(g.MouseButtonMiddle) {
+						state = 0
+						err := m.handleMouseTool(g.MouseButtonMiddle, state, m.focusedY, p.X, p.Y)
+						if err != nil {
+							log.Errorln(err)
+						}
 						delete(m.mouseHeld, g.MouseButtonMiddle)
 						m.visitedTiles = make(map[image.Point]bool)
 					}
 					// LMB
 					if g.IsMouseDown(g.MouseButtonLeft) {
+						state = 2
 						if _, ok := m.mouseHeld[g.MouseButtonLeft]; !ok {
 							m.mouseHeld[g.MouseButtonLeft] = true
+							state = 1
 						}
-						if p, err := m.getMapPointFromMouse(mousePos); err == nil {
-							if _, ok := m.visitedTiles[p]; !ok {
-								err := m.handleMouseTool(g.MouseButtonLeft, m.focusedY, p.X, p.Y)
-								if err != nil {
-									log.Errorln(err)
-								}
-								m.visitedTiles[p] = true
+						if _, ok := m.visitedTiles[p]; !ok {
+							err := m.handleMouseTool(g.MouseButtonLeft, state, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
 							}
+							m.visitedTiles[p] = true
 						}
 					} else if g.IsMouseReleased(g.MouseButtonLeft) {
+						state = 0
+						err := m.handleMouseTool(g.MouseButtonLeft, state, m.focusedY, p.X, p.Y)
+						if err != nil {
+							log.Errorln(err)
+						}
 						delete(m.mouseHeld, g.MouseButtonLeft)
 						m.visitedTiles = make(map[image.Point]bool)
 					}

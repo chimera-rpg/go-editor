@@ -7,6 +7,15 @@ import (
 	"github.com/chimera-rpg/go-editor/data"
 )
 
+type ButtonState = uint8
+
+const (
+	Up      ButtonState = 0 // Released
+	Down                = 1 // Pressed
+	Held                = 2 // Held
+	Trigger             = 3 // Triggered by direct call
+)
+
 func (m *Mapset) bindMouseToTool(btn g.MouseButton, toolIndex int) {
 	// Remove old btn bind.
 	delete(m.toolBinds, btn)
@@ -51,7 +60,7 @@ func (m *Mapset) getToolButtonString(toolIndex int) string {
 	return "_"
 }
 
-func (m *Mapset) handleMouseTool(btn g.MouseButton, y, x, z int) error {
+func (m *Mapset) handleMouseTool(btn g.MouseButton, state ButtonState, y, x, z int) error {
 	if toolIndex, ok := m.toolBinds[btn]; ok {
 		if m.currentMapIndex < 0 || m.currentMapIndex >= len(m.maps) {
 			return errors.New("no current map")
@@ -59,17 +68,17 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, y, x, z int) error {
 		cm := m.maps[m.currentMapIndex]
 
 		if toolIndex == insertTool {
-			return m.toolInsert(cm, y, x, z)
+			return m.toolInsert(state, cm, y, x, z)
 		} else if toolIndex == selectTool {
-			return m.toolSelect(cm, y, x, z)
+			return m.toolSelect(state, cm, y, x, z)
 		} else if toolIndex == eraseTool {
-			return m.toolErase(cm, y, x, z)
+			return m.toolErase(state, cm, y, x, z)
 		}
 	}
 	return nil
 }
 
-func (m *Mapset) toolSelect(v *data.UnReMap, y, x, z int) (err error) {
+func (m *Mapset) toolSelect(state ButtonState, v *data.UnReMap, y, x, z int) (err error) {
 	// TODO: Check if Shift or Ctrl is held!
 	m.selectedCoords.Clear()
 	m.selectedCoords.Select(y, x, z)
@@ -79,7 +88,7 @@ func (m *Mapset) toolSelect(v *data.UnReMap, y, x, z int) (err error) {
 	return
 }
 
-func (m *Mapset) toolInsert(v *data.UnReMap, y, x, z int) (err error) {
+func (m *Mapset) toolInsert(state ButtonState, v *data.UnReMap, y, x, z int) (err error) {
 	// Bail if no archetype is selected.
 	if m.context.SelectedArch() == "" {
 		return
@@ -107,7 +116,7 @@ func (m *Mapset) toolInsert(v *data.UnReMap, y, x, z int) (err error) {
 	return
 }
 
-func (m *Mapset) toolErase(v *data.UnReMap, y, x, z int) (err error) {
+func (m *Mapset) toolErase(state ButtonState, v *data.UnReMap, y, x, z int) (err error) {
 	clone := v.Clone()
 	if err := m.removeArchetype(clone, y, x, z, -1); err != nil {
 		return err
