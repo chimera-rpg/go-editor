@@ -137,6 +137,7 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 		}
 	}
 
+	focusedDrawn := false
 	// Draw focused arch location, if possible
 	{
 		archs := v.GetArchs(m.focusedY, m.focusedX, m.focusedZ)
@@ -149,6 +150,7 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 			oH := (tHeight) * scale
 
 			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), focusedBackgroundColor, 0, 0)
+			focusedDrawn = true
 		}
 	}
 
@@ -156,7 +158,7 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 	{
 		for yxz := range m.selectedCoords.Get() {
 			y, x, z := yxz[0], yxz[1], yxz[2]
-			if m.focusedY == y && m.focusedX == x && m.focusedZ == z {
+			if focusedDrawn && m.focusedY == y && m.focusedX == x && m.focusedZ == z {
 				continue
 			}
 
