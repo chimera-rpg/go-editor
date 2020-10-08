@@ -12,33 +12,34 @@ import (
 )
 
 type Mapset struct {
-	context                      Context
-	filename                     string
-	maps                         []*data.UnReMap
-	currentMapIndex              int
-	focusedY, focusedX, focusedZ int
-	focusedI                     int
-	selectedYStart, selectedYEnd int
-	selectedXStart, selectedXEnd int
-	selectedZStart, selectedZEnd int
-	selectedCoords               SelectedCoords
-	resizeL, resizeR             int32
-	resizeT, resizeB             int32
-	resizeU, resizeD             int32
-	newH, newW, newD             int32
-	newDataName, newName         string
-	loreEditor, descEditor       imgui.TextEditor
-	zoom                         int32
-	showGrid                     bool
-	showYGrids                   bool
-	onionskin                    bool
-	keepSameTile                 bool
-	ShouldClose                  bool
-	visitedTiles                 map[image.Point]bool // Coordinates visited during mouse drag.
-	mouseHeld                    map[g.MouseButton]bool
-	toolBinds                    map[g.MouseButton]int
-	blockScroll                  bool // Block map scrolling (true if ctrl or alt is held)
-	unsaved                      bool
+	context                        Context
+	filename                       string
+	maps                           []*data.UnReMap
+	currentMapIndex                int
+	focusedY, focusedX, focusedZ   int
+	focusedI                       int
+	selectedCoords                 SelectedCoords
+	selectingYStart, selectingYEnd int
+	selectingXStart, selectingXEnd int
+	selectingZStart, selectingZEnd int
+	selectingCoords                SelectedCoords
+	resizeL, resizeR               int32
+	resizeT, resizeB               int32
+	resizeU, resizeD               int32
+	newH, newW, newD               int32
+	newDataName, newName           string
+	loreEditor, descEditor         imgui.TextEditor
+	zoom                           int32
+	showGrid                       bool
+	showYGrids                     bool
+	onionskin                      bool
+	keepSameTile                   bool
+	ShouldClose                    bool
+	visitedTiles                   map[image.Point]bool // Coordinates visited during mouse drag.
+	mouseHeld                      map[g.MouseButton]bool
+	toolBinds                      map[g.MouseButton]int
+	blockScroll                    bool // Block map scrolling (true if ctrl or alt is held)
+	unsaved                        bool
 }
 
 const (
@@ -79,6 +80,7 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 	}
 
 	m.selectedCoords.Clear()
+	m.selectingCoords.Clear()
 
 	return m
 }

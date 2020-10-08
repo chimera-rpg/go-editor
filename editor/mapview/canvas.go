@@ -173,6 +173,25 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 		}
 	}
 
+	// Draw selecting.
+	{
+		for yxz := range m.selectingCoords.Get() {
+			y, x, z := yxz[0], yxz[1], yxz[2]
+			if focusedDrawn && m.focusedY == y && m.focusedX == x && m.focusedZ == z {
+				continue
+			}
+
+			xOffset := y * int(yStep.X)
+			yOffset := y * int(-yStep.Y)
+			oX := pos.X + (x*tWidth+xOffset+startX)*scale
+			oY := pos.Y + (z*tHeight-yOffset+startY)*scale
+			oW := (tWidth) * scale
+			oH := (tHeight) * scale
+
+			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), selectingBackgroundColor, 0, 0)
+		}
+	}
+
 	// Draw focused.
 	{
 		xOffset := m.focusedY * int(yStep.X)

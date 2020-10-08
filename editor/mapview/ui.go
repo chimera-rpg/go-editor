@@ -17,6 +17,7 @@ import (
 var focusedBorderColor = color.RGBA{255, 0, 0, 128}
 var focusedBackgroundColor = color.RGBA{255, 0, 0, 100}
 var selectedBackgroundColor = color.RGBA{255, 255, 32, 100}
+var selectingBackgroundColor = color.RGBA{255, 255, 32, 50}
 
 func (m *Mapset) Draw() {
 	windowOpen := true

@@ -5,6 +5,7 @@ import (
 
 	g "github.com/AllenDang/giu"
 	"github.com/chimera-rpg/go-editor/data"
+	"github.com/chimera-rpg/go-editor/widgets"
 )
 
 type ButtonState = uint8
@@ -79,12 +80,56 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, state ButtonState, y, x, z i
 }
 
 func (m *Mapset) toolSelect(state ButtonState, v *data.UnReMap, y, x, z int) (err error) {
-	// TODO: Check if Shift or Ctrl is held!
-	m.selectedCoords.Clear()
-	m.selectedCoords.Select(y, x, z)
-	m.focusedY = y
-	m.focusedX = x
-	m.focusedZ = z
+	insertMode := 0 // replace
+	widgets.KeyBinds(0,
+		widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyShift), nil, func() {
+			insertMode = 1 // append
+		}),
+		widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyControl), nil, func() {
+			insertMode = 2 // remove
+		}),
+	).Build()
+
+	if state == Down {
+		m.selectingYStart, m.selectingYEnd = y, y
+		m.selectingXStart, m.selectingXEnd = x, x
+		m.selectingZStart, m.selectingZEnd = z, z
+		m.selectingCoords.Clear()
+		m.selectingCoords.Range(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+	} else if state == Held {
+		m.selectingYEnd = y
+		m.selectingXEnd = x
+		m.selectingZEnd = z
+		m.selectingCoords.Clear()
+		m.selectingCoords.Range(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+	} else if state == Up {
+		m.selectingYEnd = y
+		m.selectingXEnd = x
+		m.selectingZEnd = z
+		m.selectingCoords.Clear()
+		m.selectingCoords.Range(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+
+		if insertMode == 0 { // replace
+			m.selectedCoords.Set(m.selectingCoords)
+		} else if insertMode == 1 { // append
+			m.selectedCoords.Add(m.selectingCoords)
+		} else if insertMode == 2 { // remove
+			m.selectedCoords.Remove(m.selectingCoords)
+		}
+		m.selectingCoords.Clear()
+		m.selectingYStart, m.selectingYEnd, m.selectingXStart, m.selectingXEnd, m.selectingZEnd, m.selectingZStart = -1, -1, -1, -1, -1, -1
+		// And set focused to last coords.
+		m.focusedY = y
+		m.focusedX = x
+		m.focusedZ = z
+	} else {
+		// TODO: Check if Shift or Ctrl is held!
+		m.selectedCoords.Clear()
+		m.selectedCoords.Select(y, x, z)
+		m.focusedY = y
+		m.focusedX = x
+		m.focusedZ = z
+	}
 	return
 }
 
