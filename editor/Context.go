@@ -9,5 +9,5 @@ type Context struct {
 	dataManager   *data.Manager
 	selectedArch  string
 	cursorArch    []string
-	imageTextures map[string]*ImageTexture
+	imageTextures map[string]*data.ImageTexture
 }

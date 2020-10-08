@@ -29,15 +29,10 @@ type Editor struct {
 	openMapCWD, openMapFilename string
 }
 
-type ImageTexture struct {
-	texture       *g.Texture
-	width, height float32
-}
-
 func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.context = Context{
 		dataManager:   dataManager,
-		imageTextures: make(map[string]*ImageTexture),
+		imageTextures: make(map[string]*data.ImageTexture),
 	}
 	e.isLoaded = false
 	e.isRunning = true
@@ -51,10 +46,10 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 
 	for imagePath, img := range dataManager.GetImages() {
 		//e.context.imageTexturesLock.Lock()
-		e.context.imageTextures[imagePath] = &ImageTexture{
-			texture: nil,
-			width:   float32(img.Bounds().Max.X),
-			height:  float32(img.Bounds().Max.Y),
+		e.context.imageTextures[imagePath] = &data.ImageTexture{
+			Texture: nil,
+			Width:   float32(img.Bounds().Max.X),
+			Height:  float32(img.Bounds().Max.Y),
 		}
 		//e.context.imageTexturesLock.Unlock()
 	}
@@ -68,7 +63,7 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 				log.Fatalln(err)
 			}
 			if it, ok := e.context.imageTextures[imagePath]; ok {
-				it.texture = tex
+				it.Texture = tex
 			}
 		}
 		e.isLoaded = true
@@ -221,8 +216,8 @@ func (e *Editor) drawArchetypes() {
 						//e.context.imageTexturesLock.Unlock()
 						if ok {
 							g.SameLine()
-							if t.texture != nil {
-								g.Image(t.texture, t.width, t.height).Build()
+							if t.Texture != nil {
+								g.Image(t.Texture, t.Width, t.Height).Build()
 							}
 						}
 					}

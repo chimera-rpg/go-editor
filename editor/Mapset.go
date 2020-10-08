@@ -10,6 +10,7 @@ import (
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
+	"github.com/chimera-rpg/go-editor/data"
 	"github.com/chimera-rpg/go-editor/widgets"
 	sdata "github.com/chimera-rpg/go-server/data"
 	log "github.com/sirupsen/logrus"
@@ -574,8 +575,8 @@ func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
 								if err == nil {
 									if tex, ok := m.context.imageTextures[imageName]; ok {
 										g.SameLine()
-										if tex.texture != nil {
-											g.Image(tex.texture, tex.width, tex.height).Build()
+										if tex.Texture != nil {
+											g.Image(tex.Texture, tex.Width, tex.Height).Build()
 										}
 										return
 									}
@@ -780,7 +781,7 @@ type archDrawable struct {
 	z    int
 	x, y int
 	w, h int
-	t    *ImageTexture
+	t    *data.ImageTexture
 	c    color.RGBA
 }
 
@@ -849,15 +850,15 @@ func (m *Mapset) drawMap(v *UnReMap) {
 					}
 
 					if tex, ok := m.context.imageTextures[imageName]; ok {
-						if (oH > 1 || oD > 1) && int(tex.height*float32(scale)) > tHeight*scale {
-							oY -= int(tex.height*float32(scale)) - (tHeight * scale)
+						if (oH > 1 || oD > 1) && int(tex.Height*float32(scale)) > tHeight*scale {
+							oY -= int(tex.Height*float32(scale)) - (tHeight * scale)
 						}
 						drawables = append(drawables, archDrawable{
 							z: zIndex,
 							x: oX,
 							y: oY,
-							w: oX + int(tex.width)*scale,
-							h: oY + int(tex.height)*scale,
+							w: oX + int(tex.Width)*scale,
+							h: oY + int(tex.Height)*scale,
 							c: col,
 							t: tex,
 						})
@@ -875,7 +876,7 @@ func (m *Mapset) drawMap(v *UnReMap) {
 	})
 	// Render them.
 	for _, d := range drawables {
-		canvas.AddImageV(d.t.texture, image.Pt(d.x, d.y), image.Pt(d.w, d.h), image.Pt(0, 0), image.Pt(1, 1), d.c)
+		canvas.AddImageV(d.t.Texture, image.Pt(d.x, d.y), image.Pt(d.w, d.h), image.Pt(0, 0), image.Pt(1, 1), d.c)
 	}
 
 	// Draw grid.
