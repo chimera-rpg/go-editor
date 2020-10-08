@@ -42,10 +42,10 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.isLoaded = false
 	e.isRunning = true
 	e.archetypesMode = true
-	e.showSplash = true
+	e.showSplash = false
 	e.openMapCWD = dataManager.MapsPath
 
-	e.masterWindow = g.NewMasterWindow("Editor", 800, 600, 0, nil)
+	e.masterWindow = g.NewMasterWindow("Editor", 1280, 720, 0, nil)
 	g.Context.GetRenderer().SetTextureMagFilter(g.TextureFilterNearest)
 	imgui.CurrentIO().SetIniFilename(e.context.dataManager.GetEtcPath("chimera-editor.ini"))
 
