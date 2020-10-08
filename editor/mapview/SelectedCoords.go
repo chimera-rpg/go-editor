@@ -2,9 +2,12 @@ package mapview
 
 import "math"
 
+// Coords is our type alias to [y, x, z]
+type Coords = [3]int
+
 // SelectedCoords is a simple structure that provides functionality to select/unselect arbitrary coordinates.
 type SelectedCoords struct {
-	selected map[[3]int]struct{}
+	selected map[Coords]struct{}
 }
 
 // Get returns the underlying map.
@@ -14,17 +17,30 @@ func (s *SelectedCoords) Get() map[[3]int]struct{} {
 
 // Select selects the given coordinates.
 func (s *SelectedCoords) Select(y, x, z int) {
-	s.selected[[3]int{y, x, z}] = struct{}{}
+	s.selected[Coords{y, x, z}] = struct{}{}
 }
 
 // Unselect unselects the given coordinates.
 func (s *SelectedCoords) Unselect(y, x, z int) {
-	delete(s.selected, [3]int{y, x, z})
+	delete(s.selected, Coords{y, x, z})
 }
 
 // Clear clears all selected coordinates.
 func (s *SelectedCoords) Clear() {
-	s.selected = make(map[[3]int]struct{})
+	s.selected = make(map[Coords]struct{})
+}
+
+// Selected checks if the coordinate is selected.
+func (s *SelectedCoords) Selected(y, x, z int) bool {
+	if _, ok := s.selected[Coords{y, x, z}]; ok {
+		return true
+	}
+	return false
+}
+
+// Unselected checks if the coordinate is unselected.
+func (s *SelectedCoords) Unselected(y, x, z int) bool {
+	return !s.Selected(y, x, z)
 }
 
 // Set sets the coords to match the selection of another.

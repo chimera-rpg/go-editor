@@ -34,8 +34,9 @@ type Mapset struct {
 	showYGrids                     bool
 	onionskin                      bool
 	keepSameTile                   bool
+	uniqueTileVisits               bool
 	ShouldClose                    bool
-	visitedTiles                   map[image.Point]bool // Coordinates visited during mouse drag.
+	visitedCoords                  SelectedCoords // Coordinates visited during mouse drag.
 	mouseHeld                      map[g.MouseButton]bool
 	toolBinds                      map[g.MouseButton]int
 	blockScroll                    bool // Block map scrolling (true if ctrl or alt is held)
@@ -52,21 +53,21 @@ const (
 
 func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {
 	m := &Mapset{
-		filename:     name,
-		zoom:         3.0,
-		showGrid:     true,
-		showYGrids:   false,
-		onionskin:    true,
-		keepSameTile: true,
-		newW:         1,
-		newH:         1,
-		newD:         1,
-		context:      context,
-		loreEditor:   imgui.NewTextEditor(),
-		descEditor:   imgui.NewTextEditor(),
-		visitedTiles: make(map[image.Point]bool),
-		mouseHeld:    make(map[g.MouseButton]bool),
-		toolBinds:    make(map[g.MouseButton]int),
+		filename:         name,
+		zoom:             3.0,
+		showGrid:         true,
+		showYGrids:       false,
+		onionskin:        true,
+		keepSameTile:     true,
+		uniqueTileVisits: true,
+		newW:             1,
+		newH:             1,
+		newD:             1,
+		context:          context,
+		loreEditor:       imgui.NewTextEditor(),
+		descEditor:       imgui.NewTextEditor(),
+		mouseHeld:        make(map[g.MouseButton]bool),
+		toolBinds:        make(map[g.MouseButton]int),
 	}
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)
@@ -81,6 +82,7 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 
 	m.selectedCoords.Clear()
 	m.selectingCoords.Clear()
+	m.visitedCoords.Clear()
 
 	return m
 }

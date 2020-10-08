@@ -92,6 +92,7 @@ func (m *Mapset) Draw() {
 			}),
 			g.Menu("Settings", g.Layout{
 				g.Checkbox("Keep Same Tile", &m.keepSameTile, nil),
+				g.Checkbox("Only Visit Unique Tiles", &m.uniqueTileVisits, nil),
 			}),
 			g.Menu("View", g.Layout{
 				g.Checkbox("Onionskinning", &m.onionskin, nil),
@@ -401,12 +402,9 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 							m.mouseHeld[g.MouseButtonRight] = true
 							state = 1
 						}
-						if _, ok := m.visitedTiles[p]; !ok {
-							err := m.handleMouseTool(g.MouseButtonRight, state, m.focusedY, p.X, p.Y)
-							if err != nil {
-								log.Errorln(err)
-							}
-							m.visitedTiles[p] = true
+						err := m.handleMouseTool(g.MouseButtonRight, state, m.focusedY, p.X, p.Y)
+						if err != nil {
+							log.Errorln(err)
 						}
 					} else if g.IsMouseReleased(g.MouseButtonRight) {
 						state = 0
@@ -416,7 +414,6 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 						}
 
 						delete(m.mouseHeld, g.MouseButtonRight)
-						m.visitedTiles = make(map[image.Point]bool)
 					}
 					// MMB
 					if g.IsMouseDown(g.MouseButtonMiddle) {
@@ -425,12 +422,9 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 							m.mouseHeld[g.MouseButtonMiddle] = true
 							state = 1
 						}
-						if _, ok := m.visitedTiles[p]; !ok {
-							err := m.handleMouseTool(g.MouseButtonMiddle, state, m.focusedY, p.X, p.Y)
-							if err != nil {
-								log.Errorln(err)
-							}
-							m.visitedTiles[p] = true
+						err := m.handleMouseTool(g.MouseButtonMiddle, state, m.focusedY, p.X, p.Y)
+						if err != nil {
+							log.Errorln(err)
 						}
 					} else if g.IsMouseReleased(g.MouseButtonMiddle) {
 						state = 0
@@ -439,7 +433,6 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 							log.Errorln(err)
 						}
 						delete(m.mouseHeld, g.MouseButtonMiddle)
-						m.visitedTiles = make(map[image.Point]bool)
 					}
 					// LMB
 					if g.IsMouseDown(g.MouseButtonLeft) {
@@ -448,12 +441,9 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 							m.mouseHeld[g.MouseButtonLeft] = true
 							state = 1
 						}
-						if _, ok := m.visitedTiles[p]; !ok {
-							err := m.handleMouseTool(g.MouseButtonLeft, state, m.focusedY, p.X, p.Y)
-							if err != nil {
-								log.Errorln(err)
-							}
-							m.visitedTiles[p] = true
+						err := m.handleMouseTool(g.MouseButtonLeft, state, m.focusedY, p.X, p.Y)
+						if err != nil {
+							log.Errorln(err)
 						}
 					} else if g.IsMouseReleased(g.MouseButtonLeft) {
 						state = 0
@@ -462,7 +452,6 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 							log.Errorln(err)
 						}
 						delete(m.mouseHeld, g.MouseButtonLeft)
-						m.visitedTiles = make(map[image.Point]bool)
 					}
 				}
 			}),

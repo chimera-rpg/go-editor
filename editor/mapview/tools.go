@@ -68,6 +68,18 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, state ButtonState, y, x, z i
 		}
 		cm := m.maps[m.currentMapIndex]
 
+		if m.uniqueTileVisits {
+			if state == Down || state == Held {
+				if m.visitedCoords.Selected(y, x, z) {
+					return nil
+				} else {
+					m.visitedCoords.Select(y, x, z)
+				}
+			} else if state == Up {
+				m.visitedCoords.Clear()
+			}
+		}
+
 		if toolIndex == insertTool {
 			return m.toolInsert(state, cm, y, x, z)
 		} else if toolIndex == selectTool {
