@@ -406,26 +406,28 @@ func (m *Mapset) draw() {
 func (m *Mapset) layoutMapTabs() g.Layout {
 	var tabs g.Layout
 	for mapIndex, v := range m.maps {
-		var flags g.TabItemFlags
-		if v.Unsaved() {
-			flags |= g.TabItemFlagsUnsavedDocument
-		}
-		tab := g.TabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, flags, g.Layout{
-			g.Custom(func() {
-				m.currentMapIndex = mapIndex
-				availW, availH := g.GetAvaiableRegion()
-				defaultW := float32(math.Round(float64(availW - availW/4)))
-				defaultH := float32(math.Round(float64(availH - availH/4)))
-				g.SplitLayout("vsplit", g.DirectionVertical, true, defaultH, g.Layout{
-					g.SplitLayout("hsplit", g.DirectionHorizontal, true, defaultW,
-						m.layoutMapView(v),
-						m.layoutArchsList(v),
-					),
-				}, m.layoutSelectedArch(v)).Build()
-			}),
-		})
+		func(mapIndex int, v *UnReMap) {
+			var flags g.TabItemFlags
+			if v.Unsaved() {
+				flags |= g.TabItemFlagsUnsavedDocument
+			}
+			tab := g.TabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, flags, g.Layout{
+				g.Custom(func() {
+					m.currentMapIndex = mapIndex
+					availW, availH := g.GetAvaiableRegion()
+					defaultW := float32(math.Round(float64(availW - availW/4)))
+					defaultH := float32(math.Round(float64(availH - availH/4)))
+					g.SplitLayout("vsplit", g.DirectionVertical, true, defaultH, g.Layout{
+						g.SplitLayout("hsplit", g.DirectionHorizontal, true, defaultW,
+							m.layoutMapView(v),
+							m.layoutArchsList(v),
+						),
+					}, m.layoutSelectedArch(v)).Build()
+				}),
+			})
 
-		tabs = append(tabs, tab)
+			tabs = append(tabs, tab)
+		}(mapIndex, v)
 	}
 	return g.Layout{g.TabBarV("Mapset", g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown, tabs)}
 }
