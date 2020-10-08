@@ -3,6 +3,7 @@ package mapview
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"math"
 
 	g "github.com/AllenDang/giu"
@@ -12,6 +13,10 @@ import (
 	sdata "github.com/chimera-rpg/go-server/data"
 	log "github.com/sirupsen/logrus"
 )
+
+var focusedBorderColor = color.RGBA{255, 0, 0, 128}
+var focusedBackgroundColor = color.RGBA{255, 0, 0, 100}
+var selectedBackgroundColor = color.RGBA{255, 255, 32, 100}
 
 func (m *Mapset) Draw() {
 	windowOpen := true

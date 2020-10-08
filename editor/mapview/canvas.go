@@ -148,8 +148,7 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 			oW := (tWidth) * scale
 			oH := (tHeight) * scale
 
-			col = color.RGBA{255, 0, 0, 100}
-			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0)
+			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), focusedBackgroundColor, 0, 0)
 		}
 	}
 
@@ -168,8 +167,7 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 			oW := (tWidth) * scale
 			oH := (tHeight) * scale
 
-			col = color.RGBA{255, 255, 32, 100}
-			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0)
+			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), selectedBackgroundColor, 0, 0)
 		}
 	}
 
@@ -182,8 +180,7 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 		oW := (tWidth) * scale
 		oH := (tHeight) * scale
 
-		col = color.RGBA{255, 0, 0, 128}
-		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0, 1)
+		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), focusedBorderColor, 0, 0, 1)
 	}
 
 	imgui.EndChild()
