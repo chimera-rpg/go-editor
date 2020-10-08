@@ -903,6 +903,22 @@ func (m *Mapset) drawMap(v *UnReMap) {
 		}
 	}
 
+	// Draw focused arch location, if possible
+	{
+		archs := v.GetArchs(m.focusedY, m.focusedX, m.focusedZ)
+		if m.focusedI >= 0 && m.focusedI < len(archs) {
+			xOffset := m.focusedY * int(yStep.X)
+			yOffset := m.focusedY * int(-yStep.Y)
+			oX := pos.X + (m.focusedX*tWidth+xOffset+startX)*scale
+			oY := pos.Y + (m.focusedZ*tHeight-yOffset+startY)*scale
+			oW := (tWidth) * scale
+			oH := (tHeight) * scale
+
+			col = color.RGBA{255, 0, 0, 100}
+			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0)
+		}
+	}
+
 	// Draw selected.
 	{
 		for yxz := range m.selectedCoords.Get() {
