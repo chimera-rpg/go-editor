@@ -608,15 +608,17 @@ func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
 			}
 		}(y)
 
+		flags := g.TreeNodeFlagsDefaultOpen | g.TreeNodeFlagsSpanFullWidth | g.TreeNodeFlagsOpenOnArrow | g.TreeNodeFlagsOpenOnDoubleClick
 		if y == m.focusedY {
 			yItems = append(yItems, g.Custom(func() {
-				imgui.PushStyleColor(imgui.StyleColorText, g.ToVec4Color(color.RGBA{32, 128, 255, 255}))
+				//imgui.PushStyleColor(imgui.StyleColorText, g.ToVec4Color(color.RGBA{32, 128, 255, 255}))
 			}))
+			flags |= g.TreeNodeFlagsSelected
 		}
-		yItems = append(yItems, g.TreeNode(fmt.Sprintf("%d", y), g.TreeNodeFlagsDefaultOpen|g.TreeNodeFlagsSpanFullWidth, items))
+		yItems = append(yItems, g.TreeNode(fmt.Sprintf("%d", y), flags, items))
 		if y == m.focusedY {
 			yItems = append(yItems, g.Custom(func() {
-				imgui.PopStyleColor()
+				//imgui.PopStyleColor()
 			}))
 		}
 	}
