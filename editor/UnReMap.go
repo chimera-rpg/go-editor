@@ -98,3 +98,15 @@ func (u *UnReMap) Clone() *sdata.Map {
 	}
 	return clone
 }
+
+func (u *UnReMap) GetArchs(y, x, z int) []sdata.Archetype {
+	t := u.Get()
+	if y >= 0 && y < t.Height {
+		if x >= 0 && x < t.Width {
+			if z >= 0 && z < t.Depth {
+				return t.Tiles[y][x][z]
+			}
+		}
+	}
+	return nil
+}
