@@ -537,9 +537,57 @@ func (m *Mapset) layoutMapView(v *UnReMap) g.Layout {
 }
 
 func (m *Mapset) layoutArchsList(v *UnReMap) g.Layout {
-	return g.Layout{
-		g.Label("tile archetypes"),
+	sm := m.CurrentMap()
+
+	var yItems g.Layout
+	// Collect the entire Y "stack" as separate lists.
+	for y := sm.Get().Height - 1; y >= 0; y-- {
+		var items g.Layout
+
+		for _, arch := range sm.GetArchs(y, m.focusedX, m.focusedZ) {
+			archName := m.context.dataManager.GetArchName(&arch, "")
+			var flags g.TreeNodeFlags
+			flags = g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
+			/*if archName == e.context.selectedArch {
+				flags |= g.TreeNodeFlagsSelected
+			}*/
+			items = append(items, g.TreeNode("", flags, g.Layout{
+				g.Custom(func(name string) func() {
+					return func() {
+						if g.IsItemHovered() {
+							if g.IsMouseDoubleClicked(g.MouseButtonLeft) {
+								//e.openArchsetFromArchetype(name)
+							} else if g.IsMouseClicked(g.MouseButtonLeft) {
+								//e.context.selectedArch = name
+							}
+						}
+					}
+				}(archName)),
+				g.Custom(func(arch sdata.Archetype) func() {
+					return func() {
+						anim, face := m.context.dataManager.GetAnimAndFace(&arch, "", "")
+						imageName, err := m.context.dataManager.GetAnimFaceImage(anim, face)
+						if err != nil {
+							return
+						}
+						if tex, ok := m.context.imageTextures[imageName]; ok {
+							g.SameLine()
+							if tex.texture != nil {
+								g.Image(tex.texture, tex.width, tex.height).Build()
+							}
+						} else {
+							g.SameLine()
+							g.Dummy(float32(m.context.dataManager.AnimationsConfig.TileWidth), float32(m.context.dataManager.AnimationsConfig.TileHeight))
+						}
+					}
+				}(arch)),
+				g.Custom(func() { g.SameLine() }),
+				g.Label(archName),
+			}))
+		}
+		yItems = append(yItems, g.TreeNode(fmt.Sprintf("%d", y), g.TreeNodeFlagsDefaultOpen|g.TreeNodeFlagsSpanFullWidth, items))
 	}
+	return yItems
 }
 
 func (m *Mapset) layoutSelectedArch(v *UnReMap) g.Layout {
