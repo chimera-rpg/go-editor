@@ -372,6 +372,7 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 	if m.blockScroll {
 		childFlags |= imgui.WindowFlagsNoScrollWithMouse
 	}
+	hovered := false
 
 	return g.Layout{
 		g.Custom(func() {
@@ -384,6 +385,7 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 			}),
 			g.Custom(func() {
 				if g.IsItemHovered() {
+					hovered = true
 					mousePos := g.GetMousePos()
 					mousePos.X -= childPos.X
 					mousePos.Y -= childPos.Y
@@ -455,31 +457,35 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 					}
 				}
 			}),
+			g.Custom(func() {
+				if hovered {
+					widgets.KeyBinds(0,
+						widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyAlt), func() {
+							mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+							if mouseWheelDelta != 0 {
+								m.focusedY += int(mouseWheelDelta)
+								if m.focusedY < 0 {
+									m.focusedY = 0
+								} else if m.focusedY >= v.Get().Height {
+									m.focusedY = v.Get().Height - 1
+								}
+							}
+						}),
+						widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyControl), func() {
+							mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+							if mouseWheelDelta != 0 {
+								m.zoom += int32(mouseWheelDelta)
+								if m.zoom < 1 {
+									m.zoom = 1
+								} else if m.zoom > 8 {
+									m.zoom = 8
+								}
+							}
+						}),
+					).Build()
+				}
+			}),
 		}),
-		widgets.KeyBinds(widgets.KeyBindsFlagItemHovered,
-			widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyAlt), func() {
-				mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
-				if mouseWheelDelta != 0 {
-					m.focusedY += int(mouseWheelDelta)
-					if m.focusedY < 0 {
-						m.focusedY = 0
-					} else if m.focusedY >= v.Get().Height {
-						m.focusedY = v.Get().Height - 1
-					}
-				}
-			}),
-			widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyControl), func() {
-				mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
-				if mouseWheelDelta != 0 {
-					m.zoom += int32(mouseWheelDelta)
-					if m.zoom < 1 {
-						m.zoom = 1
-					} else if m.zoom > 8 {
-						m.zoom = 8
-					}
-				}
-			}),
-		),
 	}
 }
 
