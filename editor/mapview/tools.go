@@ -186,11 +186,28 @@ func (m *Mapset) toolInsert(state ButtonState, v *data.UnReMap, y, x, z int) (er
 }
 
 func (m *Mapset) toolErase(state ButtonState, v *data.UnReMap, y, x, z int) (err error) {
-	clone := v.Clone()
-	if err := m.removeArchetype(clone, y, x, z, -1); err != nil {
-		return err
+	if state == Down {
+		clone := v.Clone()
+		if err := m.removeArchetype(clone, y, x, z, -1); err != nil {
+			return err
+		}
+		v.Set(clone)
+	} else if state == Trigger {
+		clone := v.Clone()
+		changed := false
+		for coord := range m.selectedCoords.Get() {
+			y, x, z := coord[0], coord[1], coord[2]
+			if err := m.removeArchetype(clone, y, x, z, -1); err != nil {
+				log.Println(err)
+				continue
+			} else {
+				changed = true
+			}
+		}
+		if changed {
+			v.Set(clone)
+		}
 	}
-	v.Set(clone)
 	return
 }
 
