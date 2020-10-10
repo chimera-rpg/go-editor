@@ -43,14 +43,6 @@ type Mapset struct {
 	unsaved                        bool
 }
 
-const (
-	noTool = iota
-	selectTool
-	insertTool
-	pickTool
-	eraseTool
-)
-
 func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {
 	m := &Mapset{
 		filename:         name,

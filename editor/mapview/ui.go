@@ -124,6 +124,17 @@ func (m *Mapset) Draw() {
 				}
 			}
 			imgui.SameLine()
+			imgui.SelectableV(fmt.Sprintf("fill (%s)", m.getToolButtonString(fillTool)), m.isToolBound(fillTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
+			if g.IsItemHovered() {
+				if g.IsMouseClicked(g.MouseButtonLeft) {
+					m.bindMouseToTool(g.MouseButtonLeft, fillTool)
+				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
+					m.bindMouseToTool(g.MouseButtonMiddle, fillTool)
+				} else if g.IsMouseClicked(g.MouseButtonRight) {
+					m.bindMouseToTool(g.MouseButtonRight, fillTool)
+				}
+			}
+			imgui.SameLine()
 			imgui.SelectableV(fmt.Sprintf("pick (%s)", m.getToolButtonString(pickTool)), m.isToolBound(pickTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
 			if g.IsItemHovered() {
 				if g.IsMouseClicked(g.MouseButtonLeft) {
@@ -321,6 +332,11 @@ func (m *Mapset) Draw() {
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyA), func() {
 				if cm := m.CurrentMap(); cm != nil {
 					m.toolInsert(3, cm, m.focusedY, m.focusedX, m.focusedZ)
+				}
+			}),
+			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyControl), widgets.Keys(widgets.KeyF), func() {
+				if cm := m.CurrentMap(); cm != nil {
+					m.toolFill(3, cm, m.focusedY, m.focusedX, m.focusedZ)
 				}
 			}),
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyD), func() {

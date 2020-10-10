@@ -6,6 +6,7 @@ import (
 	g "github.com/AllenDang/giu"
 	"github.com/chimera-rpg/go-editor/data"
 	"github.com/chimera-rpg/go-editor/widgets"
+	log "github.com/sirupsen/logrus"
 )
 
 type ButtonState = uint8
@@ -15,6 +16,15 @@ const (
 	Down                = 1 // Pressed
 	Held                = 2 // Held
 	Trigger             = 3 // Triggered by direct call
+)
+
+const (
+	noTool = iota
+	selectTool
+	insertTool
+	pickTool
+	eraseTool
+	fillTool
 )
 
 func (m *Mapset) bindMouseToTool(btn g.MouseButton, toolIndex int) {
@@ -86,6 +96,8 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, state ButtonState, y, x, z i
 			return m.toolSelect(state, cm, y, x, z)
 		} else if toolIndex == eraseTool {
 			return m.toolErase(state, cm, y, x, z)
+		} else if toolIndex == fillTool {
+			return m.toolFill(state, cm, y, x, z)
 		}
 	}
 	return nil
@@ -179,5 +191,50 @@ func (m *Mapset) toolErase(state ButtonState, v *data.UnReMap, y, x, z int) (err
 		return err
 	}
 	v.Set(clone)
+	return
+}
+
+func (m *Mapset) toolFill(state ButtonState, v *data.UnReMap, y, x, z int) (err error) {
+	// Bail if no archetype is selected.
+	if m.context.SelectedArch() == "" {
+		return
+	}
+	if state == Trigger || state == Up {
+		clone := v.Clone()
+		changed := false
+		for coord := range m.selectedCoords.Get() {
+			y, x, z := coord[0], coord[1], coord[2]
+
+			place := true
+			// Check if we should not insert if top tile is the same.
+			if m.keepSameTile {
+				tiles := m.getTiles(v.Get(), y, x, z)
+				if tiles != nil && len(*tiles) > 0 {
+					if (*tiles)[len(*tiles)-1].Arch == m.context.SelectedArch() {
+						place = false
+					}
+					if place {
+						for _, a := range (*tiles)[len(*tiles)-1].Archs {
+							if a == m.context.SelectedArch() {
+								place = false
+								break
+							}
+						}
+					}
+				}
+			}
+			if place {
+				if err := m.insertArchetype(clone, m.context.SelectedArch(), y, x, z, -1); err != nil {
+					log.Println(err)
+					continue
+				} else {
+					changed = true
+				}
+			}
+		}
+		if changed {
+			v.Set(clone)
+		}
+	}
 	return
 }
