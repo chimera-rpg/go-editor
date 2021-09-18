@@ -95,7 +95,9 @@ func (m *Mapset) Draw() {
 				g.Checkbox("Only Visit Unique Tiles", &m.uniqueTileVisits, nil),
 			}),
 			g.Menu("View", g.Layout{
-				g.Checkbox("Onionskinning", &m.onionskin, nil),
+				g.Checkbox("Z Onionskinning", &m.onionskinZ, nil),
+				g.Checkbox("Y Onionskinning", &m.onionskinY, nil),
+				g.Checkbox("X Onionskinning", &m.onionskinX, nil),
 				g.Checkbox("Grid", &m.showGrid, nil),
 				g.Checkbox("Y Grids", &m.showYGrids, nil),
 				g.SliderInt("Zoom", &m.zoom, 1, 8, "%d"),

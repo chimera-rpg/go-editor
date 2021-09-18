@@ -3,6 +3,7 @@ package mapview
 import (
 	"image"
 	"image/color"
+	"math"
 	"sort"
 
 	g "github.com/AllenDang/giu"
@@ -46,21 +47,32 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 	col = color.RGBA{255, 255, 255, 255}
 	var drawables []archDrawable
 	// Draw archetypes.
+	var alphaY, alphaX, alphaZ float64
+	// TODO: Adjust onion skins based upon distance from cursor.
 	for y := 0; y < sm.Height; y++ {
-		if m.onionskin {
-			// TODO: adjust alpha based upon distance of y from focusedY
-			if y < m.focusedY {
-				col.A = 200
-			} else if y > m.focusedY {
-				col.A = 50
-			} else {
-				col.A = 255
+		alphaY = 255
+		if m.onionskinY {
+			if y > m.focusedY {
+				alphaY = 50
 			}
 		}
 		xOffset := y * int(yStep.X)
 		yOffset := y * int(-yStep.Y)
 		for x := sm.Width - 1; x >= 0; x-- {
+			alphaX = 255
+			if m.onionskinX {
+				if x < m.focusedX {
+					alphaX = 50
+				}
+			}
 			for z := 0; z < sm.Depth; z++ {
+				alphaZ = 255
+				if m.onionskinZ {
+					if z > m.focusedZ {
+						alphaZ = 50
+					}
+				}
+				col.A = uint8(math.Min(math.Min(alphaX, alphaY), alphaZ))
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
 					oX := pos.X + (x*tWidth+xOffset+startX)*scale
 					oY := pos.Y + (z*tHeight-yOffset+startY)*scale
