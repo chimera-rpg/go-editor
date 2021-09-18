@@ -12,56 +12,59 @@ import (
 )
 
 type Mapset struct {
-	context                            Context
-	filename                           string
-	maps                               []*data.UnReMap
-	currentMapIndex                    int
-	focusedY, focusedX, focusedZ       int
-	focusedI                           int
-	selectedCoords                     SelectedCoords
-	selectingYStart, selectingYEnd     int
-	selectingXStart, selectingXEnd     int
-	selectingZStart, selectingZEnd     int
-	selectingCoords                    SelectedCoords
-	resizeL, resizeR                   int32
-	resizeT, resizeB                   int32
-	resizeU, resizeD                   int32
-	newH, newW, newD                   int32
-	newDataName, newName               string
-	loreEditor, descEditor             imgui.TextEditor
-	zoom                               int32
-	showGrid                           bool
-	showYGrids                         bool
-	onionskinY, onionskinX, onionskinZ bool
-	keepSameTile                       bool
-	uniqueTileVisits                   bool
-	ShouldClose                        bool
-	visitedCoords                      SelectedCoords // Coordinates visited during mouse drag.
-	mouseHeld                          map[g.MouseButton]bool
-	toolBinds                          map[g.MouseButton]int
-	blockScroll                        bool // Block map scrolling (true if ctrl or alt is held)
-	unsaved                            bool
+	context                                    Context
+	filename                                   string
+	maps                                       []*data.UnReMap
+	currentMapIndex                            int
+	focusedY, focusedX, focusedZ               int
+	focusedI                                   int
+	selectedCoords                             SelectedCoords
+	selectingYStart, selectingYEnd             int
+	selectingXStart, selectingXEnd             int
+	selectingZStart, selectingZEnd             int
+	selectingCoords                            SelectedCoords
+	resizeL, resizeR                           int32
+	resizeT, resizeB                           int32
+	resizeU, resizeD                           int32
+	newH, newW, newD                           int32
+	newDataName, newName                       string
+	loreEditor, descEditor                     imgui.TextEditor
+	zoom                                       int32
+	showGrid                                   bool
+	showYGrids                                 bool
+	onionskinY, onionskinX, onionskinZ         bool
+	onionSkinGtIntensity, onionSkinLtIntensity int32
+	keepSameTile                               bool
+	uniqueTileVisits                           bool
+	ShouldClose                                bool
+	visitedCoords                              SelectedCoords // Coordinates visited during mouse drag.
+	mouseHeld                                  map[g.MouseButton]bool
+	toolBinds                                  map[g.MouseButton]int
+	blockScroll                                bool // Block map scrolling (true if ctrl or alt is held)
+	unsaved                                    bool
 }
 
 func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {
 	m := &Mapset{
-		filename:         name,
-		zoom:             3.0,
-		showGrid:         true,
-		showYGrids:       false,
-		onionskinY:       true,
-		onionskinX:       false,
-		onionskinZ:       false,
-		keepSameTile:     true,
-		uniqueTileVisits: true,
-		newW:             1,
-		newH:             1,
-		newD:             1,
-		context:          context,
-		loreEditor:       imgui.NewTextEditor(),
-		descEditor:       imgui.NewTextEditor(),
-		mouseHeld:        make(map[g.MouseButton]bool),
-		toolBinds:        make(map[g.MouseButton]int),
+		filename:             name,
+		zoom:                 3.0,
+		showGrid:             true,
+		showYGrids:           false,
+		onionskinY:           true,
+		onionskinX:           false,
+		onionskinZ:           false,
+		onionSkinGtIntensity: 200,
+		onionSkinLtIntensity: 50,
+		keepSameTile:         true,
+		uniqueTileVisits:     true,
+		newW:                 1,
+		newH:                 1,
+		newD:                 1,
+		context:              context,
+		loreEditor:           imgui.NewTextEditor(),
+		descEditor:           imgui.NewTextEditor(),
+		mouseHeld:            make(map[g.MouseButton]bool),
+		toolBinds:            make(map[g.MouseButton]int),
 	}
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)

@@ -98,6 +98,8 @@ func (m *Mapset) Draw() {
 				g.Checkbox("Z Onionskinning", &m.onionskinZ, nil),
 				g.Checkbox("Y Onionskinning", &m.onionskinY, nil),
 				g.Checkbox("X Onionskinning", &m.onionskinX, nil),
+				g.SliderInt("Onionskin > Opacity", &m.onionSkinGtIntensity, 0, 255, "%d"),
+				g.SliderInt("Onionskin < Opacity", &m.onionSkinLtIntensity, 0, 255, "%d"),
 				g.Checkbox("Grid", &m.showGrid, nil),
 				g.Checkbox("Y Grids", &m.showYGrids, nil),
 				g.SliderInt("Zoom", &m.zoom, 1, 8, "%d"),

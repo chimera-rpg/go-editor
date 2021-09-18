@@ -47,13 +47,15 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 	col = color.RGBA{255, 255, 255, 255}
 	var drawables []archDrawable
 	// Draw archetypes.
-	var alphaY, alphaX, alphaZ float64
+	var alphaY, alphaX, alphaZ int32
 	// TODO: Adjust onion skins based upon distance from cursor.
 	for y := 0; y < sm.Height; y++ {
 		alphaY = 255
 		if m.onionskinY {
-			if y > m.focusedY {
-				alphaY = 50
+			if y < m.focusedY {
+				alphaY = m.onionSkinGtIntensity
+			} else if y > m.focusedY {
+				alphaY = m.onionSkinLtIntensity
 			}
 		}
 		xOffset := y * int(yStep.X)
@@ -62,17 +64,21 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 			alphaX = 255
 			if m.onionskinX {
 				if x < m.focusedX {
-					alphaX = 50
+					alphaX = m.onionSkinGtIntensity
+				} else if x > m.focusedX {
+					alphaX = m.onionSkinLtIntensity
 				}
 			}
 			for z := 0; z < sm.Depth; z++ {
 				alphaZ = 255
 				if m.onionskinZ {
 					if z > m.focusedZ {
-						alphaZ = 50
+						alphaZ = m.onionSkinGtIntensity
+					} else if z < m.focusedZ {
+						alphaZ = m.onionSkinLtIntensity
 					}
 				}
-				col.A = uint8(math.Min(math.Min(alphaX, alphaY), alphaZ))
+				col.A = uint8(math.Min(math.Min(float64(alphaX), float64(alphaY)), float64(alphaZ)))
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
 					oX := pos.X + (x*tWidth+xOffset+startX)*scale
 					oY := pos.Y + (z*tHeight-yOffset+startY)*scale
