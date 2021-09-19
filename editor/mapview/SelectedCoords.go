@@ -66,6 +66,7 @@ func (s *SelectedCoords) Remove(o SelectedCoords) {
 }
 
 // Range selects or unselects between 2 coordinates.
+// TODO: Add a doOutline bool for only doing outer edge for range.
 func (s *SelectedCoords) Range(doSelect bool, y1, x1, z1, y2, x2, z2 int) {
 	ymin := int(math.Min(float64(y1), float64(y2)))
 	ymax := int(math.Max(float64(y1), float64(y2)))
