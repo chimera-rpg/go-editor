@@ -329,6 +329,11 @@ func (m *Manager) GetArchetype(f string) *sdata.Archetype {
 	return m.archetypes[f]
 }
 
+// GetArchetypesAsTree returns the current archetypes as a tree.
+func (m *Manager) GetArchetypesAsTree() ArchetypeTreeNode {
+	return ParseArchetypesIntoTree(m.archetypesOrder)
+}
+
 func (m *Manager) GetAnimFaceImage(anim, face string) (string, error) {
 	a, ok := m.animations[anim]
 	if !ok {

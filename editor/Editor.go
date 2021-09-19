@@ -178,55 +178,78 @@ func (e *Editor) drawSplash() {
 	}
 }
 
-func (e *Editor) drawArchetypes() {
+func (e *Editor) drawArchetypeTreeNode(node data.ArchetypeTreeNode, parent string, isFirst bool) g.Layout {
+	var items g.Layout
 
+	var flags g.TreeNodeFlags
+	flags = g.TreeNodeFlagsSpanFullWidth
+	var archName string
+	if isFirst {
+		flags |= g.TreeNodeFlagsLeaf | g.TreeNodeFlagsNoTreePushOnOpen
+	}
+	if len(parent) == 0 {
+		archName = node.Name
+	} else {
+		archName = parent + "/" + node.Name
+	}
+
+	if node.IsTree {
+		var childItems g.Layout
+		for _, child := range node.Children {
+			childItems = append(childItems, e.drawArchetypeTreeNode(child, archName, false))
+		}
+		items = append(items, g.TreeNode(node.Name, flags, childItems))
+	} else {
+		flags |= g.TreeNodeFlagsLeaf
+		if archName == e.context.selectedArch {
+			flags |= g.TreeNodeFlagsSelected
+		}
+		items = append(items, g.TreeNode("", flags, g.Layout{
+			g.Custom(func(name string) func() {
+				return func() {
+					if g.IsItemHovered() {
+						if g.IsMouseDoubleClicked(g.MouseButtonLeft) {
+							e.openArchsetFromArchetype(name)
+						} else if g.IsMouseClicked(g.MouseButtonLeft) {
+							e.context.selectedArch = name
+							log.Println(name)
+						}
+					}
+				}
+			}(archName)),
+			g.Custom(func(archName string) func() {
+				return func() {
+					arch := e.context.dataManager.GetArchetype(archName)
+					if arch == nil {
+						return
+					}
+					anim, face := e.context.dataManager.GetAnimAndFace(arch, "", "")
+					imageName, err := e.context.dataManager.GetAnimFaceImage(anim, face)
+					if err != nil {
+						return
+					}
+					//e.context.imageTexturesLock.Lock()
+					t, ok := e.context.imageTextures[imageName]
+					//e.context.imageTexturesLock.Unlock()
+					if ok {
+						g.SameLine()
+						if t.Texture != nil {
+							g.Image(t.Texture, t.Width, t.Height).Build()
+						}
+					}
+				}
+			}(archName)),
+			g.Custom(func() { g.SameLine() }),
+			g.Label(node.Name),
+		}))
+	}
+	return items
+}
+
+func (e *Editor) drawArchetypes() {
 	var items g.Layout
 	if e.archetypesMode {
-		archs := e.context.dataManager.GetArchetypes()
-		for _, archName := range archs {
-			var flags g.TreeNodeFlags
-			flags = g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
-			if archName == e.context.selectedArch {
-				flags |= g.TreeNodeFlagsSelected
-			}
-			items = append(items, g.TreeNode("", flags, g.Layout{
-				g.Custom(func(name string) func() {
-					return func() {
-						if g.IsItemHovered() {
-							if g.IsMouseDoubleClicked(g.MouseButtonLeft) {
-								e.openArchsetFromArchetype(name)
-							} else if g.IsMouseClicked(g.MouseButtonLeft) {
-								e.context.selectedArch = name
-							}
-						}
-					}
-				}(archName)),
-				g.Custom(func(archName string) func() {
-					return func() {
-						arch := e.context.dataManager.GetArchetype(archName)
-						if arch == nil {
-							return
-						}
-						anim, face := e.context.dataManager.GetAnimAndFace(arch, "", "")
-						imageName, err := e.context.dataManager.GetAnimFaceImage(anim, face)
-						if err != nil {
-							return
-						}
-						//e.context.imageTexturesLock.Lock()
-						t, ok := e.context.imageTextures[imageName]
-						//e.context.imageTexturesLock.Unlock()
-						if ok {
-							g.SameLine()
-							if t.Texture != nil {
-								g.Image(t.Texture, t.Width, t.Height).Build()
-							}
-						}
-					}
-				}(archName)),
-				g.Custom(func() { g.SameLine() }),
-				g.Label(archName),
-			}))
-		}
+		items = e.drawArchetypeTreeNode(e.context.dataManager.GetArchetypesAsTree(), "", true)
 	} else {
 		archs := e.context.dataManager.GetArchetypeFiles()
 		for _, archFile := range archs {
