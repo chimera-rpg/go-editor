@@ -222,5 +222,17 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), focusedBorderColor, 0, 0, 1)
 	}
 
+	// Draw hovered.
+	{
+		xOffset := m.hoveredY * int(yStep.X)
+		yOffset := m.hoveredY * int(-yStep.Y)
+		oX := pos.X + (m.hoveredX*tWidth+xOffset+startX)*scale
+		oY := pos.Y + (m.hoveredZ*tHeight-yOffset+startY)*scale
+		oW := (tWidth) * scale
+		oH := (tHeight) * scale
+
+		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), hoveredBorderColor, 0, 0, 1)
+	}
+
 	imgui.EndChild()
 }

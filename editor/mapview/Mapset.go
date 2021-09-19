@@ -18,6 +18,8 @@ type Mapset struct {
 	currentMapIndex                              int
 	focusedY, focusedX, focusedZ                 int
 	focusedI                                     int
+	hoveredY, hoveredX, hoveredZ                 int
+	hoveredI                                     int
 	selectedCoords                               SelectedCoords
 	selectingYStart, selectingYEnd               int
 	selectingXStart, selectingXEnd               int

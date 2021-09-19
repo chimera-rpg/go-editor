@@ -17,8 +17,10 @@ import (
 
 var focusedBorderColor = color.RGBA{255, 0, 0, 128}
 var focusedBackgroundColor = color.RGBA{255, 0, 0, 100}
-var selectedBackgroundColor = color.RGBA{255, 255, 32, 100}
-var selectingBackgroundColor = color.RGBA{255, 255, 32, 50}
+var selectedBackgroundColor = color.RGBA{128, 128, 128, 128}
+var selectingBackgroundColor = color.RGBA{128, 128, 128, 64}
+var hoveredBorderColor = color.RGBA{255, 255, 0, 128}
+var hoveredBackgroundColor = color.RGBA{255, 255, 0, 0}
 
 func (m *Mapset) Draw() {
 	windowOpen := true
@@ -439,6 +441,10 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 						//log.Errorln(err)
 						return
 					}
+
+					m.hoveredY = m.focusedY
+					m.hoveredX = p.X
+					m.hoveredZ = p.Y
 
 					var state ButtonState
 					// RMB
