@@ -274,6 +274,12 @@ func (e *Editor) drawArchetypes() {
 			}),
 			g.Menu("Misc", g.Layout{
 				g.Checkbox("Archetype Mode", &e.archetypesMode, func() {}),
+				g.Button("Reload Archetypes", func() {
+					e.context.dataManager.ReloadArchetypes()
+				}),
+				g.Button("Reload Animations", func() {
+					e.context.dataManager.ReloadAnimations()
+				}),
 			}),
 		}),
 		items,

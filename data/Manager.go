@@ -96,6 +96,40 @@ func (m *Manager) Setup() (err error) {
 	return
 }
 
+func (m *Manager) ReloadArchetypes() {
+	m.archetypes = make(map[string]*sdata.Archetype)
+	m.archetypeFiles = make(map[string][]string)
+	m.archetypesOrder = make([]string, 0)
+	if err := m.LoadArchetypes(); err != nil {
+		return
+	}
+	log.Printf("Loaded %d archetypes\n", len(m.archetypes))
+}
+
+func (m *Manager) ReloadAnimations() error {
+	m.animationFiles = make(map[string]map[string]struct{})
+	m.animations = make(map[string]sdata.AnimationPre)
+
+	animationsConfigPath := filepath.Join(m.ArchetypesPath, "config.yaml")
+	r, err := ioutil.ReadFile(animationsConfigPath)
+	if err != nil {
+		return err
+	}
+	if err = yaml.Unmarshal(r, &m.AnimationsConfig); err != nil {
+		return err
+	}
+
+	if err = m.LoadAnimations(); err != nil {
+		return err
+	}
+
+	if err = m.LoadImages(); err != nil {
+		return err
+	}
+	log.Printf("Cached %d images\n", len(m.images))
+	return nil
+}
+
 // GetDataPath gets a path relative to the data path directory.
 func (m *Manager) GetDataPath(parts ...string) string {
 	return path.Join(m.DataPath, filepath.Clean(fmt.Sprintf("%c", filepath.Separator)+filepath.Join(parts...)))
