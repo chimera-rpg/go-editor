@@ -12,36 +12,38 @@ import (
 )
 
 type Mapset struct {
-	context                                    Context
-	filename                                   string
-	maps                                       []*data.UnReMap
-	currentMapIndex                            int
-	focusedY, focusedX, focusedZ               int
-	focusedI                                   int
-	selectedCoords                             SelectedCoords
-	selectingYStart, selectingYEnd             int
-	selectingXStart, selectingXEnd             int
-	selectingZStart, selectingZEnd             int
-	selectingCoords                            SelectedCoords
-	resizeL, resizeR                           int32
-	resizeT, resizeB                           int32
-	resizeU, resizeD                           int32
-	newH, newW, newD                           int32
-	newDataName, newName                       string
-	loreEditor, descEditor                     imgui.TextEditor
-	zoom                                       int32
-	showGrid                                   bool
-	showYGrids                                 bool
-	onionskinY, onionskinX, onionskinZ         bool
-	onionSkinGtIntensity, onionSkinLtIntensity int32
-	keepSameTile                               bool
-	uniqueTileVisits                           bool
-	ShouldClose                                bool
-	visitedCoords                              SelectedCoords // Coordinates visited during mouse drag.
-	mouseHeld                                  map[g.MouseButton]bool
-	toolBinds                                  map[g.MouseButton]int
-	blockScroll                                bool // Block map scrolling (true if ctrl or alt is held)
-	unsaved                                    bool
+	context                                      Context
+	filename                                     string
+	maps                                         []*data.UnReMap
+	currentMapIndex                              int
+	focusedY, focusedX, focusedZ                 int
+	focusedI                                     int
+	selectedCoords                               SelectedCoords
+	selectingYStart, selectingYEnd               int
+	selectingXStart, selectingXEnd               int
+	selectingZStart, selectingZEnd               int
+	selectingCoords                              SelectedCoords
+	resizeL, resizeR                             int32
+	resizeT, resizeB                             int32
+	resizeU, resizeD                             int32
+	newH, newW, newD                             int32
+	newDataName, newName                         string
+	loreEditor, descEditor                       imgui.TextEditor
+	zoom                                         int32
+	showGrid                                     bool
+	showYGrids                                   bool
+	onionskinY, onionskinX, onionskinZ           bool
+	onionSkinGtIntensity, onionSkinLtIntensity   int32
+	keepSameTile                                 bool
+	uniqueTileVisits                             bool
+	ShouldClose                                  bool
+	visitedCoords                                SelectedCoords // Coordinates visited during mouse drag.
+	mouseHeld                                    map[g.MouseButton]bool
+	toolBinds                                    map[g.MouseButton]int
+	blockScroll                                  bool // Block map scrolling (true if ctrl or alt is held)
+	unsaved                                      bool
+	showSave                                     bool
+	saveMapCWD, saveMapFilename, pendingFilename string
 }
 
 func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {
@@ -65,6 +67,7 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 		descEditor:           imgui.NewTextEditor(),
 		mouseHeld:            make(map[g.MouseButton]bool),
 		toolBinds:            make(map[g.MouseButton]int),
+		saveMapCWD:           context.DataManager().MapsPath,
 	}
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)
@@ -118,13 +121,22 @@ func (m *Mapset) saveAll() {
 		}
 		maps[v.DataName()] = v.SavedMap()
 	}
-	err := m.context.DataManager().SaveMap(m.filename, maps)
+	targetFilename := m.filename
+	if targetFilename == "" {
+		targetFilename = m.pendingFilename
+	}
+	if targetFilename == "" {
+		m.showSave = true
+		return
+	}
+	err := m.context.DataManager().SaveMap(targetFilename, maps)
 	if err != nil {
 		m.unsaved = true
 		log.Println(err)
 		// TODO: Report error to the user.
 		return
 	}
+	m.filename = targetFilename
 	m.unsaved = false
 	// TODO: Some sort of UI notification.
 }

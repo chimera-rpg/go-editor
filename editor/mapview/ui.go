@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"path"
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
@@ -163,7 +164,9 @@ func (m *Mapset) Draw() {
 		}),
 		m.layoutMapTabs(),
 		g.Custom(func() {
-			if resizeMapPopup {
+			if m.showSave {
+				g.OpenPopup("Save Map")
+			} else if resizeMapPopup {
 				g.OpenPopup("Resize Map")
 			} else if newMapPopup {
 				g.OpenPopup("New Map")
@@ -172,6 +175,27 @@ func (m *Mapset) Draw() {
 			} else if deleteMapPopup {
 				g.OpenPopup("Delete Map")
 			}
+		}),
+		g.PopupModalV("Save Map", nil, 0, g.Layout{
+			g.Label("Save mapset to file"),
+			widgets.FileBrowser(&m.saveMapCWD, &m.saveMapFilename, nil),
+			g.Line(
+				g.Button("Cancel", func() {
+					m.saveMapCWD = m.context.DataManager().MapsPath
+					m.saveMapFilename = ""
+					m.showSave = false
+					g.CloseCurrentPopup()
+				}),
+				g.Button("Save", func() {
+					fullPath := path.Join(m.saveMapCWD, m.saveMapFilename)
+					m.saveMapCWD = m.context.DataManager().MapsPath
+					m.saveMapFilename = ""
+					m.pendingFilename = fullPath
+					m.showSave = false
+					m.saveAll()
+					g.CloseCurrentPopup()
+				}),
+			),
 		}),
 		g.PopupModalV("Resize Map", nil, 0, g.Layout{
 			g.Label("Grow or Shrink the current map"),
