@@ -7,6 +7,7 @@ import (
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/giu/imgui"
 	"github.com/chimera-rpg/go-editor/data"
+	"github.com/chimera-rpg/go-editor/widgets"
 	sdata "github.com/chimera-rpg/go-server/data"
 	log "github.com/sirupsen/logrus"
 )
@@ -46,6 +47,7 @@ type Mapset struct {
 	unsaved                                      bool
 	showSave                                     bool
 	saveMapCWD, saveMapFilename, pendingFilename string
+	archEditor                                   widgets.ArchEditorWidget
 }
 
 func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {
@@ -57,8 +59,8 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 		onionskinY:           true,
 		onionskinX:           false,
 		onionskinZ:           false,
-		onionSkinGtIntensity: 200,
-		onionSkinLtIntensity: 50,
+		onionSkinGtIntensity: 240,
+		onionSkinLtIntensity: 10,
 		keepSameTile:         true,
 		uniqueTileVisits:     true,
 		newW:                 1,
@@ -71,6 +73,7 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 		toolBinds:            make(map[g.MouseButton]int),
 		saveMapCWD:           context.DataManager().MapsPath,
 	}
+	m.archEditor.SetContext(context)
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)
 
