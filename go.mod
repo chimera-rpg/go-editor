@@ -1,6 +1,6 @@
 module github.com/chimera-rpg/go-editor
 
-go 1.14
+go 1.16
 
 require (
 	github.com/AllenDang/giu v0.5.7-0.20210920064036-77748a6babb3
