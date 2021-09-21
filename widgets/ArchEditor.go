@@ -1,6 +1,8 @@
 package widgets
 
 import (
+	"image/color"
+
 	log "github.com/sirupsen/logrus"
 
 	g "github.com/AllenDang/giu"
@@ -13,11 +15,19 @@ type Context interface {
 	DataManager() *data.Manager
 }
 
+type StringPair struct {
+	initial  string
+	pending  string
+	previous string
+	reset    bool
+}
+
 type ArchEditorWidget struct {
 	arch               *sdata.Archetype
 	descEditor         imgui.TextEditor
 	context            Context
-	name               string
+	name               StringPair
+	description        StringPair
 	preChangeCallback  func() bool
 	postChangeCallback func() bool
 	requestSave        func() bool
@@ -56,9 +66,43 @@ func (a *ArchEditorWidget) SetArchetype(arch *sdata.Archetype) {
 	if arch == a.arch {
 		return
 	}
-	dm := a.context.DataManager()
 	a.arch = arch
-	a.name = dm.GetArchName(a.arch, "")
+
+	//
+	a.Refresh()
+}
+
+func (a *ArchEditorWidget) Refresh() {
+	a.name = a.getStringPair("Name")
+	a.description = a.getStringPair("Description")
+}
+
+func (a *ArchEditorWidget) getStringPair(field string) StringPair {
+	dm := a.context.DataManager()
+	s := StringPair{}
+	v1 := dm.GetArchAncestryField(a.arch, field)
+	if v1.IsValid() && !v1.IsNil() {
+		s.previous = v1.Elem().String()
+	}
+	v2 := dm.GetArchField(a.arch, field)
+	if v2.IsValid() && !v2.IsNil() {
+		s.pending = v2.Elem().String()
+		s.initial = v2.Elem().String()
+	}
+	s.reset = false
+	return s
+}
+
+func (a *ArchEditorWidget) checkStringPair(field string, s *StringPair) {
+	if s.reset {
+		a.context.DataManager().ClearArchField(a.arch, field)
+		s.reset = false
+	} else if s.initial != s.pending {
+		if err := a.context.DataManager().SetArchField(a.arch, field, s.pending); err != nil {
+			log.Println(err)
+		}
+		s.initial = s.pending
+	}
 }
 
 func (a *ArchEditorWidget) Layout() (l g.Layout) {
@@ -70,19 +114,61 @@ func (a *ArchEditorWidget) Layout() (l g.Layout) {
 	return l
 }
 
+func (a *ArchEditorWidget) StringLayout(field string, target *StringPair) g.Layout {
+	dm := a.context.DataManager()
+	isLocal, _ := dm.IsArchFieldLocal(a.arch, field)
+	var resetButton g.Widget
+	resetButton = g.Button("reset", func() {
+		target.reset = true
+		target.pending = target.previous
+	})
+	if !isLocal || target.reset {
+		resetButton = g.Dummy(0, 0)
+	}
+
+	var inputField g.Widget
+	if field == "Description" {
+		inputField = g.InputText(field, 0, &target.pending)
+	} else {
+		inputField = g.InputText(field, 0, &target.pending)
+	}
+
+	return g.Layout{
+		g.Custom(func() {
+			if isLocal {
+				g.PushColorText(color.RGBA{
+					R: 200,
+					G: 128,
+					B: 0,
+					A: 255,
+				})
+			}
+		}),
+		g.Line(
+			inputField,
+			resetButton,
+		),
+		g.Custom(func() {
+			if isLocal {
+				g.PopStyleColor()
+			}
+		}),
+	}
+}
+
 func (a *ArchEditorWidget) ArchetypeLayout() (l g.Layout) {
 	l = g.Layout{
-		g.InputText("Name", 0, &a.name),
+		a.StringLayout("Name", &a.name),
+		a.StringLayout("Description", &a.description),
 		g.Line(
 			g.Button("apply", func() {
-				dm := a.context.DataManager()
 				a.preChangeCallback()
-				if a.name != dm.GetArchName(a.arch, "") {
-					if err := dm.SetArchField(a.arch, "Name", a.name); err != nil {
-						log.Println(err)
-					}
-				}
+
+				a.checkStringPair("Name", &a.name)
+				a.checkStringPair("Description", &a.description)
+
 				a.postChangeCallback()
+				a.Refresh()
 			}),
 		),
 	}
