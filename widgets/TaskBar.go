@@ -18,7 +18,8 @@ func (t *TaskbarWidget) Draw(windows []WindowContainerI) {
 	var items []g.Widget
 	for _, win := range windows {
 		items = append(items, func(win WindowContainerI) g.Widget {
-			return g.Button(win.Title()).OnClick(func() {
+			w, _ := g.CalcTextSize(win.Title())
+			return g.Selectable(win.Title()).Size(w, 18).OnClick(func() {
 				win.Window().BringToFront()
 			})
 		}(win))
