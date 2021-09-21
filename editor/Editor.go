@@ -31,6 +31,7 @@ type Editor struct {
 	archsets       []*Archset
 	animsets       []*Animset
 	context        Context
+	taskbar        *widgets.TaskbarWidget
 	//
 	pendingImages map[string]image.Image
 	//
@@ -47,6 +48,7 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.archetypesMode = true
 	e.showSplash = false
 	e.openMapCWD = dataManager.MapsPath
+	e.taskbar = widgets.NewTaskbar()
 
 	e.masterWindow = g.NewMasterWindow("Editor", 1280, 720, g.MasterWindowFlagsMaximized)
 	g.Context.GetRenderer().SetTextureMagFilter(g.TextureFilterNearest)
@@ -152,15 +154,28 @@ func (e *Editor) loop() {
 		),
 	).Build()
 
+	var windows []widgets.WindowContainerI
+
+	title, win, layout := e.drawArchetypes()
+	windows = append(windows, &WindowContainer{
+		title:  title,
+		window: win,
+		layout: layout,
+	})
+
 	for i, m := range e.mapsets {
-		m.Draw()
+		title, win, layout := m.Draw()
+		windows = append(windows, &WindowContainer{
+			title:  title,
+			window: win,
+			layout: layout,
+		})
 		if m.ShouldClose {
 			e.mapsets = append(e.mapsets[:i], e.mapsets[i+1:]...)
 		}
 	}
 
 	for i, a := range e.archsets {
-		a.draw()
 		if a.shouldClose {
 			e.archsets = append(e.archsets[:i], e.archsets[i+1:]...)
 		}
@@ -170,9 +185,13 @@ func (e *Editor) loop() {
 		a.draw()
 	}
 
-	e.drawArchetypes()
 	e.drawAnimations()
 	e.drawSplash()
+
+	w, h := e.masterWindow.GetSize()
+	e.taskbar.ParentWidth = w
+	e.taskbar.ParentHeight = h
+	e.taskbar.Draw(windows)
 
 }
 
@@ -258,7 +277,7 @@ func (e *Editor) drawArchetypeTreeNode(node data.ArchetypeTreeNode, parent strin
 	return items
 }
 
-func (e *Editor) drawArchetypes() {
+func (e *Editor) drawArchetypes() (title string, w *g.WindowWidget, layout g.Layout) {
 	var items g.Layout
 	if e.archetypesMode {
 		items = e.drawArchetypeTreeNode(e.context.dataManager.GetArchetypesAsTree(), "", true)
@@ -278,7 +297,10 @@ func (e *Editor) drawArchetypes() {
 		}
 	}
 	var b bool
-	g.Window("Archetypes").IsOpen(&b).Flags(g.WindowFlagsMenuBar).Pos(10, 30).Size(200, 400).Layout(
+	title = "Archetypes"
+	w = g.Window(title)
+	w.IsOpen(&b).Flags(g.WindowFlagsMenuBar).Pos(10, 30).Size(200, 400)
+	layout = g.Layout{
 		g.MenuBar().Layout(
 			g.Menu("File").Layout(
 				g.MenuItem("New...").OnClick(func() {}),
@@ -295,8 +317,9 @@ func (e *Editor) drawArchetypes() {
 			),
 		),
 		items,
-	)
+	}
 
+	return
 }
 
 func (e *Editor) drawAnimations() {

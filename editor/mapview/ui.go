@@ -22,7 +22,7 @@ var selectingBackgroundColor = color.RGBA{128, 128, 128, 64}
 var hoveredBorderColor = color.RGBA{255, 255, 0, 128}
 var hoveredBackgroundColor = color.RGBA{255, 255, 0, 0}
 
-func (m *Mapset) Draw() {
+func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 	windowOpen := true
 
 	var mapExists bool
@@ -54,60 +54,62 @@ func (m *Mapset) Draw() {
 	if m.Unsaved() {
 		windowFlags |= g.WindowFlagsUnsavedDocument
 	}
-	g.Window(fmt.Sprintf("Mapset: %s", filename)).IsOpen(&windowOpen).Flags(windowFlags).Pos(210, 30).Size(300, 400).Layout(
-		g.MenuBar().Layout(
-			g.Menu("Mapset").Layout(
-				g.MenuItem("New Map...").OnClick(func() {
-					newMapPopup = true
-					m.descEditor.SetText("")
-					m.loreEditor.SetText("")
-				}),
-				g.Separator(),
-				g.MenuItem("Save All").OnClick(func() { m.saveAll() }),
-				g.Separator(),
-				g.MenuItem("Close").OnClick(func() { m.close() }),
-			),
-			g.Menu("Map").Layout(
-				g.MenuItem("Properties...").Enabled(mapExists).OnClick(func() {
-					cm := m.CurrentMap()
-					m.newName = cm.Get().Name
-					m.newDataName = cm.DataName()
-					m.descEditor.SetText(cm.Get().Description)
-					m.loreEditor.SetText(cm.Get().Lore)
-					adjustMapPopup = true
-				}),
-				g.MenuItem("Resize...").Enabled(mapExists).OnClick(func() {
-					resizeMapPopup = true
-				}),
-				g.Separator(),
-				g.MenuItem("Undo").Enabled(mapExists).OnClick(func() {
-					cm := m.CurrentMap()
-					cm.Undo()
-				}),
-				g.MenuItem("Redo").Enabled(mapExists).OnClick(func() {
-					cm := m.CurrentMap()
-					cm.Redo()
-				}),
-				g.Separator(),
-				g.MenuItem("Delete...").Enabled(mapExists).OnClick(func() {
-					deleteMapPopup = true
-				}),
-			),
-			g.Menu("Settings").Layout(
-				g.Checkbox("Keep Same Tile", &m.keepSameTile),
-				g.Checkbox("Only Visit Unique Tiles", &m.uniqueTileVisits),
-			),
-			g.Menu("View").Layout(
-				g.Checkbox("Z Onionskinning", &m.onionskinZ),
-				g.Checkbox("Y Onionskinning", &m.onionskinY),
-				g.Checkbox("X Onionskinning", &m.onionskinX),
-				g.SliderInt(&m.onionSkinGtIntensity, 0, 255).Label("Onionskin > Opacity").Format("%d"),
-				g.SliderInt(&m.onionSkinLtIntensity, 0, 255).Label("Onionskin < Opacity").Format("%d"),
-				g.Checkbox("Grid", &m.showGrid),
-				g.Checkbox("Y Grids", &m.showYGrids),
-				g.SliderInt(&m.zoom, 1, 8).Label("Zoom").Format("%d"),
-			),
+	title = fmt.Sprintf("Mapset: %s", filename)
+	w = g.Window(title)
+	w.IsOpen(&windowOpen).Flags(windowFlags).Pos(210, 30).Size(300, 400)
+	layout = g.Layout{g.MenuBar().Layout(
+		g.Menu("Mapset").Layout(
+			g.MenuItem("New Map...").OnClick(func() {
+				newMapPopup = true
+				m.descEditor.SetText("")
+				m.loreEditor.SetText("")
+			}),
+			g.Separator(),
+			g.MenuItem("Save All").OnClick(func() { m.saveAll() }),
+			g.Separator(),
+			g.MenuItem("Close").OnClick(func() { m.close() }),
 		),
+		g.Menu("Map").Layout(
+			g.MenuItem("Properties...").Enabled(mapExists).OnClick(func() {
+				cm := m.CurrentMap()
+				m.newName = cm.Get().Name
+				m.newDataName = cm.DataName()
+				m.descEditor.SetText(cm.Get().Description)
+				m.loreEditor.SetText(cm.Get().Lore)
+				adjustMapPopup = true
+			}),
+			g.MenuItem("Resize...").Enabled(mapExists).OnClick(func() {
+				resizeMapPopup = true
+			}),
+			g.Separator(),
+			g.MenuItem("Undo").Enabled(mapExists).OnClick(func() {
+				cm := m.CurrentMap()
+				cm.Undo()
+			}),
+			g.MenuItem("Redo").Enabled(mapExists).OnClick(func() {
+				cm := m.CurrentMap()
+				cm.Redo()
+			}),
+			g.Separator(),
+			g.MenuItem("Delete...").Enabled(mapExists).OnClick(func() {
+				deleteMapPopup = true
+			}),
+		),
+		g.Menu("Settings").Layout(
+			g.Checkbox("Keep Same Tile", &m.keepSameTile),
+			g.Checkbox("Only Visit Unique Tiles", &m.uniqueTileVisits),
+		),
+		g.Menu("View").Layout(
+			g.Checkbox("Z Onionskinning", &m.onionskinZ),
+			g.Checkbox("Y Onionskinning", &m.onionskinY),
+			g.Checkbox("X Onionskinning", &m.onionskinX),
+			g.SliderInt(&m.onionSkinGtIntensity, 0, 255).Label("Onionskin > Opacity").Format("%d"),
+			g.SliderInt(&m.onionSkinLtIntensity, 0, 255).Label("Onionskin < Opacity").Format("%d"),
+			g.Checkbox("Grid", &m.showGrid),
+			g.Checkbox("Y Grids", &m.showYGrids),
+			g.SliderInt(&m.zoom, 1, 8).Label("Zoom").Format("%d"),
+		),
+	),
 		g.Custom(func() {
 			imgui.SelectableV(fmt.Sprintf("select (%s)", m.getToolButtonString(selectTool)), m.isToolBound(selectTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
 			if g.IsItemHovered() {
@@ -376,11 +378,13 @@ func (m *Mapset) Draw() {
 				}
 			}),
 		),
-	)
-
-	if !windowOpen {
-		m.close()
+		g.Custom(func() {
+			if !windowOpen {
+				m.close()
+			}
+		}),
 	}
+	return title, w, layout
 }
 
 func (m *Mapset) layoutMapTabs() g.Layout {

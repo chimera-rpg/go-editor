@@ -34,12 +34,14 @@ func NewArchset(context *Context, name string, archs map[string]*sdata.Archetype
 	return a
 }
 
-func (a *Archset) draw() {
+func (a *Archset) draw() *g.WindowWidget {
 	windowOpen := true
 
 	var newArchPopup bool
 
-	g.Window(fmt.Sprintf("Archset: %s", a.filename)).IsOpen(&windowOpen).Flags(g.WindowFlagsMenuBar).Pos(210, 430).Size(300, 400).Layout(
+	w := g.Window(fmt.Sprintf("Archset: %s", a.filename))
+
+	w.IsOpen(&windowOpen).Flags(g.WindowFlagsMenuBar).Pos(210, 430).Size(300, 400).Layout(
 		g.MenuBar().Layout(
 			g.Menu("Archset").Layout(
 				g.MenuItem("New Arch...").OnClick(func() {
@@ -111,6 +113,7 @@ func (a *Archset) draw() {
 	if !windowOpen {
 		a.close()
 	}
+	return w
 }
 
 func (a *Archset) setDefaults() {
