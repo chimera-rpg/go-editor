@@ -128,7 +128,7 @@ func (a *ArchEditorWidget) StringLayout(field string, target *StringPair) g.Layo
 
 	var inputField g.Widget
 	if field == "Description" {
-		inputField = g.InputText(field, 0, &target.pending)
+		inputField = g.InputTextMultiline(field, &target.pending, 0, 0, g.InputTextFlagsNone, nil, nil)
 	} else {
 		inputField = g.InputText(field, 0, &target.pending)
 	}
