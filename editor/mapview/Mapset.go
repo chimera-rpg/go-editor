@@ -135,7 +135,7 @@ func (m *Mapset) getMapPointFromMouse(p image.Point) (h image.Point, err error) 
 	hitX := int(float64(p.X) / scale)
 	hitY := int(float64(p.Y) / scale)
 
-	xOffset := m.focusedY*int(dm.AnimationsConfig.YStep.X) + padding
+	xOffset := m.focusedY*int(-dm.AnimationsConfig.YStep.X) + padding
 	yOffset := m.focusedY*int(dm.AnimationsConfig.YStep.Y) + padding + (sm.Get().Height * int(-dm.AnimationsConfig.YStep.Y))
 
 	nearestX := (hitX+xOffset)/tWidth - 1
