@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 
+	_ "embed"
+
 	g "github.com/AllenDang/giu"
 	imgui "github.com/AllenDang/imgui-go"
 	"github.com/chimera-rpg/go-editor/data"
@@ -16,6 +18,9 @@ import (
 	sdata "github.com/chimera-rpg/go-server/data"
 	log "github.com/sirupsen/logrus"
 )
+
+//go:embed ProggyClean.ttf
+var fontBytes []byte
 
 type Editor struct {
 	masterWindow   *g.MasterWindow
@@ -47,6 +52,7 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.masterWindow = g.NewMasterWindow("Editor", 1280, 720, g.MasterWindowFlagsMaximized)
 	g.Context.GetRenderer().SetTextureMagFilter(g.TextureFilterNearest)
 	imgui.CurrentIO().SetIniFilename(e.context.dataManager.GetEtcPath("chimera-editor.ini"))
+	g.SetDefaultFontFromBytes(fontBytes, 13)
 
 	for imagePath, img := range dataManager.GetImages() {
 		e.context.imageTextures[imagePath] = &data.ImageTexture{
