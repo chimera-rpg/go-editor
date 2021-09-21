@@ -128,7 +128,7 @@ func (e *Editor) loop() {
 		g.OpenPopup("Open Mapset...")
 	}
 
-	g.PopupModal("Open Mapset...").Flags(g.WindowFlagsNoResize).Layout(
+	g.PopupModal("Open Mapset...").Flags(g.WindowFlagsAlwaysAutoResize).Layout(
 		g.Label("Select a maps file"),
 		widgets.FileBrowser(&e.openMapCWD, &e.openMapFilename, nil),
 		g.Row(
