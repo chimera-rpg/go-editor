@@ -54,7 +54,7 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 	m := &Mapset{
 		filename:             name,
 		zoom:                 3.0,
-		showGrid:             true,
+		showGrid:             false,
 		showYGrids:           false,
 		onionskinY:           true,
 		onionskinX:           false,
