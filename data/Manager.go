@@ -476,6 +476,13 @@ func (m *Manager) GetArchField(a *sdata.Archetype, field string) reflect.Value {
 	if f.IsValid() && !f.IsNil() {
 		return f
 	}
+	f = m.GetArchAncestryField(a, field)
+	return f
+}
+
+// GetArchAncestryField gets the arch's ancestry value for a given field.
+func (m *Manager) GetArchAncestryField(a *sdata.Archetype, field string) reflect.Value {
+	var f reflect.Value
 	if a.Arch != "" {
 		a2 := m.GetArchetype(a.Arch)
 		if a2 != nil {
@@ -495,6 +502,47 @@ func (m *Manager) GetArchField(a *sdata.Archetype, field string) reflect.Value {
 		}
 	}
 	return f
+}
+
+// IsArchFieldLocal returns whether or not a given field is defined on the archetype or if it is from its ancestry.
+func (m *Manager) IsArchFieldLocal(a *sdata.Archetype, field string) (bool, error) {
+	s := reflect.ValueOf(a).Elem()
+	f := s.FieldByName(field)
+	if !f.IsValid() {
+		return false, fmt.Errorf("field \"%s\" does not exist", field)
+	}
+	if !f.CanSet() {
+		return false, fmt.Errorf("field \"%s\" cannot be set", field)
+	}
+	if f.Kind() == reflect.Ptr {
+		if f.IsNil() {
+			return false, nil
+		}
+		return true, nil
+		// TODO: At the moment only strings exist as points, we need MatterType and others to also be pointers.
+	}
+	// Look up ancestry
+	ancestorSame := true
+	if a.Arch != "" {
+		a2 := m.GetArchetype(a.Arch)
+		if a2 != nil {
+			f2 := m.GetArchField(a2, field)
+			if !reflect.DeepEqual(f, f2) {
+				ancestorSame = false
+			}
+		}
+	}
+	for _, archName := range a.Archs {
+		a2 := m.GetArchetype(archName)
+		if a2 != nil {
+			f2 := m.GetArchField(a2, field)
+			if !reflect.DeepEqual(f, f2) {
+				ancestorSame = false
+			}
+		}
+	}
+
+	return !ancestorSame, nil
 }
 
 func (m *Manager) SetArchField(a *sdata.Archetype, field string, v interface{}) error {
@@ -541,6 +589,18 @@ func (m *Manager) SetArchField(a *sdata.Archetype, field string, v interface{}) 
 		f.Set(reflect.ValueOf(v))
 	}
 	return nil
+}
+
+func (m *Manager) ClearArchField(a *sdata.Archetype, field string) bool {
+	f := m.GetArchField(a, field)
+	if !f.IsValid() {
+		return false
+	}
+	if f.Kind() == reflect.Ptr {
+		f.Set(reflect.Zero(f.Type()))
+		return true
+	}
+	return false
 }
 
 func (m *Manager) GetArchName(a *sdata.Archetype, name string) string {
