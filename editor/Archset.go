@@ -95,7 +95,7 @@ func (a *Archset) draw() {
 				g.Button("Create", func() {
 					// TODO: Check if arch with the same name already exists
 					a.archs = append(a.archs, NewUnReArch(sdata.Archetype{
-						Name: sdata.NewStringExpression(a.newName),
+						Name: &*&a.newName, // TODO: Replace with a NewString(...) function call.
 					}, a.newDataName))
 					g.CloseCurrentPopup()
 					a.setDefaults()
