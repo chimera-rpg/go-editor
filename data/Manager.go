@@ -4,6 +4,7 @@ import (
 	"errors"
 	"image"
 	"log"
+	"reflect"
 	"strings"
 
 	"fmt"
@@ -468,31 +469,88 @@ func (m *Manager) GetArchType(a *sdata.Archetype, atype cdata.ArchetypeType) cda
 	return atype
 }
 
+// GetArchField does a proper hierarchical lookup for a given field.
+func (m *Manager) GetArchField(a *sdata.Archetype, field string) reflect.Value {
+	s := reflect.ValueOf(a).Elem()
+	f := s.FieldByName(field)
+	if f.IsValid() && !f.IsNil() {
+		return f
+	}
+	if a.Arch != "" {
+		a2 := m.GetArchetype(a.Arch)
+		if a2 != nil {
+			f = m.GetArchField(a2, field)
+			if f.IsValid() && !f.IsNil() {
+				return f
+			}
+		}
+	}
+	for _, archName := range a.Archs {
+		a2 := m.GetArchetype(archName)
+		if a2 != nil {
+			f = m.GetArchField(a2, field)
+			if f.IsValid() && !f.IsNil() {
+				return f
+			}
+		}
+	}
+	return f
+}
+
+func (m *Manager) SetArchField(a *sdata.Archetype, field string, v interface{}) error {
+	s := reflect.ValueOf(a).Elem()
+	f := s.FieldByName(field)
+	if !f.IsValid() {
+		return fmt.Errorf("field \"%s\" does not exist", field)
+	}
+	if !f.CanSet() {
+		return fmt.Errorf("field \"%s\" cannot be set", field)
+	}
+	if f.Kind() == reflect.Ptr {
+		switch t := v.(type) {
+		case string:
+			f.Set(reflect.ValueOf(&*&t))
+		case *string:
+			f.Set(reflect.ValueOf(&*t))
+		default:
+			return fmt.Errorf("passed interface of %v is not a string or string pointer", v)
+		}
+	} else if f.Kind() == reflect.Uint8 {
+		switch t := v.(type) {
+		case uint8:
+			f.Set(reflect.ValueOf(t))
+		default:
+			return fmt.Errorf("passed interface of %v is not a uint8", v)
+		}
+	} else if f.Kind() == reflect.Uint32 {
+		switch t := v.(type) {
+		case uint32:
+			f.Set(reflect.ValueOf(t))
+		default:
+			return fmt.Errorf("passed interface of %v is not a uint32", v)
+		}
+	} else if f.Kind() == reflect.Float32 {
+		switch t := v.(type) {
+		case float32:
+			f.Set(reflect.ValueOf(t))
+		default:
+			return fmt.Errorf("passed interface of %v is not a float32", v)
+		}
+	} else {
+		// FIXME: This is a bad catchall.
+		f.Set(reflect.ValueOf(v))
+	}
+	return nil
+}
+
 func (m *Manager) GetArchName(a *sdata.Archetype, name string) string {
-	aString, _ := a.Name.GetString()
-	if name == "" && aString != "" {
-		name = aString
+	if name != "" {
+		return name
 	}
 
-	if name == "" {
-		if a.Arch != "" {
-			o := m.GetArchetype(a.Arch)
-			if o != nil {
-				name = m.GetArchName(o, name)
-				if name != "" {
-					return name
-				}
-			}
-		}
-		for _, archName := range a.Archs {
-			o := m.GetArchetype(archName)
-			if o != nil {
-				name = m.GetArchName(o, name)
-				if name != "" {
-					return name
-				}
-			}
-		}
+	v := m.GetArchField(a, "Name")
+	if v.IsValid() && !v.IsNil() {
+		return v.Elem().String()
 	}
 
 	return name
