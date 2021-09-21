@@ -419,12 +419,13 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 		childFlags |= imgui.WindowFlagsNoScrollWithMouse
 	}
 	hovered := false
+	lineHeight := imgui.CalcTextSize("Toolbar", false, 0)
 
 	return g.Layout{
 		g.Custom(func() {
 			availW, availH = g.GetAvaiableRegion()
 		}),
-		g.Child(v.Get().Name, false, availW, availH, childFlags, g.Layout{
+		g.Child(v.Get().Name, false, availW, availH-lineHeight.Y*2, childFlags, g.Layout{
 			g.Custom(func() {
 				childPos = g.GetCursorScreenPos()
 				m.drawMap(v)
@@ -536,6 +537,16 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 				}
 			}),
 		}),
+		m.layoutMapInfobar(v),
+	}
+}
+
+func (m *Mapset) layoutMapInfobar(v *data.UnReMap) g.Layout {
+	return g.Layout{
+		g.Line(
+			g.Label(fmt.Sprintf("%dx%dx%d", m.focusedX, m.focusedZ, m.focusedY)),
+			g.Label(fmt.Sprintf("(%dx%dx%d)", m.hoveredX, m.hoveredZ, m.hoveredY)),
+		),
 	}
 }
 
