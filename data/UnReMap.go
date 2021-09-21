@@ -1,32 +1,35 @@
 package data
 
 import (
+	"github.com/chimera-rpg/go-editor/internal/unredo"
 	sdata "github.com/chimera-rpg/go-server/data"
-	undo "github.com/iomodo/a-simple-undo-redo"
 )
 
 type UnReMap struct {
-	undoer   undo.Undoer
+	undoer   unredo.Unredoabler
 	dataName string
 	savedMap *sdata.Map
 	unsaved  bool
 }
 
 func NewUnReMap(m *sdata.Map, d string) *UnReMap {
-	undoer := undo.NewUndoer(0)
+	undoer := unredo.NewUnredoabler(m)
 	u := &UnReMap{
 		undoer:   undoer,
 		dataName: d,
 	}
-	u.Set(m)
 	u.Save()
 
 	return u
 }
 
+func (u *UnReMap) Replace(m *sdata.Map) {
+	u.undoer.Replace(m)
+}
+
 func (u *UnReMap) Set(m *sdata.Map) {
 	u.unsaved = true
-	u.undoer.Save(m)
+	u.undoer.Push(m)
 }
 
 func (u *UnReMap) Get() *sdata.Map {
@@ -61,7 +64,7 @@ func (u *UnReMap) Save() {
 }
 
 func (u *UnReMap) Reset() {
-	u.Set(u.savedMap)
+	u.undoer.Replace(u.savedMap)
 	u.Save()
 	u.unsaved = false
 }
