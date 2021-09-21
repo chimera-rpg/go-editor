@@ -12,11 +12,13 @@ import (
 )
 
 type archDrawable struct {
-	z    int
-	x, y int
-	w, h int
-	t    *data.ImageTexture
-	c    color.RGBA
+	z     int
+	x, y  int
+	cY    int
+	w, h  int
+	large bool
+	t     *data.ImageTexture
+	c     color.RGBA
 }
 
 func (m *Mapset) drawMap(v *data.UnReMap) {
@@ -82,7 +84,11 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
 					oX := pos.X + (x*tWidth+xOffset+startX)*scale
 					oY := pos.Y + (z*tHeight-yOffset+startY)*scale
-					oH, _, oD := dm.GetArchDimensions(&sm.Tiles[y][x][z][t])
+					oH, oW, oD := dm.GetArchDimensions(&sm.Tiles[y][x][z][t])
+					large := false
+					if oH > 1 || oW > 1 || oD > 1 {
+						large = true
+					}
 					if adjustment, ok := dm.AnimationsConfig.Adjustments[dm.GetArchType(&sm.Tiles[y][x][z][t], 0)]; ok {
 						oX += int(adjustment.X) * scale
 						oY += int(adjustment.Y) * scale
@@ -101,17 +107,20 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 					}
 
 					if tex, ok := m.context.ImageTextures()[imageName]; ok {
+						cY := oY
 						if (oH > 1 || oD > 1) && int(tex.Height*float32(scale)) > tHeight*scale {
 							oY -= int(tex.Height*float32(scale)) - (tHeight * scale)
 						}
 						drawables = append(drawables, archDrawable{
-							z: zIndex,
-							x: oX,
-							y: oY,
-							w: oX + int(tex.Width)*scale,
-							h: oY + int(tex.Height)*scale,
-							c: col,
-							t: tex,
+							z:     zIndex,
+							x:     oX,
+							y:     oY,
+							cY:    cY,
+							w:     oX + int(tex.Width)*scale,
+							h:     oY + int(tex.Height)*scale,
+							c:     col,
+							t:     tex,
+							large: large,
 						})
 					} else {
 						//log.Println(err)
@@ -128,6 +137,17 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 	// Render them.
 	for _, d := range drawables {
 		canvas.AddImageV(d.t.Texture, image.Pt(d.x, d.y), image.Pt(d.w, d.h), image.Pt(0, 0), image.Pt(1, 1), d.c)
+	}
+	for _, d := range drawables {
+		if d.large {
+			col := color.RGBA{
+				R: 0,
+				G: 128,
+				B: 255,
+				A: d.c.A,
+			}
+			canvas.AddRect(image.Pt(d.x, d.cY), image.Pt(d.x+tWidth*scale, d.cY+tHeight*scale), col, 0, 0, 0.5)
+		}
 	}
 
 	// Draw grid.
