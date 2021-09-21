@@ -2,10 +2,11 @@ package widgets
 
 import (
 	"fmt"
-	"github.com/AllenDang/giu/imgui"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+
+	imgui "github.com/AllenDang/imgui-go"
 )
 
 type FileBrowserWidget struct {

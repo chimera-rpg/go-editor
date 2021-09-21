@@ -8,7 +8,7 @@ import (
 	"path"
 
 	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/giu/imgui"
+	imgui "github.com/AllenDang/imgui-go"
 	"github.com/chimera-rpg/go-editor/data"
 	"github.com/chimera-rpg/go-editor/widgets"
 	sdata "github.com/chimera-rpg/go-server/data"
@@ -54,21 +54,21 @@ func (m *Mapset) Draw() {
 	if m.Unsaved() {
 		windowFlags |= g.WindowFlagsUnsavedDocument
 	}
-	g.WindowV(fmt.Sprintf("Mapset: %s", filename), &windowOpen, windowFlags, 210, 30, 300, 400, g.Layout{
-		g.MenuBar(g.Layout{
-			g.Menu("Mapset", g.Layout{
-				g.MenuItem("New Map...", func() {
+	g.Window(fmt.Sprintf("Mapset: %s", filename)).IsOpen(&windowOpen).Flags(windowFlags).Pos(210, 30).Size(300, 400).Layout(
+		g.MenuBar().Layout(
+			g.Menu("Mapset").Layout(
+				g.MenuItem("New Map...").OnClick(func() {
 					newMapPopup = true
 					m.descEditor.SetText("")
 					m.loreEditor.SetText("")
 				}),
 				g.Separator(),
-				g.MenuItem("Save All", func() { m.saveAll() }),
+				g.MenuItem("Save All").OnClick(func() { m.saveAll() }),
 				g.Separator(),
-				g.MenuItem("Close", func() { m.close() }),
-			}),
-			g.Menu("Map", g.Layout{
-				g.MenuItemV("Properties...", false, mapExists, func() {
+				g.MenuItem("Close").OnClick(func() { m.close() }),
+			),
+			g.Menu("Map").Layout(
+				g.MenuItem("Properties...").Enabled(mapExists).OnClick(func() {
 					cm := m.CurrentMap()
 					m.newName = cm.Get().Name
 					m.newDataName = cm.DataName()
@@ -76,38 +76,38 @@ func (m *Mapset) Draw() {
 					m.loreEditor.SetText(cm.Get().Lore)
 					adjustMapPopup = true
 				}),
-				g.MenuItemV("Resize...", false, mapExists, func() {
+				g.MenuItem("Resize...").Enabled(mapExists).OnClick(func() {
 					resizeMapPopup = true
 				}),
 				g.Separator(),
-				g.MenuItemV("Undo", false, mapExists, func() {
+				g.MenuItem("Undo").Enabled(mapExists).OnClick(func() {
 					cm := m.CurrentMap()
 					cm.Undo()
 				}),
-				g.MenuItemV("Redo", false, mapExists, func() {
+				g.MenuItem("Redo").Enabled(mapExists).OnClick(func() {
 					cm := m.CurrentMap()
 					cm.Redo()
 				}),
 				g.Separator(),
-				g.MenuItemV("Delete...", false, mapExists, func() {
+				g.MenuItem("Delete...").Enabled(mapExists).OnClick(func() {
 					deleteMapPopup = true
 				}),
-			}),
-			g.Menu("Settings", g.Layout{
-				g.Checkbox("Keep Same Tile", &m.keepSameTile, nil),
-				g.Checkbox("Only Visit Unique Tiles", &m.uniqueTileVisits, nil),
-			}),
-			g.Menu("View", g.Layout{
-				g.Checkbox("Z Onionskinning", &m.onionskinZ, nil),
-				g.Checkbox("Y Onionskinning", &m.onionskinY, nil),
-				g.Checkbox("X Onionskinning", &m.onionskinX, nil),
-				g.SliderInt("Onionskin > Opacity", &m.onionSkinGtIntensity, 0, 255, "%d"),
-				g.SliderInt("Onionskin < Opacity", &m.onionSkinLtIntensity, 0, 255, "%d"),
-				g.Checkbox("Grid", &m.showGrid, nil),
-				g.Checkbox("Y Grids", &m.showYGrids, nil),
-				g.SliderInt("Zoom", &m.zoom, 1, 8, "%d"),
-			}),
-		}),
+			),
+			g.Menu("Settings").Layout(
+				g.Checkbox("Keep Same Tile", &m.keepSameTile),
+				g.Checkbox("Only Visit Unique Tiles", &m.uniqueTileVisits),
+			),
+			g.Menu("View").Layout(
+				g.Checkbox("Z Onionskinning", &m.onionskinZ),
+				g.Checkbox("Y Onionskinning", &m.onionskinY),
+				g.Checkbox("X Onionskinning", &m.onionskinX),
+				g.SliderInt(&m.onionSkinGtIntensity, 0, 255).Label("Onionskin > Opacity").Format("%d"),
+				g.SliderInt(&m.onionSkinLtIntensity, 0, 255).Label("Onionskin < Opacity").Format("%d"),
+				g.Checkbox("Grid", &m.showGrid),
+				g.Checkbox("Y Grids", &m.showYGrids),
+				g.SliderInt(&m.zoom, 1, 8).Label("Zoom").Format("%d"),
+			),
+		),
 		g.Custom(func() {
 			imgui.SelectableV(fmt.Sprintf("select (%s)", m.getToolButtonString(selectTool)), m.isToolBound(selectTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
 			if g.IsItemHovered() {
@@ -178,17 +178,18 @@ func (m *Mapset) Draw() {
 				g.OpenPopup("Delete Map")
 			}
 		}),
-		g.PopupModalV("Save Map", nil, 0, g.Layout{
+		g.PopupModal("Save Map").Layout(
 			g.Label("Save mapset to file"),
 			widgets.FileBrowser(&m.saveMapCWD, &m.saveMapFilename, nil),
-			g.Line(
-				g.Button("Cancel", func() {
+			// Line
+			g.Row(
+				g.Button("Cancel").OnClick(func() {
 					m.saveMapCWD = m.context.DataManager().MapsPath
 					m.saveMapFilename = ""
 					m.showSave = false
 					g.CloseCurrentPopup()
 				}),
-				g.Button("Save", func() {
+				g.Button("Save").OnClick(func() {
 					fullPath := path.Join(m.saveMapCWD, m.saveMapFilename)
 					m.saveMapCWD = m.context.DataManager().MapsPath
 					m.saveMapFilename = ""
@@ -198,39 +199,39 @@ func (m *Mapset) Draw() {
 					g.CloseCurrentPopup()
 				}),
 			),
-		}),
-		g.PopupModalV("Resize Map", nil, 0, g.Layout{
+		),
+		g.PopupModal("Resize Map").Layout(
 			g.Label("Grow or Shrink the current map"),
-			g.Line(
-				g.InputInt("Up    ", 50, &m.resizeU),
-				g.InputInt("Down  ", 50, &m.resizeD),
+			g.Row(
+				g.InputInt(&m.resizeU).Size(50).Label("Up    "),
+				g.InputInt(&m.resizeD).Size(50).Label("Down  "),
 			),
-			g.Line(
-				g.InputInt("Left  ", 50, &m.resizeL),
-				g.InputInt("Right ", 50, &m.resizeR),
+			g.Row(
+				g.InputInt(&m.resizeL).Size(50).Label("Left  "),
+				g.InputInt(&m.resizeR).Size(50).Label("Right "),
 			),
-			g.Line(
-				g.InputInt("Top   ", 50, &m.resizeT),
-				g.InputInt("Bottom", 50, &m.resizeB),
+			g.Row(
+				g.InputInt(&m.resizeT).Size(50).Label("Top   "),
+				g.InputInt(&m.resizeB).Size(50).Label("Bottom"),
 			),
-			g.Line(
-				g.Button("Resize", func() {
+			g.Row(
+				g.Button("Resize").OnClick(func() {
 					m.resizeMap(int(m.resizeU), int(m.resizeD), int(m.resizeL), int(m.resizeR), int(m.resizeT), int(m.resizeB))
 					m.resizeU, m.resizeD, m.resizeL, m.resizeR, m.resizeT, m.resizeB = 0, 0, 0, 0, 0, 0
 					g.CloseCurrentPopup()
 				}),
-				g.Button("Cancel", func() {
+				g.Button("Cancel").OnClick(func() {
 					m.resizeU, m.resizeD, m.resizeL, m.resizeR, m.resizeT, m.resizeB = 0, 0, 0, 0, 0, 0
 					g.CloseCurrentPopup()
 				}),
 			),
-		}),
-		g.PopupModalV("New Map", nil, g.WindowFlagsHorizontalScrollbar, g.Layout{
+		),
+		g.PopupModal("New Map").Flags(g.WindowFlagsHorizontalScrollbar).Layout(
 			g.Label("Create a new map"),
-			g.InputText("Data Name", 0, &m.newDataName),
-			g.InputText("Name", 0, &m.newName),
+			g.InputText(&m.newDataName).Label("Data Name"),
+			g.InputText(&m.newName).Label("Name"),
 			g.Custom(func() {
-				availW, _ := g.GetAvaiableRegion()
+				availW, _ := g.GetAvailableRegion()
 				labelV := imgui.CalcTextSize("Description", false, 0)
 				m.descEditor.Render("Description", imgui.Vec2{X: availW - labelV.X - 5, Y: 200}, false)
 				imgui.SameLine()
@@ -239,11 +240,11 @@ func (m *Mapset) Draw() {
 				imgui.SameLine()
 				g.Label("Lore").Build()
 			}),
-			g.SliderInt("Height", &m.newH, 1, 200, "%d"),
-			g.SliderInt("Width ", &m.newW, 1, 200, "%d"),
-			g.SliderInt("Depth ", &m.newD, 1, 200, "%d"),
-			g.Line(
-				g.Button("Create", func() {
+			g.SliderInt(&m.newH, 1, 200).Label("Height").Format("%d"),
+			g.SliderInt(&m.newW, 1, 200).Label("Width ").Format("%d"),
+			g.SliderInt(&m.newD, 1, 200).Label("Depth ").Format("%d"),
+			g.Row(
+				g.Button("Create").OnClick(func() {
 					g.CloseCurrentPopup()
 					lore := m.loreEditor.GetText()
 					desc := m.descEditor.GetText()
@@ -252,17 +253,17 @@ func (m *Mapset) Draw() {
 					m.maps = append(m.maps, data.NewUnReMap(newMap, m.newDataName))
 					m.newName, m.newDataName = "", ""
 				}),
-				g.Button("Cancel", func() {
+				g.Button("Cancel").OnClick(func() {
 					g.CloseCurrentPopup()
 					m.newName, m.newDataName = "", ""
 				}),
 			),
-		}),
-		g.PopupModalV("Map Properties", nil, g.WindowFlagsHorizontalScrollbar, g.Layout{
-			g.InputText("Data Name", 0, &m.newDataName),
-			g.InputText("Name", 0, &m.newName),
+		),
+		g.PopupModal("Map Properties").Flags(g.WindowFlagsHorizontalScrollbar).Layout(
+			g.InputText(&m.newDataName).Label("Data Name"),
+			g.InputText(&m.newName).Label("Name"),
 			g.Custom(func() {
-				availW, availH := g.GetAvaiableRegion()
+				availW, availH := g.GetAvailableRegion()
 				labelV := imgui.CalcTextSize("Description", false, 0)
 				m.descEditor.Render("Description", imgui.Vec2{X: availW - labelV.X - 5, Y: availH/2 - labelV.Y - 3}, false)
 				imgui.SameLine()
@@ -271,8 +272,8 @@ func (m *Mapset) Draw() {
 				imgui.SameLine()
 				g.Label("Lore").Build()
 			}),
-			g.Line(
-				g.Button("Save", func() {
+			g.Row(
+				g.Button("Save").OnClick(func() {
 					g.CloseCurrentPopup()
 					//
 					cm := m.CurrentMap()
@@ -288,25 +289,25 @@ func (m *Mapset) Draw() {
 
 					m.newName, m.newDataName = "", ""
 				}),
-				g.Button("Cancel", func() {
+				g.Button("Cancel").OnClick(func() {
 					g.CloseCurrentPopup()
 					m.newName, m.newDataName = "", ""
 				}),
 			),
-		}),
-		g.PopupModalV("Delete Map", nil, 0, g.Layout{
+		),
+		g.PopupModal("Delete Map").Layout(
 			g.Label("Delete map?"),
 			g.Label("This cannot be recovered."),
-			g.Line(
-				g.Button("Delete", func() {
+			g.Row(
+				g.Button("Delete").OnClick(func() {
 					m.deleteMap(m.currentMapIndex)
 					g.CloseCurrentPopup()
 				}),
-				g.Button("Cancel", func() {
+				g.Button("Cancel").OnClick(func() {
 					g.CloseCurrentPopup()
 				}),
 			),
-		}),
+		),
 		widgets.KeyBinds(widgets.KeyBindsFlagWindowFocused,
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyShift, widgets.KeyControl), widgets.Keys(widgets.KeyZ), func() {
 				if cm := m.CurrentMap(); cm != nil {
@@ -375,7 +376,7 @@ func (m *Mapset) Draw() {
 				}
 			}),
 		),
-	})
+	)
 
 	if !windowOpen {
 		m.close()
@@ -383,32 +384,32 @@ func (m *Mapset) Draw() {
 }
 
 func (m *Mapset) layoutMapTabs() g.Layout {
-	var tabs g.Layout
+	var tabs []*g.TabItemWidget
 	for mapIndex, v := range m.maps {
 		func(mapIndex int, v *data.UnReMap) {
 			var flags g.TabItemFlags
 			if v.Unsaved() {
 				flags |= g.TabItemFlagsUnsavedDocument
 			}
-			tab := g.TabItemV(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name), nil, flags, g.Layout{
+			tab := g.TabItem(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name)).Flags(flags).Layout(
 				g.Custom(func() {
 					m.currentMapIndex = mapIndex
-					availW, availH := g.GetAvaiableRegion()
+					availW, availH := g.GetAvailableRegion()
 					defaultW := float32(math.Round(float64(availW - availW/4)))
 					defaultH := float32(math.Round(float64(availH - availH/4)))
-					g.SplitLayout("vsplit", g.DirectionVertical, true, defaultH, g.Layout{
-						g.SplitLayout("hsplit", g.DirectionHorizontal, true, defaultW,
+					g.SplitLayout(g.DirectionVertical, true, defaultH, g.Layout{
+						g.SplitLayout(g.DirectionHorizontal, true, defaultW,
 							m.layoutMapView(v),
 							m.layoutArchsList(v),
 						),
 					}, m.layoutSelectedArch(v)).Build()
 				}),
-			})
+			)
 
 			tabs = append(tabs, tab)
 		}(mapIndex, v)
 	}
-	return g.Layout{g.TabBarV("Mapset", g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown, tabs)}
+	return g.Layout{g.TabBar().Flags(g.TabBarFlagsFittingPolicyScroll | g.TabBarFlagsFittingPolicyResizeDown).TabItems(tabs...)}
 }
 
 func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
@@ -420,122 +421,128 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 	}
 	hovered := false
 	lineHeight := imgui.CalcTextSize("Toolbar", false, 0)
+	var canvasWidth, canvasHeight float32
 
 	return g.Layout{
 		g.Custom(func() {
-			availW, availH = g.GetAvaiableRegion()
-		}),
-		g.Child(v.Get().Name, false, availW, availH-lineHeight.Y*2, childFlags, g.Layout{
-			g.Custom(func() {
-				childPos = g.GetCursorScreenPos()
-				m.drawMap(v)
-			}),
-			g.Custom(func() {
-				if g.IsItemHovered() {
-					hovered = true
-					mousePos := g.GetMousePos()
-					mousePos.X -= childPos.X
-					mousePos.Y -= childPos.Y
-
-					p, err := m.getMapPointFromMouse(mousePos)
-					if err != nil {
-						//log.Errorln(err)
-						return
-					}
-
-					m.hoveredY = m.focusedY
-					m.hoveredX = p.X
-					m.hoveredZ = p.Y
-
-					var state ButtonState
-					// RMB
-					if g.IsMouseDown(g.MouseButtonRight) {
-						state = 2
-						if _, ok := m.mouseHeld[g.MouseButtonRight]; !ok {
-							m.mouseHeld[g.MouseButtonRight] = true
-							state = 1
-						}
-						err := m.handleMouseTool(g.MouseButtonRight, state, m.focusedY, p.X, p.Y)
-						if err != nil {
-							log.Errorln(err)
-						}
-					} else if g.IsMouseReleased(g.MouseButtonRight) {
-						state = 0
-						err := m.handleMouseTool(g.MouseButtonRight, state, m.focusedY, p.X, p.Y)
-						if err != nil {
-							log.Errorln(err)
-						}
-
-						delete(m.mouseHeld, g.MouseButtonRight)
-					}
-					// MMB
-					if g.IsMouseDown(g.MouseButtonMiddle) {
-						state = 2
-						if _, ok := m.mouseHeld[g.MouseButtonMiddle]; !ok {
-							m.mouseHeld[g.MouseButtonMiddle] = true
-							state = 1
-						}
-						err := m.handleMouseTool(g.MouseButtonMiddle, state, m.focusedY, p.X, p.Y)
-						if err != nil {
-							log.Errorln(err)
-						}
-					} else if g.IsMouseReleased(g.MouseButtonMiddle) {
-						state = 0
-						err := m.handleMouseTool(g.MouseButtonMiddle, state, m.focusedY, p.X, p.Y)
-						if err != nil {
-							log.Errorln(err)
-						}
-						delete(m.mouseHeld, g.MouseButtonMiddle)
-					}
-					// LMB
-					if g.IsMouseDown(g.MouseButtonLeft) {
-						state = 2
-						if _, ok := m.mouseHeld[g.MouseButtonLeft]; !ok {
-							m.mouseHeld[g.MouseButtonLeft] = true
-							state = 1
-						}
-						err := m.handleMouseTool(g.MouseButtonLeft, state, m.focusedY, p.X, p.Y)
-						if err != nil {
-							log.Errorln(err)
-						}
-					} else if g.IsMouseReleased(g.MouseButtonLeft) {
-						state = 0
-						err := m.handleMouseTool(g.MouseButtonLeft, state, m.focusedY, p.X, p.Y)
-						if err != nil {
-							log.Errorln(err)
-						}
-						delete(m.mouseHeld, g.MouseButtonLeft)
-					}
-				}
-			}),
-			g.Custom(func() {
-				if hovered {
-					widgets.KeyBinds(0,
-						widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyAlt), func() {
-							mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
-							if mouseWheelDelta != 0 {
-								m.focusedY += int(mouseWheelDelta)
-								if m.focusedY < 0 {
-									m.focusedY = 0
-								} else if m.focusedY >= v.Get().Height {
-									m.focusedY = v.Get().Height - 1
-								}
-							}
-						}),
-						widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyControl), func() {
-							mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
-							if mouseWheelDelta != 0 {
-								m.zoom += int32(mouseWheelDelta)
-								if m.zoom < 1 {
-									m.zoom = 1
-								} else if m.zoom > 8 {
-									m.zoom = 8
-								}
-							}
+			availW, availH = g.GetAvailableRegion()
+			g.Child().Border(false).Flags(childFlags).Size(availW, availH-lineHeight.Y*2).Layout(
+				g.Custom(func() {
+					childPos = g.GetCursorScreenPos()
+					canvasWidth, canvasHeight = m.getMapSize(v)
+					g.Child().Border(false).Flags(g.WindowFlagsNoMouseInputs|g.WindowFlagsNoMove).Size(canvasWidth, canvasHeight).Layout(
+						g.Custom(func() {
+							m.drawMap(v)
 						}),
 					).Build()
-				}
-			}),
+				}),
+				g.Custom(func() {
+					if g.IsItemHovered() {
+						hovered = true
+						mousePos := g.GetMousePos()
+						mousePos.X -= childPos.X
+						mousePos.Y -= childPos.Y
+
+						p, err := m.getMapPointFromMouse(mousePos)
+						if err != nil {
+							//log.Errorln(err)
+							return
+						}
+
+						m.hoveredY = m.focusedY
+						m.hoveredX = p.X
+						m.hoveredZ = p.Y
+
+						var state ButtonState
+						// RMB
+						if g.IsMouseDown(g.MouseButtonRight) {
+							state = 2
+							if _, ok := m.mouseHeld[g.MouseButtonRight]; !ok {
+								m.mouseHeld[g.MouseButtonRight] = true
+								state = 1
+							}
+							err := m.handleMouseTool(g.MouseButtonRight, state, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
+							}
+						} else if g.IsMouseReleased(g.MouseButtonRight) {
+							state = 0
+							err := m.handleMouseTool(g.MouseButtonRight, state, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
+							}
+
+							delete(m.mouseHeld, g.MouseButtonRight)
+						}
+						// MMB
+						if g.IsMouseDown(g.MouseButtonMiddle) {
+							state = 2
+							if _, ok := m.mouseHeld[g.MouseButtonMiddle]; !ok {
+								m.mouseHeld[g.MouseButtonMiddle] = true
+								state = 1
+							}
+							err := m.handleMouseTool(g.MouseButtonMiddle, state, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
+							}
+						} else if g.IsMouseReleased(g.MouseButtonMiddle) {
+							state = 0
+							err := m.handleMouseTool(g.MouseButtonMiddle, state, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
+							}
+							delete(m.mouseHeld, g.MouseButtonMiddle)
+						}
+						// LMB
+						if g.IsMouseDown(g.MouseButtonLeft) {
+							state = 2
+							if _, ok := m.mouseHeld[g.MouseButtonLeft]; !ok {
+								m.mouseHeld[g.MouseButtonLeft] = true
+								state = 1
+							}
+							err := m.handleMouseTool(g.MouseButtonLeft, state, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
+							}
+						} else if g.IsMouseReleased(g.MouseButtonLeft) {
+							state = 0
+							err := m.handleMouseTool(g.MouseButtonLeft, state, m.focusedY, p.X, p.Y)
+							if err != nil {
+								log.Errorln(err)
+							}
+							delete(m.mouseHeld, g.MouseButtonLeft)
+						}
+					}
+				}),
+				g.Custom(func() {
+					if hovered {
+						widgets.KeyBinds(0,
+							widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyAlt), func() {
+								mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+								if mouseWheelDelta != 0 {
+									m.focusedY += int(mouseWheelDelta)
+									if m.focusedY < 0 {
+										m.focusedY = 0
+									} else if m.focusedY >= v.Get().Height {
+										m.focusedY = v.Get().Height - 1
+									}
+								}
+							}),
+							widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyControl), func() {
+								mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+								if mouseWheelDelta != 0 {
+									m.zoom += int32(mouseWheelDelta)
+									if m.zoom < 1 {
+										m.zoom = 1
+									} else if m.zoom > 8 {
+										m.zoom = 8
+									}
+								}
+							}),
+						).Build()
+					}
+				}),
+			).Build()
 		}),
 		m.layoutMapInfobar(v),
 	}
@@ -543,7 +550,7 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 
 func (m *Mapset) layoutMapInfobar(v *data.UnReMap) g.Layout {
 	return g.Layout{
-		g.Line(
+		g.Row(
 			g.Label(fmt.Sprintf("%dx%dx%d", m.focusedX, m.focusedZ, m.focusedY)),
 			g.Label(fmt.Sprintf("(%dx%dx%d)", m.hoveredX, m.hoveredZ, m.hoveredY)),
 		),
@@ -571,7 +578,7 @@ func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
 						if index == m.focusedI && m.focusedY == y {
 							flags |= g.TreeNodeFlagsSelected
 						}
-						items = append(items, g.TreeNode("", flags, g.Layout{
+						items = append(items, g.TreeNode("").Flags(flags).Layout(
 							g.Custom(func() {
 								if g.IsItemHovered() {
 									if g.IsMouseDoubleClicked(g.MouseButtonLeft) {
@@ -589,7 +596,7 @@ func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
 									if tex, ok := m.context.ImageTextures()[imageName]; ok {
 										g.SameLine()
 										if tex.Texture != nil {
-											g.Image(tex.Texture, tex.Width, tex.Height).Build()
+											g.Image(tex.Texture).Size(tex.Width, tex.Height).Build()
 										}
 										return
 									}
@@ -605,20 +612,20 @@ func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
 							g.Custom(func() {
 								//imgui.PopStyleColorV(1)
 							}),
-						}))
+						))
 					}(index, arch)
 				}
 			} else {
 				var flags g.TreeNodeFlags
 				flags = g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
-				items = append(items, g.TreeNode("", flags, g.Layout{
+				items = append(items, g.TreeNode("").Flags(flags).Layout(
 					g.Custom(func() {
 						g.SameLine()
 						g.Dummy(float32(dm.AnimationsConfig.TileWidth), float32(dm.AnimationsConfig.TileHeight))
 					}),
 					g.Custom(func() { g.SameLine() }),
 					g.Label("-"),
-				}))
+				))
 			}
 		}(y)
 
@@ -629,7 +636,7 @@ func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
 			}))
 			flags |= g.TreeNodeFlagsSelected
 		}
-		yItems = append(yItems, g.TreeNode(fmt.Sprintf("%d", y), flags, items))
+		yItems = append(yItems, g.TreeNode(fmt.Sprintf("%d", y)).Flags(flags).Layout(items))
 		if y == m.focusedY {
 			yItems = append(yItems, g.Custom(func() {
 				//imgui.PopStyleColor()

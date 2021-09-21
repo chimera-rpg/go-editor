@@ -5,7 +5,7 @@ import (
 	"path"
 
 	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/giu/imgui"
+	imgui "github.com/AllenDang/imgui-go"
 	sdata "github.com/chimera-rpg/go-server/data"
 )
 
@@ -39,20 +39,20 @@ func (a *Archset) draw() {
 
 	var newArchPopup bool
 
-	g.WindowV(fmt.Sprintf("Archset: %s", a.filename), &windowOpen, g.WindowFlagsMenuBar, 210, 430, 300, 400, g.Layout{
-		g.MenuBar(g.Layout{
-			g.Menu("Archset", g.Layout{
-				g.MenuItem("New Arch...", func() {
+	g.Window(fmt.Sprintf("Archset: %s", a.filename)).IsOpen(&windowOpen).Flags(g.WindowFlagsMenuBar).Pos(210, 430).Size(300, 400).Layout(
+		g.MenuBar().Layout(
+			g.Menu("Archset").Layout(
+				g.MenuItem("New Arch...").OnClick(func() {
 					newArchPopup = true
 				}),
 				g.Separator(),
-				g.MenuItem("Save All", func() {}),
+				g.MenuItem("Save All").OnClick(func() {}),
 				g.Separator(),
-				g.MenuItem("Close", func() {
+				g.MenuItem("Close").OnClick(func() {
 					a.close()
 				}),
-			}),
-		}),
+			),
+		),
 		g.Custom(func() {
 			if imgui.BeginTabBarV("Archset", int(g.TabBarFlagsFittingPolicyScroll|g.TabBarFlagsFittingPolicyResizeDown)) {
 				for archIndex, arch := range a.archs {
@@ -61,17 +61,17 @@ func (a *Archset) draw() {
 						flags |= g.TabItemFlagsUnsavedDocument
 					}
 					if imgui.BeginTabItemV(arch.DataName(), nil, int(flags)) {
-						_, availH := g.GetAvaiableRegion()
+						_, availH := g.GetAvailableRegion()
 						a.currentArchIndex = archIndex
 						arch.textEditor.Render("Source", imgui.Vec2{X: 0, Y: availH - 20}, false)
 						if arch.textEditor.IsTextChanged() {
 							arch.SetUnsaved(true)
 						}
-						g.Line(
-							g.Button("Reset", func() {
+						g.Row(
+							g.Button("Reset").OnClick(func() {
 								arch.Reset()
 							}),
-							g.Button("Save", func() {
+							g.Button("Save").OnClick(func() {
 								arch.Save()
 								// TODO: Resave current Archset with most recent saved versions of Archs.
 							}),
@@ -87,12 +87,12 @@ func (a *Archset) draw() {
 				g.OpenPopup("New Arch")
 			}
 		}),
-		g.PopupModalV("New Arch", nil, g.WindowFlagsHorizontalScrollbar, g.Layout{
+		g.PopupModal("New Arch").IsOpen(&newArchPopup).Flags(g.WindowFlagsHorizontalScrollbar).Layout(
 			g.Label("Create a new arch"),
-			g.InputText("Data Name", 0, &a.newDataName),
-			g.InputText("Name", 0, &a.newName),
-			g.Line(
-				g.Button("Create", func() {
+			g.InputText(&a.newDataName).Label("Data Name"),
+			g.InputText(&a.newName).Label("Name"),
+			g.Row(
+				g.Button("Create").OnClick(func() {
 					// TODO: Check if arch with the same name already exists
 					a.archs = append(a.archs, NewUnReArch(sdata.Archetype{
 						Name: &*&a.newName, // TODO: Replace with a NewString(...) function call.
@@ -100,13 +100,13 @@ func (a *Archset) draw() {
 					g.CloseCurrentPopup()
 					a.setDefaults()
 				}),
-				g.Button("Cancel", func() {
+				g.Button("Cancel").OnClick(func() {
 					g.CloseCurrentPopup()
 					a.setDefaults()
 				}),
 			),
-		}),
-	})
+		),
+	)
 
 	if !windowOpen {
 		a.close()

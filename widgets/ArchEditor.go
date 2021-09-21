@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/giu/imgui"
+	imgui "github.com/AllenDang/imgui-go"
 	"github.com/chimera-rpg/go-editor/data"
 	sdata "github.com/chimera-rpg/go-server/data"
 )
@@ -107,7 +107,7 @@ func (a *ArchEditorWidget) checkStringPair(field string, s *StringPair) {
 
 func (a *ArchEditorWidget) Layout() (l g.Layout) {
 	l = g.Layout{
-		g.MenuBar(g.Layout{}),
+		g.MenuBar().Layout(),
 		a.ArchetypeLayout(),
 	}
 
@@ -118,7 +118,7 @@ func (a *ArchEditorWidget) StringLayout(field string, target *StringPair) g.Layo
 	dm := a.context.DataManager()
 	isLocal, _ := dm.IsArchFieldLocal(a.arch, field)
 	var resetButton g.Widget
-	resetButton = g.Button("reset", func() {
+	resetButton = g.Button("reset").OnClick(func() {
 		target.reset = true
 		target.pending = target.previous
 	})
@@ -128,9 +128,10 @@ func (a *ArchEditorWidget) StringLayout(field string, target *StringPair) g.Layo
 
 	var inputField g.Widget
 	if field == "Description" {
-		inputField = g.InputTextMultiline(field, &target.pending, 0, 0, g.InputTextFlagsNone, nil, nil)
+		//inputField = g.InputTextMultiline(field, &target.pending, 0, 0, g.InputTextFlagsNone, nil, nil)
+		inputField = g.InputText(&target.pending).Label(field)
 	} else {
-		inputField = g.InputText(field, 0, &target.pending)
+		inputField = g.InputText(&target.pending).Label(field)
 	}
 
 	return g.Layout{
@@ -144,7 +145,7 @@ func (a *ArchEditorWidget) StringLayout(field string, target *StringPair) g.Layo
 				})
 			}
 		}),
-		g.Line(
+		g.Row(
 			inputField,
 			resetButton,
 		),
@@ -160,8 +161,8 @@ func (a *ArchEditorWidget) ArchetypeLayout() (l g.Layout) {
 	l = g.Layout{
 		a.StringLayout("Name", &a.name),
 		a.StringLayout("Description", &a.description),
-		g.Line(
-			g.Button("apply", func() {
+		g.Row(
+			g.Button("apply").OnClick(func() {
 				a.preChangeCallback()
 
 				a.checkStringPair("Name", &a.name)

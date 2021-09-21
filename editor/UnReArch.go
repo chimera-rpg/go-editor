@@ -1,7 +1,7 @@
 package editor
 
 import (
-	"github.com/AllenDang/giu/imgui"
+	imgui "github.com/AllenDang/imgui-go"
 	"github.com/chimera-rpg/go-editor/internal/unredo"
 	sdata "github.com/chimera-rpg/go-server/data"
 	"gopkg.in/yaml.v2"

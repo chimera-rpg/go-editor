@@ -5,7 +5,7 @@ import (
 	"image"
 
 	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/giu/imgui"
+	imgui "github.com/AllenDang/imgui-go"
 	"github.com/chimera-rpg/go-editor/data"
 	"github.com/chimera-rpg/go-editor/widgets"
 	sdata "github.com/chimera-rpg/go-server/data"

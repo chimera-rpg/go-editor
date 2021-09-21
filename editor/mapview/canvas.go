@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	g "github.com/AllenDang/giu"
-	"github.com/AllenDang/giu/imgui"
 	"github.com/chimera-rpg/go-editor/data"
 )
 
@@ -21,11 +20,8 @@ type archDrawable struct {
 	c     color.RGBA
 }
 
-func (m *Mapset) drawMap(v *data.UnReMap) {
+func (m *Mapset) getMapSize(v *data.UnReMap) (float32, float32) {
 	sm := v.Get()
-
-	pos := g.GetCursorScreenPos()
-	canvas := g.GetCanvas()
 	dm := m.context.DataManager()
 	scale := int(m.zoom)
 	tWidth := int(dm.AnimationsConfig.TileWidth)
@@ -37,8 +33,25 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 
 	canvasWidth := int((cWidth + (sm.Height * int(yStep.X)) + padding*2) * scale)
 	canvasHeight := int((cHeight + (sm.Height * int(-yStep.Y)) + padding*2) * scale)
+	return float32(canvasWidth), float32(canvasHeight)
+}
 
-	imgui.BeginChildV("map", imgui.Vec2{X: float32(canvasWidth), Y: float32(canvasHeight)}, false, imgui.WindowFlagsNoMove|imgui.WindowFlagsNoMouseInputs)
+func (m *Mapset) drawMap(v *data.UnReMap) {
+	sm := v.Get()
+	dm := m.context.DataManager()
+
+	canvas := g.GetCanvas()
+	pos := g.GetCursorScreenPos()
+	scale := int(m.zoom)
+	tWidth := int(dm.AnimationsConfig.TileWidth)
+	tHeight := int(dm.AnimationsConfig.TileHeight)
+	yStep := dm.AnimationsConfig.YStep
+	padding := 4
+	cWidth := sm.Width * tWidth
+	cHeight := sm.Depth * tHeight
+
+	canvasWidth := int((cWidth + (sm.Height * int(yStep.X)) + padding*2) * scale)
+	canvasHeight := int((cHeight + (sm.Height * int(-yStep.Y)) + padding*2) * scale)
 
 	startX := padding
 	startY := padding + (sm.Height * int(-yStep.Y))
@@ -253,6 +266,4 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 
 		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), hoveredBorderColor, 0, 0, 1)
 	}
-
-	imgui.EndChild()
 }

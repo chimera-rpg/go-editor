@@ -14,5 +14,5 @@ type Animset struct {
 func (a *Animset) draw() {
 	var b bool
 
-	g.WindowV(fmt.Sprintf("Animset: %s", a.filename), &b, g.WindowFlagsMenuBar, 210, 440, 300, 400, g.Layout{})
+	g.Window(fmt.Sprintf("Animset: %s", a.filename)).IsOpen(&b).Flags(g.WindowFlagsMenuBar).Pos(210, 440).Size(300, 400)
 }
