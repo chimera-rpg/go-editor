@@ -73,7 +73,38 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 		toolBinds:            make(map[g.MouseButton]int),
 		saveMapCWD:           context.DataManager().MapsPath,
 	}
+	var pendingClone *sdata.Map
 	m.archEditor.SetContext(context)
+	m.archEditor.SetPreChangeCallback(func() bool {
+		if m.CurrentMap() == nil {
+			return false
+		}
+		log.Println("SetPreChange")
+		pendingClone = m.CurrentMap().Clone()
+		return true
+	})
+	m.archEditor.SetPostChangeCallback(func() bool {
+		if m.CurrentMap() == nil {
+			return false
+		}
+		newClone := m.CurrentMap().Clone()
+		m.CurrentMap().Replace(pendingClone)
+		m.CurrentMap().Set(newClone)
+		log.Println("SetPostChange")
+		return true
+	})
+	m.archEditor.SetSaveCallback(func() bool {
+		m.saveAll()
+		return true
+	})
+	m.archEditor.SetUndoCallback(func() bool {
+		m.CurrentMap().Undo()
+		return true
+	})
+	m.archEditor.SetRedoCallback(func() bool {
+		m.CurrentMap().Redo()
+		return true
+	})
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)
 
