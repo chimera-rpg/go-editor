@@ -2,13 +2,13 @@ package editor
 
 import (
 	"github.com/AllenDang/giu/imgui"
+	"github.com/chimera-rpg/go-editor/internal/unredo"
 	sdata "github.com/chimera-rpg/go-server/data"
-	undo "github.com/iomodo/a-simple-undo-redo"
 	"gopkg.in/yaml.v2"
 )
 
 type UnReArch struct {
-	undoer     undo.Undoer
+	undoer     unredo.Unredoabler
 	source     string
 	dataName   string
 	textEditor imgui.TextEditor
@@ -17,7 +17,7 @@ type UnReArch struct {
 }
 
 func NewUnReArch(a sdata.Archetype, d string) *UnReArch {
-	undoer := undo.NewUndoer(0)
+	undoer := unredo.NewUnredoabler(a)
 	u := &UnReArch{
 		undoer:     undoer,
 		dataName:   d,
@@ -25,13 +25,12 @@ func NewUnReArch(a sdata.Archetype, d string) *UnReArch {
 		savedArch:  a,
 	}
 	u.textEditor.SetShowWhitespaces(false)
-	u.Set(a)
 
 	return u
 }
 
 func (u *UnReArch) Set(a sdata.Archetype) error {
-	u.undoer.Save(a)
+	u.undoer.Push(a)
 
 	bytes, err := yaml.Marshal(a)
 	if err != nil {
