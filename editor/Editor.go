@@ -2,7 +2,6 @@ package editor
 
 import (
 	"errors"
-	"fmt"
 	"image"
 	"image/draw"
 	"os"
@@ -262,10 +261,8 @@ func (e *Editor) drawArchetypeTreeNode(node data.ArchetypeTreeNode, parent strin
 					//e.context.imageTexturesLock.Unlock()
 					if ok {
 						g.SameLine()
-						fmt.Printf("ok %s %+v\n", imageName, t)
 						if t.Texture != nil {
 							g.Image(t.Texture).Size(t.Width, t.Height).Build()
-							fmt.Println("Wow, got stuff")
 						}
 					}
 				}
@@ -313,6 +310,11 @@ func (e *Editor) drawArchetypes() (title string, w *g.WindowWidget, layout g.Lay
 				}),
 				g.Button("Reload Animations").OnClick(func() {
 					e.context.dataManager.ReloadAnimations()
+				}),
+				g.Button("Reload Images").OnClick(func() {
+					e.context.dataManager.ReloadImages()
+					e.pendingImages = e.context.dataManager.GetImages()
+					e.isLoaded = false
 				}),
 			),
 		),

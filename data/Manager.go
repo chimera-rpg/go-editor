@@ -131,6 +131,17 @@ func (m *Manager) ReloadAnimations() error {
 	return nil
 }
 
+func (m *Manager) ReloadImages() error {
+	m.images = make(map[string]image.Image)
+	m.scaledImages = make(map[float64]map[string]image.Image)
+
+	if err := m.LoadImages(); err != nil {
+		return err
+	}
+	log.Printf("Cached %d images\n", len(m.images))
+	return nil
+}
+
 // GetDataPath gets a path relative to the data path directory.
 func (m *Manager) GetDataPath(parts ...string) string {
 	return path.Join(m.DataPath, filepath.Clean(fmt.Sprintf("%c", filepath.Separator)+filepath.Join(parts...)))
