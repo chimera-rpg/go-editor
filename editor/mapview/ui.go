@@ -134,18 +134,23 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 			g.ImageButton(icons.Textures[selectImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
 				m.bindMouseToTool(g.MouseButtonLeft, selectTool)
 			}),
+			g.Tooltip("selection tool"),
 			g.ImageButton(icons.Textures[insertImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
 				m.bindMouseToTool(g.MouseButtonLeft, insertTool)
 			}),
+			g.Tooltip("insertion tool"),
 			g.ImageButton(icons.Textures[fillImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
 				m.bindMouseToTool(g.MouseButtonLeft, fillTool)
 			}),
+			g.Tooltip("fill tool"),
 			g.ImageButton(icons.Textures[pickImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
 				m.bindMouseToTool(g.MouseButtonLeft, pickTool)
 			}),
+			g.Tooltip("pick from map tool"),
 			g.ImageButton(icons.Textures[eraseImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
 				m.bindMouseToTool(g.MouseButtonLeft, eraseTool)
 			}),
+			g.Tooltip("erase tool"),
 		),
 		/*g.Custom(func() {
 			imgui.SelectableV(fmt.Sprintf("select (%s)", m.getToolButtonString(selectTool)), m.isToolBound(selectTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
