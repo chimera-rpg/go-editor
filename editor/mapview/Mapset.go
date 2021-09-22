@@ -109,8 +109,8 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 	m.descEditor.SetShowWhitespaces(false)
 
 	m.bindMouseToTool(g.MouseButtonLeft, selectTool)
-	m.bindMouseToTool(g.MouseButtonMiddle, eraseTool)
-	m.bindMouseToTool(g.MouseButtonRight, insertTool)
+	//m.bindMouseToTool(g.MouseButtonMiddle, eraseTool)
+	//m.bindMouseToTool(g.MouseButtonRight, insertTool)
 
 	for k, v := range maps {
 		m.maps = append(m.maps, data.NewUnReMap(v, k))

@@ -10,6 +10,7 @@ import (
 	g "github.com/AllenDang/giu"
 	imgui "github.com/AllenDang/imgui-go"
 	"github.com/chimera-rpg/go-editor/data"
+	"github.com/chimera-rpg/go-editor/editor/icons"
 	"github.com/chimera-rpg/go-editor/widgets"
 	sdata "github.com/chimera-rpg/go-server/data"
 	log "github.com/sirupsen/logrus"
@@ -36,8 +37,27 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 	if filename == "" {
 		filename = "Untitled Map"
 	}
-	toolWidth, _ := g.CalcTextSize("_________")
-
+	//toolWidth, _ := g.CalcTextSize("_________")
+	selectImage := "select"
+	if m.isToolBound(selectTool) {
+		selectImage += "-focus"
+	}
+	fillImage := "fill"
+	if m.isToolBound(fillTool) {
+		fillImage += "-focus"
+	}
+	pickImage := "dropper"
+	if m.isToolBound(pickTool) {
+		pickImage += "-focus"
+	}
+	eraseImage := "eraser"
+	if m.isToolBound(eraseTool) {
+		eraseImage += "-focus"
+	}
+	insertImage := "insert"
+	if m.isToolBound(insertTool) {
+		insertImage += "-focus"
+	}
 	// Block mousewheel scrolling if alt or ctrl is held.
 	m.blockScroll = false
 	widgets.KeyBinds(0,
@@ -110,7 +130,24 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 			g.SliderInt(&m.zoom, 1, 8).Label("Zoom").Format("%d"),
 		),
 	),
-		g.Custom(func() {
+		g.Row(
+			g.ImageButton(icons.Textures[selectImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+				m.bindMouseToTool(g.MouseButtonLeft, selectTool)
+			}),
+			g.ImageButton(icons.Textures[insertImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+				m.bindMouseToTool(g.MouseButtonLeft, insertTool)
+			}),
+			g.ImageButton(icons.Textures[fillImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+				m.bindMouseToTool(g.MouseButtonLeft, fillTool)
+			}),
+			g.ImageButton(icons.Textures[pickImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+				m.bindMouseToTool(g.MouseButtonLeft, pickTool)
+			}),
+			g.ImageButton(icons.Textures[eraseImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+				m.bindMouseToTool(g.MouseButtonLeft, eraseTool)
+			}),
+		),
+		/*g.Custom(func() {
 			imgui.SelectableV(fmt.Sprintf("select (%s)", m.getToolButtonString(selectTool)), m.isToolBound(selectTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
 			if g.IsItemHovered() {
 				if g.IsMouseClicked(g.MouseButtonLeft) {
@@ -165,7 +202,7 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 					m.bindMouseToTool(g.MouseButtonRight, eraseTool)
 				}
 			}
-		}),
+		}),*/
 		m.layoutMapTabs(),
 		g.Custom(func() {
 			if m.showSave {
