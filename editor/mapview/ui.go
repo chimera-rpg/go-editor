@@ -42,6 +42,10 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 	if m.isToolBound(selectTool) {
 		selectImage += "-focus"
 	}
+	cselectImage := "cselect"
+	if m.isToolBound(cselectTool) {
+		cselectImage += "-focus"
+	}
 	fillImage := "fill"
 	if m.isToolBound(fillTool) {
 		fillImage += "-focus"
@@ -131,84 +135,47 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 		),
 	),
 		g.Row(
-			g.ImageButton(icons.Textures[selectImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
-				m.bindMouseToTool(g.MouseButtonLeft, selectTool)
-			}),
-			g.Tooltip("selection tool"),
-			g.ImageButton(icons.Textures[insertImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
-				m.bindMouseToTool(g.MouseButtonLeft, insertTool)
-			}),
-			g.Tooltip("insertion tool"),
-			g.ImageButton(icons.Textures[fillImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
-				m.bindMouseToTool(g.MouseButtonLeft, fillTool)
-			}),
-			g.Tooltip("fill tool"),
-			g.ImageButton(icons.Textures[pickImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
-				m.bindMouseToTool(g.MouseButtonLeft, pickTool)
-			}),
-			g.Tooltip("pick from map tool"),
-			g.ImageButton(icons.Textures[eraseImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
-				m.bindMouseToTool(g.MouseButtonLeft, eraseTool)
-			}),
-			g.Tooltip("erase tool"),
+			g.Column(
+				g.Row(
+					g.ImageButton(icons.Textures[selectImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+						m.bindMouseToTool(g.MouseButtonLeft, selectTool)
+					}),
+					g.Tooltip("selection tool"),
+					g.ImageButton(icons.Textures[cselectImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+						m.bindMouseToTool(g.MouseButtonLeft, cselectTool)
+					}),
+					g.Tooltip("circular selection tool"),
+					g.ImageButton(icons.Textures[pickImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+						m.bindMouseToTool(g.MouseButtonLeft, pickTool)
+					}),
+					g.Tooltip("pick from map tool"),
+				),
+				g.Row(
+					g.ImageButton(icons.Textures[insertImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+						m.bindMouseToTool(g.MouseButtonLeft, insertTool)
+					}),
+					g.Tooltip("insertion tool"),
+					g.ImageButton(icons.Textures[eraseImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+						m.bindMouseToTool(g.MouseButtonLeft, eraseTool)
+					}),
+					g.Tooltip("erase tool"),
+					g.ImageButton(icons.Textures[fillImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+						m.bindMouseToTool(g.MouseButtonLeft, fillTool)
+					}),
+					g.Tooltip("fill tool"),
+				),
+				g.Row(
+					g.Child().Size(105, g.Auto).Layout(
+						g.Custom(func() {
+							g.Label("TODO").Build()
+						}),
+					),
+				),
+			),
+			g.Child().Layout(
+				m.layoutMapTabs(),
+			),
 		),
-		/*g.Custom(func() {
-			imgui.SelectableV(fmt.Sprintf("select (%s)", m.getToolButtonString(selectTool)), m.isToolBound(selectTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
-			if g.IsItemHovered() {
-				if g.IsMouseClicked(g.MouseButtonLeft) {
-					m.bindMouseToTool(g.MouseButtonLeft, selectTool)
-				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
-					m.bindMouseToTool(g.MouseButtonMiddle, selectTool)
-				} else if g.IsMouseClicked(g.MouseButtonRight) {
-					m.bindMouseToTool(g.MouseButtonRight, selectTool)
-				}
-			}
-			imgui.SameLine()
-			imgui.SelectableV(fmt.Sprintf("insert (%s)", m.getToolButtonString(insertTool)), m.isToolBound(insertTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
-			if g.IsItemHovered() {
-				if g.IsMouseClicked(g.MouseButtonLeft) {
-					m.bindMouseToTool(g.MouseButtonLeft, insertTool)
-				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
-					m.bindMouseToTool(g.MouseButtonMiddle, insertTool)
-				} else if g.IsMouseClicked(g.MouseButtonRight) {
-					m.bindMouseToTool(g.MouseButtonRight, insertTool)
-				}
-			}
-			imgui.SameLine()
-			imgui.SelectableV(fmt.Sprintf("fill (%s)", m.getToolButtonString(fillTool)), m.isToolBound(fillTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
-			if g.IsItemHovered() {
-				if g.IsMouseClicked(g.MouseButtonLeft) {
-					m.bindMouseToTool(g.MouseButtonLeft, fillTool)
-				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
-					m.bindMouseToTool(g.MouseButtonMiddle, fillTool)
-				} else if g.IsMouseClicked(g.MouseButtonRight) {
-					m.bindMouseToTool(g.MouseButtonRight, fillTool)
-				}
-			}
-			imgui.SameLine()
-			imgui.SelectableV(fmt.Sprintf("pick (%s)", m.getToolButtonString(pickTool)), m.isToolBound(pickTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
-			if g.IsItemHovered() {
-				if g.IsMouseClicked(g.MouseButtonLeft) {
-					m.bindMouseToTool(g.MouseButtonLeft, pickTool)
-				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
-					m.bindMouseToTool(g.MouseButtonMiddle, pickTool)
-				} else if g.IsMouseClicked(g.MouseButtonRight) {
-					m.bindMouseToTool(g.MouseButtonRight, pickTool)
-				}
-			}
-			imgui.SameLine()
-			imgui.SelectableV(fmt.Sprintf("erase (%s)", m.getToolButtonString(eraseTool)), m.isToolBound(eraseTool), 0, imgui.Vec2{X: toolWidth, Y: 0})
-			if g.IsItemHovered() {
-				if g.IsMouseClicked(g.MouseButtonLeft) {
-					m.bindMouseToTool(g.MouseButtonLeft, eraseTool)
-				} else if g.IsMouseClicked(g.MouseButtonMiddle) {
-					m.bindMouseToTool(g.MouseButtonMiddle, eraseTool)
-				} else if g.IsMouseClicked(g.MouseButtonRight) {
-					m.bindMouseToTool(g.MouseButtonRight, eraseTool)
-				}
-			}
-		}),*/
-		m.layoutMapTabs(),
 		g.Custom(func() {
 			if m.showSave {
 				g.OpenPopup("Save Map")

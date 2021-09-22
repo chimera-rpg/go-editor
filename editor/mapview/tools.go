@@ -21,6 +21,7 @@ const (
 const (
 	noTool = iota
 	selectTool
+	cselectTool
 	insertTool
 	pickTool
 	eraseTool
@@ -93,6 +94,8 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, state ButtonState, y, x, z i
 		if toolIndex == insertTool {
 			return m.toolInsert(state, cm, y, x, z)
 		} else if toolIndex == selectTool {
+			return m.toolSelect(state, cm, y, x, z)
+		} else if toolIndex == cselectTool {
 			return m.toolSelect(state, cm, y, x, z)
 		} else if toolIndex == eraseTool {
 			return m.toolErase(state, cm, y, x, z)
