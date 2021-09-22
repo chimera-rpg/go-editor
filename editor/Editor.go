@@ -11,6 +11,7 @@ import (
 
 	g "github.com/AllenDang/giu"
 	"github.com/chimera-rpg/go-editor/data"
+	"github.com/chimera-rpg/go-editor/editor/icons"
 	"github.com/chimera-rpg/go-editor/editor/mapview"
 	"github.com/chimera-rpg/go-editor/widgets"
 	sdata "github.com/chimera-rpg/go-server/data"
@@ -89,6 +90,8 @@ func (e *Editor) loop() {
 		g.PopupModal("Loading...").Flags(g.WindowFlagsNoResize).Layout(
 			g.Label("Now loading files..."),
 		).Build()
+
+		icons.Load()
 
 		for imagePath, img := range e.pendingImages {
 			go func(imagePath string, img image.Image) {
@@ -247,18 +250,20 @@ func (e *Editor) drawArchetypeTreeNode(node data.ArchetypeTreeNode, parent strin
 			}(archName)),
 			g.Custom(func(archName string) func() {
 				return func() {
+					var t *data.ImageTexture
+					var ok bool
 					arch := e.context.dataManager.GetArchetype(archName)
 					if arch == nil {
 						return
 					}
 					anim, face := e.context.dataManager.GetAnimAndFace(arch, "", "")
 					imageName, err := e.context.dataManager.GetAnimFaceImage(anim, face)
+
 					if err != nil {
-						return
+						t, ok = icons.Textures["missing"]
+					} else {
+						t, ok = e.context.imageTextures[imageName]
 					}
-					//e.context.imageTexturesLock.Lock()
-					t, ok := e.context.imageTextures[imageName]
-					//e.context.imageTexturesLock.Unlock()
 					if ok {
 						g.SameLine()
 						if t.Texture != nil {
