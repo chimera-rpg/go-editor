@@ -8,6 +8,7 @@ import (
 
 	g "github.com/AllenDang/giu"
 	"github.com/chimera-rpg/go-editor/data"
+	"github.com/chimera-rpg/go-editor/editor/icons"
 )
 
 type archDrawable struct {
@@ -113,13 +114,17 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 					indexY := y
 					zIndex := (indexZ * sm.Height * sm.Width) + (sm.Depth * indexY) - (indexX) + t
 
+					var tex *data.ImageTexture
+					var ok bool
 					anim, face := dm.GetAnimAndFace(&sm.Tiles[y][x][z][t], "", "")
 					imageName, err := dm.GetAnimFaceImage(anim, face)
 					if err != nil {
-						continue
+						tex, ok = icons.Textures["missing"]
+					} else {
+						tex, ok = m.context.ImageTextures()[imageName]
 					}
 
-					if tex, ok := m.context.ImageTextures()[imageName]; ok {
+					if ok {
 						cY := oY
 						if (oH > 1 || oD > 1) && int(tex.Height*float32(scale)) > tHeight*scale {
 							oY -= int(tex.Height*float32(scale)) - (tHeight * scale)
