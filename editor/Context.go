@@ -23,3 +23,7 @@ func (c *Context) ImageTextures() map[string]*data.ImageTexture {
 func (c *Context) SelectedArch() string {
 	return c.selectedArch
 }
+
+func (c *Context) SetSelectedArch(a string) {
+	c.selectedArch = a
+}
