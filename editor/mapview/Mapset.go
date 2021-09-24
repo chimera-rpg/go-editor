@@ -149,6 +149,10 @@ func (m *Mapset) getMapPointFromMouse(p image.Point) (h image.Point, err error) 
 	return
 }
 
+func (m *Mapset) Filepath() string {
+	return m.filename
+}
+
 func (m *Mapset) saveAll() {
 	maps := make(map[string]*sdata.Map)
 	for _, v := range m.maps {

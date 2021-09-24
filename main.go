@@ -1,7 +1,10 @@
 package main
 
 import (
+	"os"
+	"os/signal"
 	"runtime/debug"
+	"syscall"
 
 	log "github.com/sirupsen/logrus"
 
@@ -54,8 +57,25 @@ func main() {
 		return
 	}
 	defer editorInstance.Destroy()
+
+	// Add cleanup handling on kill.
+	sigChan := make(chan os.Signal, 2)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		if err := dataManager.EditorConfig.Save(); err != nil {
+			log.Errorln(err)
+		}
+		os.Exit(1)
+	}()
+
 	// Start the clientInstance's channel listening loop as a coroutine
 	editorInstance.Start()
+
+	// Save config.
+	if err := dataManager.EditorConfig.Save(); err != nil {
+		log.Errorln(err)
+	}
 
 	log.Print("Sayonara!")
 }

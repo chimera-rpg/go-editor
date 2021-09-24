@@ -25,6 +25,7 @@ type Editor struct {
 	masterWindow   *g.MasterWindow
 	archetypesMode bool
 	isLoaded       bool
+	isRestored     bool
 	isRunning      bool
 	showSplash     bool
 	mapsets        []*mapview.Mapset
@@ -112,6 +113,14 @@ func (e *Editor) loop() {
 		return
 	}
 
+	if !e.isRestored {
+		for _, mapName := range e.context.dataManager.EditorConfig.OpenMaps {
+			e.openMap(mapName)
+		}
+		e.isRestored = true
+		return
+	}
+
 	g.MainMenuBar().Layout(
 		g.Menu("File").Layout(
 			g.MenuItem("New Mapset").OnClick(func() {
@@ -144,12 +153,10 @@ func (e *Editor) loop() {
 			g.Button("Cancel").OnClick(func() { g.CloseCurrentPopup() }),
 			g.Button("Open").OnClick(func() {
 				fullPath := path.Join(e.openMapCWD, e.openMapFilename)
-				dMapset, err := e.context.dataManager.LoadMap(fullPath)
+				err := e.openMap(fullPath)
 				if err != nil {
 					// TODO: Popup some sort of error!
 					log.Errorln(err)
-				} else {
-					e.mapsets = append(e.mapsets, mapview.NewMapset(&e.context, fullPath, dMapset))
 				}
 				g.CloseCurrentPopup()
 			}),
@@ -174,6 +181,7 @@ func (e *Editor) loop() {
 		})
 		if m.ShouldClose {
 			e.mapsets = append(e.mapsets[:i], e.mapsets[i+1:]...)
+			e.context.dataManager.EditorConfig.RemoveMap(m.Filepath())
 		}
 	}
 
@@ -369,4 +377,26 @@ func (e *Editor) openArchsetFromArchetype(archName string) {
 		}
 	}
 	e.archsets = append(e.archsets, NewArchset(&e.context, archFilename, archMap))
+}
+
+func (e *Editor) openMap(fullPath string) error {
+	dMapset, err := e.context.dataManager.LoadMap(fullPath)
+	if err == nil {
+		e.mapsets = append(e.mapsets, mapview.NewMapset(&e.context, fullPath, dMapset))
+		if e.isRestored {
+			e.context.dataManager.EditorConfig.AddMap(fullPath)
+		}
+	}
+	return err
+}
+
+func (e *Editor) closeMap(fullPath string) error {
+	for i, m := range e.mapsets {
+		if m.Filepath() == fullPath {
+			e.mapsets = append(e.mapsets[:i], e.mapsets[i+1:]...)
+			break
+		}
+	}
+	e.context.dataManager.EditorConfig.RemoveMap(fullPath)
+	return nil
 }

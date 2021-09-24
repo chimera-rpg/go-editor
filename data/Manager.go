@@ -36,6 +36,7 @@ type Manager struct {
 	archetypesOrder     []string
 	archetypeFiles      map[string][]string
 	AnimationsConfig    cdata.AnimationsConfig
+	EditorConfig        EditorConfig
 	archetypeFilesOrder []string
 	animationFiles      map[string]map[string]struct{}
 }
@@ -70,9 +71,24 @@ func (m *Manager) Setup() (err error) {
 	m.animationFiles = make(map[string]map[string]struct{})
 	m.animations = make(map[string]sdata.AnimationPre)
 
+	// Read editor config
+	editorConfigPath := filepath.Join(m.EtcPath, "editor-config.yaml")
+	r, err := ioutil.ReadFile(editorConfigPath)
+	if err != nil {
+		m.EditorConfig = EditorConfig{}
+		if err := m.EditorConfig.Save(); err != nil {
+			return err
+		}
+	} else {
+		if err = yaml.Unmarshal(r, &m.EditorConfig); err != nil {
+			return err
+		}
+	}
+	m.EditorConfig.filePath = editorConfigPath
+
 	// Read animations config
 	animationsConfigPath := filepath.Join(m.ArchetypesPath, "config.yaml")
-	r, err := ioutil.ReadFile(animationsConfigPath)
+	r, err = ioutil.ReadFile(animationsConfigPath)
 	if err != nil {
 		return err
 	}
