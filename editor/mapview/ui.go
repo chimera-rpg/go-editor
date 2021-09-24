@@ -700,12 +700,14 @@ func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
 					}(index, arch)
 				}
 			} else {
-				var flags g.TreeNodeFlags
-				flags = g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
+				flags := g.TreeNodeFlagsLeaf | g.TreeNodeFlagsSpanFullWidth
 				items = append(items, g.TreeNode("").Flags(flags).Layout(
 					g.Custom(func() {
 						g.SameLine()
 						g.Dummy(float32(dm.AnimationsConfig.TileWidth), float32(dm.AnimationsConfig.TileHeight))
+						if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
+							m.focusedY = y
+						}
 					}),
 					g.Custom(func() { g.SameLine() }),
 					g.Label("-"),
@@ -715,17 +717,10 @@ func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
 
 		flags := g.TreeNodeFlagsDefaultOpen | g.TreeNodeFlagsSpanFullWidth | g.TreeNodeFlagsOpenOnArrow | g.TreeNodeFlagsOpenOnDoubleClick
 		if y == m.focusedY {
-			yItems = append(yItems, g.Custom(func() {
-				//imgui.PushStyleColor(imgui.StyleColorText, g.ToVec4Color(color.RGBA{32, 128, 255, 255}))
-			}))
 			flags |= g.TreeNodeFlagsSelected
 		}
+
 		yItems = append(yItems, g.TreeNode(fmt.Sprintf("%d", y)).Flags(flags).Layout(items))
-		if y == m.focusedY {
-			yItems = append(yItems, g.Custom(func() {
-				//imgui.PopStyleColor()
-			}))
-		}
 	}
 	return yItems
 }
