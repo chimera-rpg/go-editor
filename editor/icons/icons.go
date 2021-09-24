@@ -15,7 +15,7 @@ var Textures map[string]*data.ImageTexture
 
 func Load() {
 	Textures = make(map[string]*data.ImageTexture)
-	files := []string{"dropper", "dropper-focus", "eraser", "eraser-focus", "fill", "fill-focus", "insert", "insert-focus", "select", "select-focus", "cselect", "cselect-focus", "loading", "missing"}
+	files := []string{"dropper", "dropper-focus", "eraser", "eraser-focus", "fill", "fill-focus", "insert", "insert-focus", "select", "select-focus", "cselect", "cselect-focus", "lselect", "lselect-focus", "loading", "missing"}
 	for _, name := range files {
 		go func(name string) {
 			filedata, _ := f.Open(name + ".png")
