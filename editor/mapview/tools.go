@@ -2,6 +2,7 @@ package mapview
 
 import (
 	"errors"
+	"fmt"
 
 	g "github.com/AllenDang/giu"
 	"github.com/chimera-rpg/go-editor/data"
@@ -104,6 +105,8 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, state ButtonState, y, x, z i
 			return m.toolErase(state, cm, y, x, z)
 		} else if toolIndex == fillTool {
 			return m.toolFill(state, cm, y, x, z)
+		} else if toolIndex == pickTool {
+			return m.toolPick(state, cm, y, x, z)
 		}
 	}
 	return nil
@@ -182,6 +185,7 @@ func (m *Mapset) toolSelect(state ButtonState, subTool int, v *data.UnReMap, y, 
 }
 
 func (m *Mapset) toolInsert(state ButtonState, v *data.UnReMap, y, x, z int) (err error) {
+	fmt.Printf("insert %s\n", m.context.SelectedArch())
 	// Bail if no archetype is selected.
 	if m.context.SelectedArch() == "" {
 		return
@@ -275,6 +279,25 @@ func (m *Mapset) toolFill(state ButtonState, v *data.UnReMap, y, x, z int) (err 
 		}
 		if changed {
 			v.Set(clone)
+		}
+	}
+	return
+}
+
+func (m *Mapset) toolPick(state ButtonState, v *data.UnReMap, y, x, z int) (err error) {
+	if state == Trigger || state == Up {
+		tiles := m.getTiles(v.Get(), y, x, z)
+		if len(*tiles) > 0 {
+			a := (*tiles)[len(*tiles)-1]
+			arch := a.Arch
+			if arch == "" {
+				if len(a.Archs) > 0 {
+					arch = a.Archs[0]
+				}
+			}
+			if arch != "" {
+				m.context.SetSelectedArch(arch)
+			}
 		}
 	}
 	return
