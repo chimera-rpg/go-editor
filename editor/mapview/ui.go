@@ -572,10 +572,71 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 }
 
 func (m *Mapset) layoutMapInfobar(v *data.UnReMap) g.Layout {
+	dm := m.context.DataManager()
+	tiles := m.getTiles(v.Get(), m.hoveredY, m.hoveredX, m.hoveredZ)
+	var hoveredArch sdata.Archetype
+	hoveredHasMore := false
+	if len(*tiles) > 0 {
+		hoveredArch = (*tiles)[len(*tiles)-1]
+		if len(*tiles) > 1 {
+			hoveredHasMore = true
+		}
+	}
+	hoveredArchName := dm.GetArchName(&hoveredArch, "")
+	if hoveredHasMore {
+		hoveredArchName += "*"
+	}
+
+	tiles = m.getTiles(v.Get(), m.focusedY, m.focusedX, m.focusedZ)
+	var focusedArch sdata.Archetype
+	focusedHasMore := false
+	if len(*tiles) > 0 {
+		focusedArch = (*tiles)[len(*tiles)-1]
+		if len(*tiles) > 1 {
+			focusedHasMore = true
+		}
+	}
+	focusedArchName := dm.GetArchName(&focusedArch, "")
+	if focusedHasMore {
+		focusedArchName += "*"
+	}
+
 	return g.Layout{
 		g.Row(
 			g.Label(fmt.Sprintf("%dx%dx%d", m.focusedX, m.focusedZ, m.focusedY)),
+			g.Custom(func() {
+				anim, face := dm.GetAnimAndFace(&focusedArch, "", "")
+				imageName, err := dm.GetAnimFaceImage(anim, face)
+				if err == nil {
+					if tex, ok := m.context.ImageTextures()[imageName]; ok {
+						g.SameLine()
+						if tex.Texture != nil {
+							g.Image(tex.Texture).Size(tex.Width, tex.Height).Build()
+						}
+						return
+					}
+				}
+				g.SameLine()
+				g.Dummy(float32(dm.AnimationsConfig.TileWidth), float32(dm.AnimationsConfig.TileHeight))
+			}),
+			g.Label(focusedArchName),
 			g.Label(fmt.Sprintf("(%dx%dx%d)", m.hoveredX, m.hoveredZ, m.hoveredY)),
+			g.Custom(func() {
+				anim, face := dm.GetAnimAndFace(&hoveredArch, "", "")
+				imageName, err := dm.GetAnimFaceImage(anim, face)
+				if err == nil {
+					if tex, ok := m.context.ImageTextures()[imageName]; ok {
+						g.SameLine()
+						if tex.Texture != nil {
+							g.Image(tex.Texture).Size(tex.Width, tex.Height).Build()
+						}
+						return
+					}
+				}
+				g.SameLine()
+				g.Dummy(float32(dm.AnimationsConfig.TileWidth), float32(dm.AnimationsConfig.TileHeight))
+			}),
+			g.Label(hoveredArchName),
 		),
 	}
 }
