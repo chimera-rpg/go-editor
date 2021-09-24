@@ -22,6 +22,7 @@ const (
 	noTool = iota
 	selectTool
 	cselectTool
+	lselectTool
 	insertTool
 	pickTool
 	eraseTool
@@ -94,9 +95,11 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, state ButtonState, y, x, z i
 		if toolIndex == insertTool {
 			return m.toolInsert(state, cm, y, x, z)
 		} else if toolIndex == selectTool {
-			return m.toolSelect(state, cm, y, x, z)
+			return m.toolSelect(state, selectTool, cm, y, x, z)
 		} else if toolIndex == cselectTool {
-			return m.toolSelect(state, cm, y, x, z)
+			return m.toolSelect(state, cselectTool, cm, y, x, z)
+		} else if toolIndex == lselectTool {
+			return m.toolSelect(state, lselectTool, cm, y, x, z)
 		} else if toolIndex == eraseTool {
 			return m.toolErase(state, cm, y, x, z)
 		} else if toolIndex == fillTool {
@@ -106,7 +109,7 @@ func (m *Mapset) handleMouseTool(btn g.MouseButton, state ButtonState, y, x, z i
 	return nil
 }
 
-func (m *Mapset) toolSelect(state ButtonState, v *data.UnReMap, y, x, z int) (err error) {
+func (m *Mapset) toolSelect(state ButtonState, subTool int, v *data.UnReMap, y, x, z int) (err error) {
 	insertMode := 0 // replace
 	widgets.KeyBinds(0,
 		widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyShift), nil, func() {
@@ -122,19 +125,37 @@ func (m *Mapset) toolSelect(state ButtonState, v *data.UnReMap, y, x, z int) (er
 		m.selectingXStart, m.selectingXEnd = x, x
 		m.selectingZStart, m.selectingZEnd = z, z
 		m.selectingCoords.Clear()
-		m.selectingCoords.Range(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		if subTool == cselectTool {
+			m.selectingCoords.RangeCircle(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		} else if subTool == lselectTool {
+			m.selectingCoords.Line(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		} else {
+			m.selectingCoords.Range(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		}
 	} else if state == Held {
 		m.selectingYEnd = y
 		m.selectingXEnd = x
 		m.selectingZEnd = z
 		m.selectingCoords.Clear()
-		m.selectingCoords.Range(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		if subTool == cselectTool {
+			m.selectingCoords.RangeCircle(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		} else if subTool == lselectTool {
+			m.selectingCoords.Line(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		} else {
+			m.selectingCoords.Range(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		}
 	} else if state == Up {
 		m.selectingYEnd = y
 		m.selectingXEnd = x
 		m.selectingZEnd = z
 		m.selectingCoords.Clear()
-		m.selectingCoords.Range(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		if subTool == cselectTool {
+			m.selectingCoords.RangeCircle(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		} else if subTool == lselectTool {
+			m.selectingCoords.Line(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		} else {
+			m.selectingCoords.Range(true, m.selectingYStart, m.selectingXStart, m.selectingZStart, m.selectingYEnd, m.selectingXEnd, m.selectingZEnd)
+		}
 
 		if insertMode == 0 { // replace
 			m.selectedCoords.Set(m.selectingCoords)

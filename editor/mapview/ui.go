@@ -46,6 +46,10 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 	if m.isToolBound(cselectTool) {
 		cselectImage += "-focus"
 	}
+	lselectImage := "lselect"
+	if m.isToolBound(lselectTool) {
+		lselectImage += "-focus"
+	}
 	fillImage := "fill"
 	if m.isToolBound(fillTool) {
 		fillImage += "-focus"
@@ -145,10 +149,10 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 						m.bindMouseToTool(g.MouseButtonLeft, cselectTool)
 					}),
 					g.Tooltip("circular selection tool"),
-					g.ImageButton(icons.Textures[pickImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
-						m.bindMouseToTool(g.MouseButtonLeft, pickTool)
+					g.ImageButton(icons.Textures[lselectImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+						m.bindMouseToTool(g.MouseButtonLeft, lselectTool)
 					}),
-					g.Tooltip("pick from map tool"),
+					g.Tooltip("line selection tool"),
 				),
 				g.Row(
 					g.ImageButton(icons.Textures[insertImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
@@ -163,6 +167,12 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 						m.bindMouseToTool(g.MouseButtonLeft, fillTool)
 					}),
 					g.Tooltip("fill tool"),
+				),
+				g.Row(
+					g.ImageButton(icons.Textures[pickImage].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+						m.bindMouseToTool(g.MouseButtonLeft, pickTool)
+					}),
+					g.Tooltip("pick from map tool"),
 				),
 				g.Row(
 					g.Child().Size(105, g.Auto).Layout(

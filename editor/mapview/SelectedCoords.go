@@ -65,6 +65,41 @@ func (s *SelectedCoords) Remove(o SelectedCoords) {
 	}
 }
 
+func (s *SelectedCoords) Line(doSelect bool, y1, x1, z1, y2, x2, z2 int) {
+	dx := int(math.Abs(float64(x2 - x1)))
+	dz := int(math.Abs(float64(z2 - z1)))
+	sx := -1
+	if x1 < x2 {
+		sx = 1
+	}
+	sz := -1
+	if z1 < z2 {
+		sz = 1
+	}
+	v := dx - dz
+
+	for {
+		if doSelect {
+			s.Select(y1, x1, z1)
+		} else {
+			s.Unselect(y1, x1, z1)
+		}
+
+		if (x1 == x2) && (z1 == z2) {
+			break
+		}
+		v2 := v * 2
+		if v2 > -dz {
+			v -= dz
+			x1 += sx
+		}
+		if v2 < dx {
+			v += dx
+			z1 += sz
+		}
+	}
+}
+
 // Range selects or unselects between 2 coordinates.
 // TODO: Add a doOutline bool for only doing outer edge for range.
 func (s *SelectedCoords) Range(doSelect bool, y1, x1, z1, y2, x2, z2 int) {
@@ -85,4 +120,36 @@ func (s *SelectedCoords) Range(doSelect bool, y1, x1, z1, y2, x2, z2 int) {
 			}
 		}
 	}
+}
+
+func (s *SelectedCoords) RangeCircle(doSelect bool, y1, x1, z1, y2, x2, z2 int) {
+	/*ymin := int(math.Min(float64(y1), float64(y2)))
+	ymax := int(math.Max(float64(y1), float64(y2)))
+	xmin := int(math.Min(float64(x1), float64(x2)))
+	xmax := int(math.Max(float64(x1), float64(x2)))
+	zmin := int(math.Min(float64(z1), float64(z2)))
+	zmax := int(math.Max(float64(z1), float64(z2)))
+
+	yRadius := ymax - ymin
+	if yRadius == 0 {
+		yRadius = 1
+	}
+	xRadius := xmax - xmin
+	zRadius := zmax - zmin
+
+	rx := (x2 - x1) / 2
+	ry := (y2 - y1) / 2
+	rz := (z2 - z1) / 2
+	cx := (x2 + x1) / 2
+	cy := (y2 + y1) / 2
+	cz := (z2 + z1) / 2
+
+	for a := 0; a < math.Pi; a++ {
+		x := cx + math.Cos(a)*rx
+		z := cz + math.Sin(a)*rz
+		//y := cy + sin(a) * ry
+		if a > 0 {
+			// TODO: Draw line.
+		}
+	}*/
 }
