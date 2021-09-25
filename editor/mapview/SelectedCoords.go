@@ -153,3 +153,23 @@ func (s *SelectedCoords) RangeCircle(doSelect bool, y1, x1, z1, y2, x2, z2 int) 
 		}
 	}*/
 }
+
+func (s *SelectedCoords) ReplicateYSlice(doSelect bool, slice map[[3]int]struct{}, targetY int) {
+	for yxz := range slice {
+		if doSelect {
+			s.Select(targetY, yxz[1], yxz[2])
+		} else {
+			s.Unselect(targetY, yxz[1], yxz[2])
+		}
+	}
+}
+
+func (s *SelectedCoords) GetYSlice(y int) map[[3]int]struct{} {
+	results := make(map[Coords]struct{})
+	for yxz := range s.Get() {
+		if yxz[0] == y {
+			results[yxz] = struct{}{}
+		}
+	}
+	return results
+}
