@@ -75,7 +75,9 @@ func (m *Manager) Setup() (err error) {
 	editorConfigPath := filepath.Join(m.EtcPath, "editor-config.yaml")
 	r, err := ioutil.ReadFile(editorConfigPath)
 	if err != nil {
-		m.EditorConfig = EditorConfig{}
+		m.EditorConfig = EditorConfig{
+			filePath: editorConfigPath,
+		}
 		if err := m.EditorConfig.Save(); err != nil {
 			return err
 		}
