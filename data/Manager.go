@@ -165,6 +165,11 @@ func (m *Manager) GetDataPath(parts ...string) string {
 	return path.Join(m.DataPath, filepath.Clean(fmt.Sprintf("%c", filepath.Separator)+filepath.Join(parts...)))
 }
 
+func (m *Manager) GetRelativeMapPath(parts ...string) (string, error) {
+	p := path.Join(parts...)
+	return filepath.Rel(m.MapsPath, p)
+}
+
 // GetEtcPath gets a path relative to the etc path directory.
 func (m *Manager) GetEtcPath(parts ...string) string {
 	return path.Join(m.EtcPath, filepath.Clean(fmt.Sprintf("%c", filepath.Separator)+filepath.Join(parts...)))
