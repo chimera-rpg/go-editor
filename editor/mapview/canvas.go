@@ -57,6 +57,43 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 	startX := padding
 	startY := padding + (sm.Height * int(-yStep.Y))
 
+	drawRect := func(y, x, z int, col color.RGBA) {
+		xOffset := y * int(yStep.X)
+		yOffset := y * int(-yStep.Y)
+		oX := pos.X + (x*tWidth+xOffset+startX)*scale
+		oY := pos.Y + (z*tHeight-yOffset+startY)*scale
+		oW := (tWidth) * scale
+		oH := (tHeight) * scale
+
+		canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), col, 0, 0)
+	}
+
+	drawBox := func(y, x, z int, col color.RGBA) {
+		xOffset := y * int(yStep.X)
+		yOffset := y * int(-yStep.Y)
+
+		// Calc bottom
+		o1X := pos.X + (x*tWidth+xOffset+startX)*scale
+		o1Y := pos.Y + (z*tHeight-yOffset+startY)*scale
+
+		// Calc top
+		y += 1
+		xOffset = y * int(yStep.X)
+		yOffset = y * int(-yStep.Y)
+		o2X := pos.X + (x*tWidth+xOffset+startX)*scale
+		o2Y := pos.Y + (z*tHeight-yOffset+startY)*scale
+
+		oW := (tWidth) * scale
+		oH := (tHeight) * scale
+
+		// Left
+		canvas.AddQuad(image.Pt(o1X, o1Y), image.Pt(o2X, o2Y+2), image.Pt(o2X, o2Y+oH-1), image.Pt(o1X, o1Y+oH-3), col, 1)
+		// Front
+		canvas.AddQuad(image.Pt(o1X, o1Y+oH), image.Pt(o2X, o2Y+oH), image.Pt(o2X+oW, o2Y+oH), image.Pt(o1X+oW, o1Y+oH), col, 1)
+		// Top
+		canvas.AddQuad(image.Pt(o2X+1, o2Y), image.Pt(o2X+oW, o2Y), image.Pt(o2X+oW, o2Y+oH-1), image.Pt(o2X+1, o2Y+oH-1), col, 1)
+	}
+
 	col := color.RGBA{0, 0, 0, 255}
 	canvas.AddRectFilled(pos, pos.Add(image.Pt(canvasWidth, canvasHeight)), col, 0, 0)
 
@@ -198,34 +235,31 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 	{
 		archs := v.GetArchs(m.focusedY, m.focusedX, m.focusedZ)
 		if m.focusedI >= 0 && m.focusedI < len(archs) {
-			xOffset := m.focusedY * int(yStep.X)
-			yOffset := m.focusedY * int(-yStep.Y)
-			oX := pos.X + (m.focusedX*tWidth+xOffset+startX)*scale
-			oY := pos.Y + (m.focusedZ*tHeight-yOffset+startY)*scale
-			oW := (tWidth) * scale
-			oH := (tHeight) * scale
-
-			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), focusedBackgroundColor, 0, 0)
+			drawRect(m.focusedY, m.focusedX, m.focusedZ, focusedBackgroundColor)
 			focusedDrawn = true
 		}
 	}
 
 	// Draw selected.
 	{
+		coords := m.selectedCoords.Get()
+		lowestY := math.MaxInt
+		for yxz := range coords {
+			if yxz[0] < lowestY {
+				lowestY = yxz[0]
+			}
+		}
 		for yxz := range m.selectedCoords.Get() {
 			y, x, z := yxz[0], yxz[1], yxz[2]
 			if focusedDrawn && m.focusedY == y && m.focusedX == x && m.focusedZ == z {
 				continue
 			}
 
-			xOffset := y * int(yStep.X)
-			yOffset := y * int(-yStep.Y)
-			oX := pos.X + (x*tWidth+xOffset+startX)*scale
-			oY := pos.Y + (z*tHeight-yOffset+startY)*scale
-			oW := (tWidth) * scale
-			oH := (tHeight) * scale
+			if y == lowestY {
+				drawRect(y, x, z, selectedBackgroundColor)
+			}
 
-			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), selectedBackgroundColor, 0, 0)
+			drawBox(y, x, z, selectedBackgroundColor)
 		}
 	}
 
@@ -236,33 +270,28 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 			if focusedDrawn && m.focusedY == y && m.focusedX == x && m.focusedZ == z {
 				continue
 			}
-
-			xOffset := y * int(yStep.X)
-			yOffset := y * int(-yStep.Y)
-			oX := pos.X + (x*tWidth+xOffset+startX)*scale
-			oY := pos.Y + (z*tHeight-yOffset+startY)*scale
-			oW := (tWidth) * scale
-			oH := (tHeight) * scale
-
-			canvas.AddRectFilled(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), selectingBackgroundColor, 0, 0)
+			drawRect(y, x, z, selectedBackgroundColor)
+			drawBox(y, x, z, selectedBackgroundColor)
 		}
 	}
 
 	// Draw focused.
 	{
-		xOffset := m.focusedY * int(yStep.X)
+		/*xOffset := m.focusedY * int(yStep.X)
 		yOffset := m.focusedY * int(-yStep.Y)
 		oX := pos.X + (m.focusedX*tWidth+xOffset+startX)*scale
 		oY := pos.Y + (m.focusedZ*tHeight-yOffset+startY)*scale
 		oW := (tWidth) * scale
 		oH := (tHeight) * scale
 
-		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), focusedBorderColor, 0, 0, 1)
+		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), focusedBorderColor, 0, 0, 1)*/
+		drawBox(m.focusedY, m.focusedX, m.focusedZ, focusedBorderColor)
 	}
 
 	// Draw hovered.
 	{
-		xOffset := m.hoveredY * int(yStep.X)
+		drawBox(m.hoveredY, m.hoveredX, m.hoveredZ, hoveredBorderColor)
+		/*xOffset := m.hoveredY * int(yStep.X)
 		yOffset := m.hoveredY * int(-yStep.Y)
 		oX := pos.X + (m.hoveredX*tWidth+xOffset+startX)*scale
 		oY := pos.Y + (m.hoveredZ*tHeight-yOffset+startY)*scale
@@ -270,5 +299,6 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 		oH := (tHeight) * scale
 
 		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), hoveredBorderColor, 0, 0, 1)
+		*/
 	}
 }
