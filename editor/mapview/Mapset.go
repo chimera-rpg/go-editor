@@ -14,7 +14,7 @@ import (
 
 type Mapset struct {
 	context                                      Context
-	filename                                     string
+	filename, shortname                          string
 	maps                                         []*data.UnReMap
 	currentMapIndex                              int
 	focusedY, focusedX, focusedZ                 int
@@ -52,8 +52,10 @@ type Mapset struct {
 }
 
 func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {
+	shortname, _ := context.DataManager().GetRelativeMapPath(name)
 	m := &Mapset{
 		filename:             name,
+		shortname:            shortname,
 		zoom:                 3.0,
 		showGrid:             false,
 		showYGrids:           false,

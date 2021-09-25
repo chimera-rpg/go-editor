@@ -403,7 +403,8 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 			}
 		}),
 	}
-	return title, w, layout
+	winTitle, _ := m.context.DataManager().GetRelativeMapPath(m.filename)
+	return winTitle, w, layout
 }
 
 func (m *Mapset) layoutMapTabs() g.Layout {
