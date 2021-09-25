@@ -48,6 +48,7 @@ type Mapset struct {
 	showSave                                     bool
 	saveMapCWD, saveMapFilename, pendingFilename string
 	archEditor                                   widgets.ArchEditorWidget
+	isWheelSelecting                             bool
 }
 
 func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {

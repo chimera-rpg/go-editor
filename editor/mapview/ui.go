@@ -438,7 +438,7 @@ func (m *Mapset) layoutMapTabs() g.Layout {
 func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 	var availW, availH float32
 	childPos := image.Point{0, 0}
-	childFlags := g.WindowFlagsHorizontalScrollbar | imgui.WindowFlagsNoMove
+	childFlags := g.WindowFlagsHorizontalScrollbar | imgui.WindowFlagsNoMove | imgui.WindowFlagsNoNav
 	if m.blockScroll {
 		childFlags |= imgui.WindowFlagsNoScrollWithMouse
 	}
@@ -540,17 +540,42 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 				g.Custom(func() {
 					if hovered {
 						widgets.KeyBinds(0,
-							widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyAlt), func() {
-								mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
-								if mouseWheelDelta != 0 {
-									m.focusedY += int(mouseWheelDelta)
-									if m.focusedY < 0 {
-										m.focusedY = 0
-									} else if m.focusedY >= v.Get().Height {
-										m.focusedY = v.Get().Height - 1
-									}
+							// Keybind controls for selection operations.
+							widgets.KeyBind(widgets.KeyBindFlagReleased, widgets.Keys(), widgets.Keys(widgets.KeyAlt), func() {
+								if m.isWheelSelecting {
+									m.selectedCoords.Add(m.selectingCoords)
+									m.selectingCoords.Clear()
+									m.isWheelSelecting = false
 								}
 							}),
+							// Mouse wheel to add/remove selection + scroll
+							widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyAlt, widgets.KeyShift), func() {
+								mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+								if mouseWheelDelta != 0 {
+									m.isWheelSelecting = true
+									slice := m.selectingCoords.GetYSlice(m.focusedY)
+									m.selectingCoords.ReplicateYSlice(true, slice, m.focusedY+int(mouseWheelDelta))
+									slice = m.selectedCoords.GetYSlice(m.focusedY)
+									m.selectingCoords.ReplicateYSlice(true, slice, m.focusedY+int(mouseWheelDelta))
+									m.scrollFocus(v)
+								}
+							}),
+							widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyAlt, widgets.KeyControl), func() {
+								mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+								if mouseWheelDelta != 0 {
+									m.isWheelSelecting = true
+									slice := m.selectedCoords.GetYSlice(m.focusedY)
+									m.selectingCoords.ReplicateYSlice(false, slice, m.focusedY)
+									slice = m.selectingCoords.GetYSlice(m.focusedY)
+									m.selectingCoords.ReplicateYSlice(false, slice, m.focusedY)
+									m.scrollFocus(v)
+								}
+							}),
+							// Scroll
+							widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyAlt), func() {
+								m.scrollFocus(v)
+							}),
+							// Zoom
 							widgets.KeyBind(widgets.KeyBindFlagDown, widgets.Keys(), widgets.Keys(widgets.KeyControl), func() {
 								mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
 								if mouseWheelDelta != 0 {
@@ -735,5 +760,17 @@ func (m *Mapset) layoutSelectedArch(v *data.UnReMap) g.Layout {
 	}
 	return g.Layout{
 		g.Label("no archetype selected"),
+	}
+}
+
+func (m *Mapset) scrollFocus(v *data.UnReMap) {
+	mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
+	if mouseWheelDelta != 0 {
+		m.focusedY += int(mouseWheelDelta)
+		if m.focusedY < 0 {
+			m.focusedY = 0
+		} else if m.focusedY >= v.Get().Height {
+			m.focusedY = v.Get().Height - 1
+		}
 	}
 }
