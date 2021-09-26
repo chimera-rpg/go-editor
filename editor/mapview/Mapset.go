@@ -346,3 +346,33 @@ func (m *Mapset) Unsaved() bool {
 	}
 	return false
 }
+
+func (m *Mapset) ensure() {
+	cm := m.CurrentMap()
+	if cm == nil {
+		return
+	}
+	h := cm.Get().Height
+	w := cm.Get().Width
+	d := cm.Get().Depth
+	if m.focusedZ >= d {
+		m.focusedZ = d - 1
+	}
+	if m.focusedY >= h {
+		m.focusedY = h - 1
+	}
+	if m.focusedX >= w {
+		m.focusedX = w - 1
+	}
+	if m.hoveredZ >= d {
+		m.hoveredZ = d - 1
+	}
+	if m.hoveredY >= h {
+		m.hoveredY = h - 1
+	}
+	if m.hoveredX >= w {
+		m.hoveredX = w - 1
+	}
+	m.selectedCoords.Clear()
+	m.selectingCoords.Clear()
+}

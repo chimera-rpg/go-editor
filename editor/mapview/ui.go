@@ -28,6 +28,7 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 
 	var mapExists bool
 	var resizeMapPopup, newMapPopup, adjustMapPopup, deleteMapPopup bool
+	var shortTitle string
 
 	if m.CurrentMap() != nil {
 		mapExists = true
@@ -82,7 +83,15 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 	if m.Unsaved() {
 		windowFlags |= g.WindowFlagsUnsavedDocument
 	}
+	shortFilename, _ := m.context.DataManager().GetRelativeMapPath(m.filename)
+
 	title = fmt.Sprintf("Mapset: %s", filename)
+	if m.filename == "" {
+		shortTitle = fmt.Sprintf("Mapset: %s", "New Mapset")
+	} else {
+		shortTitle = fmt.Sprintf("Mapset: %s", shortFilename)
+	}
+
 	w = g.Window(title)
 	w.IsOpen(&windowOpen).Flags(windowFlags).Pos(210, 30).Size(300, 400)
 	layout = g.Layout{g.MenuBar().Layout(
@@ -403,8 +412,7 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 			}
 		}),
 	}
-	winTitle, _ := m.context.DataManager().GetRelativeMapPath(m.filename)
-	return winTitle, w, layout
+	return shortTitle, w, layout
 }
 
 func (m *Mapset) layoutMapTabs() g.Layout {
@@ -417,7 +425,10 @@ func (m *Mapset) layoutMapTabs() g.Layout {
 			}
 			tab := g.TabItem(fmt.Sprintf("%s(%s)", v.DataName(), v.Get().Name)).Flags(flags).Layout(
 				g.Custom(func() {
-					m.currentMapIndex = mapIndex
+					if m.currentMapIndex != mapIndex {
+						m.currentMapIndex = mapIndex
+						m.ensure()
+					}
 					availW, availH := g.GetAvailableRegion()
 					defaultW := float32(math.Round(float64(availW - availW/4)))
 					defaultH := float32(math.Round(float64(availH - availH/4)))
