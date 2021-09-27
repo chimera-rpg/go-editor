@@ -94,6 +94,39 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 		canvas.AddQuad(image.Pt(o2X+1, o2Y), image.Pt(o2X+oW, o2Y), image.Pt(o2X+oW, o2Y+oH-1), image.Pt(o2X+1, o2Y+oH-1), col, 1)
 	}
 
+	drawHeightBox := func(y, x, z int, col color.RGBA) {
+		// Get position of closest arch below the target coordinates.
+		yPos := y
+		for ; yPos > 0; yPos-- {
+			if len(sm.Tiles[yPos][x][z]) > 0 {
+				yPos++
+				break
+			}
+		}
+
+		xOffset := y * int(yStep.X)
+		yOffset := y * int(-yStep.Y)
+
+		// Calc bottom
+		o1X := pos.X + (x*tWidth+xOffset+startX)*scale
+		o1Y := pos.Y + (z*tHeight-yOffset+startY)*scale
+
+		// Calc top
+		y = yPos
+		xOffset = y * int(yStep.X)
+		yOffset = y * int(-yStep.Y)
+		o2X := pos.X + (x*tWidth+xOffset+startX)*scale
+		o2Y := pos.Y + (z*tHeight-yOffset+startY)*scale
+
+		oW := (tWidth) * scale
+		oH := (tHeight) * scale
+
+		canvas.AddLine(image.Pt(o1X, o1Y), image.Pt(o2X, o2Y), col, 1)
+		//canvas.AddLine(image.Pt(o1X+oW, o1Y), image.Pt(o2X+oW, o2Y), col, 1)
+		canvas.AddLine(image.Pt(o1X+oW, o1Y+oH), image.Pt(o2X+oW, o2Y+oH), col, 1)
+		canvas.AddLine(image.Pt(o1X, o1Y+oH), image.Pt(o2X, o2Y+oH), col, 1)
+	}
+
 	col := color.RGBA{0, 0, 0, 255}
 	canvas.AddRectFilled(pos, pos.Add(image.Pt(canvasWidth, canvasHeight)), col, 0, 0)
 
@@ -285,11 +318,13 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 		oH := (tHeight) * scale
 
 		canvas.AddRect(image.Pt(oX, oY), image.Pt(oX+oW, oY+oH), focusedBorderColor, 0, 0, 1)*/
+		drawHeightBox(m.focusedY, m.focusedX, m.focusedZ, focusedHeightBoxColor)
 		drawBox(m.focusedY, m.focusedX, m.focusedZ, focusedBorderColor)
 	}
 
 	// Draw hovered.
 	{
+		drawHeightBox(m.hoveredY, m.hoveredX, m.hoveredZ, hoveredHeightBoxColor)
 		drawBox(m.hoveredY, m.hoveredX, m.hoveredZ, hoveredBorderColor)
 		/*xOffset := m.hoveredY * int(yStep.X)
 		yOffset := m.hoveredY * int(-yStep.Y)

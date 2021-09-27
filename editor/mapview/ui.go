@@ -18,9 +18,11 @@ import (
 
 var focusedBorderColor = color.RGBA{255, 0, 0, 128}
 var focusedBackgroundColor = color.RGBA{255, 0, 0, 100}
+var focusedHeightBoxColor = color.RGBA{255, 0, 0, 64}
 var selectedBackgroundColor = color.RGBA{128, 128, 128, 128}
 var selectingBackgroundColor = color.RGBA{128, 128, 128, 64}
 var hoveredBorderColor = color.RGBA{255, 255, 0, 128}
+var hoveredHeightBoxColor = color.RGBA{255, 255, 0, 64}
 var hoveredBackgroundColor = color.RGBA{255, 255, 0, 0}
 
 func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
