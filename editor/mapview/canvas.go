@@ -97,9 +97,16 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 	drawHeightBox := func(y, x, z int, col color.RGBA) {
 		// Get position of closest arch below the target coordinates.
 		yPos := y
-		for ; yPos > 0; yPos-- {
+		for ; yPos >= 0; yPos-- {
 			if len(sm.Tiles[yPos][x][z]) > 0 {
-				yPos++
+				maxH := 0
+				for t := 0; t < len(sm.Tiles[yPos][x][z]); t++ {
+					h, _, _ := dm.GetArchDimensions(&sm.Tiles[yPos][x][z][t])
+					if int(h) > maxH {
+						maxH = int(h)
+					}
+				}
+				yPos += maxH
 				break
 			}
 		}
