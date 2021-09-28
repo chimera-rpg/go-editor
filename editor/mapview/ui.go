@@ -770,11 +770,10 @@ func (m *Mapset) layoutSelectedArch(v *data.UnReMap) g.Layout {
 	archs := sm.GetArchs(m.focusedY, m.focusedX, m.focusedZ)
 	if m.focusedI >= 0 && m.focusedI < len(archs) {
 		m.archEditor.SetArchetype(&archs[m.focusedI])
-		return m.archEditor.Layout()
+	} else {
+		m.archEditor.SetArchetype(nil)
 	}
-	return g.Layout{
-		g.Label("no archetype selected"),
-	}
+	return m.archEditor.Layout()
 }
 
 func (m *Mapset) scrollFocus(v *data.UnReMap) {

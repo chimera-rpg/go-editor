@@ -73,6 +73,9 @@ func (a *ArchEditorWidget) SetArchetype(arch *sdata.Archetype) {
 }
 
 func (a *ArchEditorWidget) Refresh() {
+	if a.arch == nil {
+		return
+	}
 	a.name = a.getStringPair("Name")
 	a.description = a.getStringPair("Description")
 }
@@ -158,6 +161,11 @@ func (a *ArchEditorWidget) StringLayout(field string, target *StringPair) g.Layo
 }
 
 func (a *ArchEditorWidget) ArchetypeLayout() (l g.Layout) {
+	if a.arch == nil {
+		return g.Layout{
+			g.Label("no archetype selected"),
+		}
+	}
 	l = g.Layout{
 		a.StringLayout("Name", &a.name),
 		a.StringLayout("Description", &a.description),
