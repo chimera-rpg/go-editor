@@ -170,16 +170,12 @@ func (m *Mapset) toolSelect(state ButtonState, subTool int, v *data.UnReMap, y, 
 		m.selectingCoords.Clear()
 		m.selectingYStart, m.selectingYEnd, m.selectingXStart, m.selectingXEnd, m.selectingZEnd, m.selectingZStart = -1, -1, -1, -1, -1, -1
 		// And set focused to last coords.
-		m.focusedY = y
-		m.focusedX = x
-		m.focusedZ = z
+		m.moveCursor(y, x, z, m.focusedI)
 	} else {
 		// TODO: Check if Shift or Ctrl is held!
 		m.selectedCoords.Clear()
 		m.selectedCoords.Select(y, x, z)
-		m.focusedY = y
-		m.focusedX = x
-		m.focusedZ = z
+		m.moveCursor(y, x, z, m.focusedI)
 	}
 	return
 }

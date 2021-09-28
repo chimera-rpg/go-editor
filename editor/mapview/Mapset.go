@@ -7,7 +7,6 @@ import (
 	g "github.com/AllenDang/giu"
 	imgui "github.com/AllenDang/imgui-go"
 	"github.com/chimera-rpg/go-editor/data"
-	"github.com/chimera-rpg/go-editor/widgets"
 	sdata "github.com/chimera-rpg/go-server/data"
 	log "github.com/sirupsen/logrus"
 )
@@ -47,8 +46,8 @@ type Mapset struct {
 	unsaved                                      bool
 	showSave                                     bool
 	saveMapCWD, saveMapFilename, pendingFilename string
-	archEditor                                   widgets.ArchEditorWidget
 	isWheelSelecting                             bool
+	pendingClone                                 *sdata.Map
 }
 
 func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {
@@ -76,38 +75,6 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 		toolBinds:            make(map[g.MouseButton]int),
 		saveMapCWD:           context.DataManager().MapsPath,
 	}
-	var pendingClone *sdata.Map
-	m.archEditor.SetContext(context)
-	m.archEditor.SetPreChangeCallback(func() bool {
-		if m.CurrentMap() == nil {
-			return false
-		}
-		log.Println("SetPreChange")
-		pendingClone = m.CurrentMap().Clone()
-		return true
-	})
-	m.archEditor.SetPostChangeCallback(func() bool {
-		if m.CurrentMap() == nil {
-			return false
-		}
-		newClone := m.CurrentMap().Clone()
-		m.CurrentMap().Replace(pendingClone)
-		m.CurrentMap().Set(newClone)
-		log.Println("SetPostChange")
-		return true
-	})
-	m.archEditor.SetSaveCallback(func() bool {
-		m.saveAll()
-		return true
-	})
-	m.archEditor.SetUndoCallback(func() bool {
-		m.CurrentMap().Undo()
-		return true
-	})
-	m.archEditor.SetRedoCallback(func() bool {
-		m.CurrentMap().Redo()
-		return true
-	})
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)
 
@@ -355,14 +322,24 @@ func (m *Mapset) ensure() {
 	h := cm.Get().Height
 	w := cm.Get().Width
 	d := cm.Get().Depth
-	if m.focusedZ >= d {
-		m.focusedZ = d - 1
+	z := m.focusedZ
+	y := m.focusedY
+	x := m.focusedX
+	change := false
+	if z >= d {
+		z = d - 1
+		change = true
 	}
-	if m.focusedY >= h {
-		m.focusedY = h - 1
+	if y >= h {
+		y = h - 1
+		change = true
 	}
-	if m.focusedX >= w {
-		m.focusedX = w - 1
+	if x >= w {
+		x = w - 1
+		change = true
+	}
+	if change {
+		m.moveCursor(y, x, z, m.focusedI)
 	}
 	if m.hoveredZ >= d {
 		m.hoveredZ = d - 1
@@ -375,4 +352,22 @@ func (m *Mapset) ensure() {
 	}
 	m.selectedCoords.Clear()
 	m.selectingCoords.Clear()
+}
+
+func (m *Mapset) moveCursor(y, x, z, i int) {
+	m.focusedY = y
+	m.focusedX = x
+	m.focusedZ = z
+	m.focusedI = i
+	m.selectArchetype()
+}
+
+func (m *Mapset) selectArchetype() {
+	sm := m.CurrentMap()
+	archs := sm.GetArchs(m.focusedY, m.focusedX, m.focusedZ)
+	if m.focusedI >= 0 && m.focusedI < len(archs) {
+		m.context.ArchEditor().SetArchetype(&archs[m.focusedI])
+	} else {
+		m.context.ArchEditor().SetArchetype(nil)
+	}
 }

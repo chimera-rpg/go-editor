@@ -97,6 +97,43 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 	w = g.Window(title)
 	w.IsOpen(&windowOpen).Flags(windowFlags).Pos(210, 30).Size(300, 400)
 	layout = g.Layout{g.MenuBar().Layout(
+		g.Custom(func() {
+			if w.HasFocus() || g.IsWindowFocused(g.FocusedFlagsChildWindows) {
+				if m.context.FocusedMapset() != m {
+					m.context.SetFocusedMapset(m)
+
+					m.context.ArchEditor().SetPreChangeCallback(func() bool {
+						if m.CurrentMap() == nil {
+							return false
+						}
+						m.pendingClone = m.CurrentMap().Clone()
+						return true
+					})
+					m.context.ArchEditor().SetPostChangeCallback(func() bool {
+						if m.CurrentMap() == nil {
+							return false
+						}
+						newClone := m.CurrentMap().Clone()
+						m.CurrentMap().Replace(m.pendingClone)
+						m.CurrentMap().Set(newClone)
+						return true
+					})
+					m.context.ArchEditor().SetSaveCallback(func() bool {
+						m.saveAll()
+						return true
+					})
+					m.context.ArchEditor().SetUndoCallback(func() bool {
+						m.CurrentMap().Undo()
+						return true
+					})
+					m.context.ArchEditor().SetRedoCallback(func() bool {
+						m.CurrentMap().Redo()
+						return true
+					})
+					m.selectArchetype()
+				}
+			}
+		}),
 		g.Menu("Mapset").Layout(
 			g.MenuItem("New Map...").OnClick(func() {
 				newMapPopup = true
@@ -358,38 +395,38 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 			}),
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyLeft), func() {
 				if m.focusedX > 0 {
-					m.focusedX -= 1
+					m.moveCursor(m.focusedY, m.focusedX-1, m.focusedZ, m.focusedI)
 				}
 			}),
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyRight), func() {
 				if cm := m.CurrentMap(); cm != nil {
 					if m.focusedX < cm.Get().Width-1 {
-						m.focusedX += 1
+						m.moveCursor(m.focusedY, m.focusedX+1, m.focusedZ, m.focusedI)
 					}
 				}
 			}),
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyUp), func() {
 				if m.focusedZ > 0 {
-					m.focusedZ -= 1
+					m.moveCursor(m.focusedY, m.focusedX, m.focusedZ-1, m.focusedI)
 				}
 			}),
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyDown), func() {
 				if cm := m.CurrentMap(); cm != nil {
 					if m.focusedZ < cm.Get().Depth-1 {
-						m.focusedZ += 1
+						m.moveCursor(m.focusedY, m.focusedX, m.focusedZ+1, m.focusedI)
 					}
 				}
 			}),
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyAlt), widgets.Keys(widgets.KeyUp), func() {
 				if cm := m.CurrentMap(); cm != nil {
 					if m.focusedY < cm.Get().Height-1 {
-						m.focusedY += 1
+						m.moveCursor(m.focusedY+1, m.focusedX, m.focusedZ, m.focusedI)
 					}
 				}
 			}),
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyAlt), widgets.Keys(widgets.KeyDown), func() {
 				if m.focusedY > 0 {
-					m.focusedY -= 1
+					m.moveCursor(m.focusedY-1, m.focusedX, m.focusedZ, m.focusedI)
 				}
 			}),
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(), widgets.Keys(widgets.KeyA), func() {
@@ -430,6 +467,7 @@ func (m *Mapset) layoutMapTabs() g.Layout {
 					if m.currentMapIndex != mapIndex {
 						m.currentMapIndex = mapIndex
 						m.ensure()
+						m.moveCursor(m.focusedY, m.focusedX, m.focusedZ, m.focusedI)
 					}
 					availW, availH := g.GetAvailableRegion()
 					defaultW := float32(math.Round(float64(availW - availW/4)))
@@ -439,7 +477,7 @@ func (m *Mapset) layoutMapTabs() g.Layout {
 							m.layoutMapView(v),
 							m.layoutArchsList(v),
 						),
-					}, m.layoutSelectedArch(v)).Build()
+					}, g.Dummy(0, 0)).Build()
 				}),
 			)
 
@@ -464,6 +502,7 @@ func (m *Mapset) layoutMapView(v *data.UnReMap) g.Layout {
 		g.Custom(func() {
 			availW, availH = g.GetAvailableRegion()
 			g.Child().Border(false).Flags(childFlags).Size(availW, availH-lineHeight.Y*2).Layout(
+
 				g.Custom(func() {
 					childPos = g.GetCursorScreenPos()
 					canvasWidth, canvasHeight = m.getMapSize(v)
@@ -707,8 +746,7 @@ func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
 									if g.IsMouseDoubleClicked(g.MouseButtonLeft) {
 										//e.openArchsetFromArchetype(name)
 									} else if g.IsMouseClicked(g.MouseButtonLeft) {
-										m.focusedI = index
-										m.focusedY = y
+										m.moveCursor(y, m.focusedX, m.focusedZ, index)
 									}
 								}
 							}),
@@ -745,7 +783,7 @@ func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
 						g.SameLine()
 						g.Dummy(float32(dm.AnimationsConfig.TileWidth), float32(dm.AnimationsConfig.TileHeight))
 						if g.IsItemHovered() && g.IsMouseClicked(g.MouseButtonLeft) {
-							m.focusedY = y
+							m.moveCursor(y, m.focusedX, m.focusedZ, m.focusedI)
 						}
 					}),
 					g.Custom(func() { g.SameLine() }),
@@ -764,26 +802,15 @@ func (m *Mapset) layoutArchsList(v *data.UnReMap) g.Layout {
 	return yItems
 }
 
-func (m *Mapset) layoutSelectedArch(v *data.UnReMap) g.Layout {
-	sm := m.CurrentMap()
-
-	archs := sm.GetArchs(m.focusedY, m.focusedX, m.focusedZ)
-	if m.focusedI >= 0 && m.focusedI < len(archs) {
-		m.archEditor.SetArchetype(&archs[m.focusedI])
-	} else {
-		m.archEditor.SetArchetype(nil)
-	}
-	return m.archEditor.Layout()
-}
-
 func (m *Mapset) scrollFocus(v *data.UnReMap) {
 	mouseWheelDelta, _ := g.Context.IO().GetMouseWheelDelta(), g.Context.IO().GetMouseWheelHDelta()
 	if mouseWheelDelta != 0 {
-		m.focusedY += int(mouseWheelDelta)
-		if m.focusedY < 0 {
-			m.focusedY = 0
-		} else if m.focusedY >= v.Get().Height {
-			m.focusedY = v.Get().Height - 1
+		y := m.focusedY + int(mouseWheelDelta)
+		if y < 0 {
+			y = 0
+		} else if y >= v.Get().Height {
+			y = v.Get().Height - 1
 		}
+		m.moveCursor(y, m.focusedX, m.focusedZ, m.focusedI)
 	}
 }

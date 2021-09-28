@@ -43,6 +43,22 @@ func NewArchEditor() *ArchEditorWidget {
 	return a
 }
 
+func (a *ArchEditorWidget) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
+	layout = a.Layout()
+	title = "Active Archetype"
+	w = g.Window(title)
+	return
+}
+
+func (a *ArchEditorWidget) ResetCallbacks() {
+	a.preChangeCallback = nil
+	a.postChangeCallback = nil
+	a.requestRedo = nil
+	a.requestUndo = nil
+	a.requestSave = nil
+	a.arch = nil
+}
+
 func (a *ArchEditorWidget) SetPreChangeCallback(f func() bool) {
 	a.preChangeCallback = f
 }

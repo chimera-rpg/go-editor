@@ -43,7 +43,9 @@ func (e *Editor) Setup(dataManager *data.Manager) (err error) {
 	e.context = Context{
 		dataManager:   dataManager,
 		imageTextures: make(map[string]*data.ImageTexture),
+		archEditor:    widgets.NewArchEditor(),
 	}
+	e.context.archEditor.SetContext(&e.context)
 	e.isLoaded = false
 	e.isRunning = true
 	e.archetypesMode = true
@@ -194,6 +196,13 @@ func (e *Editor) loop() {
 	for _, a := range e.animsets {
 		a.draw()
 	}
+
+	title, win, layout = e.context.archEditor.Draw()
+	windows = append(windows, &WindowContainer{
+		title:  title,
+		window: win,
+		layout: layout,
+	})
 
 	e.drawAnimations()
 	e.drawSplash()
