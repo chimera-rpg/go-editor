@@ -180,6 +180,8 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 					if oH > 1 || oW > 1 || oD > 1 {
 						large = true
 					}
+
+					// Get global arch type adjustments.
 					if adjustment, ok := dm.AnimationsConfig.Adjustments[dm.GetArchType(&sm.Tiles[y][x][z][t], 0)]; ok {
 						oX += int(adjustment.X) * scale
 						oY += int(adjustment.Y) * scale
@@ -199,6 +201,13 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 						tex, ok = icons.Textures["missing"]
 					} else {
 						tex, ok = m.context.ImageTextures()[imageName]
+					}
+
+					// Get frame X and Y offset.
+					frames, _ := dm.GetAnimFaceFrames(anim, face)
+					if len(frames) > 0 {
+						oX += int(frames[0].X) * scale
+						oY += int(frames[0].Y) * scale
 					}
 
 					if ok {

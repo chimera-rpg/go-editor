@@ -403,6 +403,18 @@ func (m *Manager) GetArchetypesAsTree() ArchetypeTreeNode {
 	return ParseArchetypesIntoTree(m.archetypesOrder)
 }
 
+func (m *Manager) GetAnimFaceFrames(anim, face string) (f []sdata.AnimationFramePre, e error) {
+	a, ok := m.animations[anim]
+	if !ok {
+		return f, errors.New("missing animation")
+	}
+	f, ok = a.Faces[face]
+	if !ok {
+		return f, errors.New("missing face")
+	}
+	return f, nil
+}
+
 func (m *Manager) GetAnimFaceImage(anim, face string) (string, error) {
 	a, ok := m.animations[anim]
 	if !ok {
