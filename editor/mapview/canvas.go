@@ -1,6 +1,7 @@
 package mapview
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -9,6 +10,8 @@ import (
 	g "github.com/AllenDang/giu"
 	"github.com/chimera-rpg/go-editor/data"
 	"github.com/chimera-rpg/go-editor/editor/icons"
+	sdata "github.com/chimera-rpg/go-server/data"
+	log "github.com/sirupsen/logrus"
 )
 
 type archDrawable struct {
@@ -139,6 +142,66 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 
 	col = color.RGBA{255, 255, 255, 255}
 	var drawables []archDrawable
+	//
+	getArchDrawable := func(y, x, z, t int, arch *sdata.Archetype) (archDrawable, error) {
+		xOffset := y * int(yStep.X)
+		yOffset := y * int(-yStep.Y)
+		oX := pos.X + (x*tWidth+xOffset+startX)*scale
+		oY := pos.Y + (z*tHeight-yOffset+startY)*scale
+		oH, oW, oD := dm.GetArchDimensions(arch)
+		large := false
+		if oH > 1 || oW > 1 || oD > 1 {
+			large = true
+		}
+
+		// Get global arch type adjustments.
+		if adjustment, ok := dm.AnimationsConfig.Adjustments[dm.GetArchType(arch, 0)]; ok {
+			oX += int(adjustment.X) * scale
+			oY += int(adjustment.Y) * scale
+		}
+
+		// calc render z
+		indexZ := z
+		indexX := x
+		indexY := y
+		zIndex := (indexZ * sm.Height * sm.Width) + (sm.Depth * indexY) - (indexX) + t
+
+		var tex *data.ImageTexture
+		var ok bool
+		anim, face := dm.GetAnimAndFace(arch, "", "")
+		imageName, err := dm.GetAnimFaceImage(anim, face)
+		if err != nil {
+			tex, ok = icons.Textures["missing"]
+		} else {
+			tex, ok = m.context.ImageTextures()[imageName]
+		}
+
+		// Get frame X and Y offset.
+		frames, _ := dm.GetAnimFaceFrames(anim, face)
+		if len(frames) > 0 {
+			oX += int(frames[0].X) * scale
+			oY += int(frames[0].Y) * scale
+		}
+
+		if ok {
+			cY := oY
+			if (oH > 1 || oD > 1) && int(tex.Height*float32(scale)) > tHeight*scale {
+				oY -= int(tex.Height*float32(scale)) - (tHeight * scale)
+			}
+			return archDrawable{
+				z:     zIndex,
+				x:     oX,
+				y:     oY,
+				cY:    cY,
+				w:     oX + int(tex.Width)*scale,
+				h:     oY + int(tex.Height)*scale,
+				c:     color.RGBA{0, 0, 0, 255},
+				t:     tex,
+				large: large,
+			}, nil
+		}
+		return archDrawable{}, fmt.Errorf("couldn't create archDrawable")
+	}
 	// Draw archetypes.
 	var alphaY, alphaX, alphaZ int32
 	// TODO: Adjust onion skins based upon distance from cursor.
@@ -151,8 +214,6 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 				alphaY = m.onionSkinLtIntensity
 			}
 		}
-		xOffset := y * int(yStep.X)
-		yOffset := y * int(-yStep.Y)
 		for x := sm.Width - 1; x >= 0; x-- {
 			alphaX = 255
 			if m.onionskinX {
@@ -173,63 +234,30 @@ func (m *Mapset) drawMap(v *data.UnReMap) {
 				}
 				col.A = uint8(math.Min(math.Min(float64(alphaX), float64(alphaY)), float64(alphaZ)))
 				for t := 0; t < len(sm.Tiles[y][x][z]); t++ {
-					oX := pos.X + (x*tWidth+xOffset+startX)*scale
-					oY := pos.Y + (z*tHeight-yOffset+startY)*scale
-					oH, oW, oD := dm.GetArchDimensions(&sm.Tiles[y][x][z][t])
-					large := false
-					if oH > 1 || oW > 1 || oD > 1 {
-						large = true
-					}
-
-					// Get global arch type adjustments.
-					if adjustment, ok := dm.AnimationsConfig.Adjustments[dm.GetArchType(&sm.Tiles[y][x][z][t], 0)]; ok {
-						oX += int(adjustment.X) * scale
-						oY += int(adjustment.Y) * scale
-					}
-
-					// calc render z
-					indexZ := z
-					indexX := x
-					indexY := y
-					zIndex := (indexZ * sm.Height * sm.Width) + (sm.Depth * indexY) - (indexX) + t
-
-					var tex *data.ImageTexture
-					var ok bool
-					anim, face := dm.GetAnimAndFace(&sm.Tiles[y][x][z][t], "", "")
-					imageName, err := dm.GetAnimFaceImage(anim, face)
+					drawable, err := getArchDrawable(y, x, z, t, &sm.Tiles[y][x][z][t])
 					if err != nil {
-						tex, ok = icons.Textures["missing"]
+						log.Println(err)
 					} else {
-						tex, ok = m.context.ImageTextures()[imageName]
-					}
-
-					// Get frame X and Y offset.
-					frames, _ := dm.GetAnimFaceFrames(anim, face)
-					if len(frames) > 0 {
-						oX += int(frames[0].X) * scale
-						oY += int(frames[0].Y) * scale
-					}
-
-					if ok {
-						cY := oY
-						if (oH > 1 || oD > 1) && int(tex.Height*float32(scale)) > tHeight*scale {
-							oY -= int(tex.Height*float32(scale)) - (tHeight * scale)
-						}
-						drawables = append(drawables, archDrawable{
-							z:     zIndex,
-							x:     oX,
-							y:     oY,
-							cY:    cY,
-							w:     oX + int(tex.Width)*scale,
-							h:     oY + int(tex.Height)*scale,
-							c:     col,
-							t:     tex,
-							large: large,
-						})
-					} else {
-						//log.Println(err)
+						drawable.c = col
+						drawables = append(drawables, drawable)
 					}
 				}
+			}
+		}
+	}
+
+	// Show our archetype to insert if possible.
+	if m.isToolBound(insertTool) {
+		arch := m.context.DataManager().GetArchetype(m.context.SelectedArch())
+		if arch != nil {
+			drawable, err := getArchDrawable(m.hoveredY, m.hoveredX, m.hoveredZ, 999, arch)
+			if err != nil {
+				log.Println(err)
+			} else {
+				drawable.c = color.RGBA{
+					255, 255, 255, 128,
+				}
+				drawables = append(drawables, drawable)
 			}
 		}
 	}
