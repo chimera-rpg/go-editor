@@ -364,6 +364,10 @@ func (m *Mapset) moveCursor(y, x, z, i int) {
 
 func (m *Mapset) selectArchetype() {
 	sm := m.CurrentMap()
+	if sm == nil {
+		m.context.ArchEditor().SetArchetype(nil)
+		return
+	}
 	archs := sm.GetArchs(m.focusedY, m.focusedX, m.focusedZ)
 	if m.focusedI >= 0 && m.focusedI < len(archs) {
 		m.context.ArchEditor().SetArchetype(&archs[m.focusedI])

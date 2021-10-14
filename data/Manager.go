@@ -519,10 +519,16 @@ func (m *Manager) GetArchType(a *sdata.Archetype, atype cdata.ArchetypeType) cda
 func (m *Manager) GetArchField(a *sdata.Archetype, field string) reflect.Value {
 	s := reflect.ValueOf(a).Elem()
 	f := s.FieldByName(field)
-	if f.IsValid() && !f.IsNil() {
+	f2 := f
+	if f.IsValid() && f.Kind() == reflect.Ptr && !f.IsNil() {
+		return f
+	} else if f.IsValid() && f.Kind() != reflect.Ptr {
 		return f
 	}
 	f = m.GetArchAncestryField(a, field)
+	if !f.IsValid() {
+		return f2
+	}
 	return f
 }
 
@@ -533,7 +539,7 @@ func (m *Manager) GetArchAncestryField(a *sdata.Archetype, field string) reflect
 		a2 := m.GetArchetype(a.Arch)
 		if a2 != nil {
 			f = m.GetArchField(a2, field)
-			if f.IsValid() && !f.IsNil() {
+			if f.IsValid() && ((f.Kind() == reflect.Ptr && !f.IsNil()) || f.Kind() != reflect.Ptr) {
 				return f
 			}
 		}
@@ -542,7 +548,7 @@ func (m *Manager) GetArchAncestryField(a *sdata.Archetype, field string) reflect
 		a2 := m.GetArchetype(archName)
 		if a2 != nil {
 			f = m.GetArchField(a2, field)
-			if f.IsValid() && !f.IsNil() {
+			if f.IsValid() && ((f.Kind() == reflect.Ptr && !f.IsNil()) || f.Kind() != reflect.Ptr) {
 				return f
 			}
 		}
@@ -573,7 +579,7 @@ func (m *Manager) IsArchFieldLocal(a *sdata.Archetype, field string) (bool, erro
 		a2 := m.GetArchetype(a.Arch)
 		if a2 != nil {
 			f2 := m.GetArchField(a2, field)
-			if !reflect.DeepEqual(f, f2) {
+			if !m.IsEqual(f, f2) {
 				ancestorSame = false
 			}
 		}
@@ -582,13 +588,23 @@ func (m *Manager) IsArchFieldLocal(a *sdata.Archetype, field string) (bool, erro
 		a2 := m.GetArchetype(archName)
 		if a2 != nil {
 			f2 := m.GetArchField(a2, field)
-			if !reflect.DeepEqual(f, f2) {
+			if !m.IsEqual(f, f2) {
 				ancestorSame = false
 			}
 		}
 	}
 
 	return !ancestorSame, nil
+}
+
+func (m *Manager) IsEqual(v1, v2 reflect.Value) bool {
+	if v1.Kind() != v2.Kind() {
+		return false
+	}
+	if v1.Interface() != v2.Interface() {
+		return false
+	}
+	return true
 }
 
 func (m *Manager) SetArchField(a *sdata.Archetype, field string, v interface{}) error {
@@ -600,12 +616,17 @@ func (m *Manager) SetArchField(a *sdata.Archetype, field string, v interface{}) 
 	if !f.CanSet() {
 		return fmt.Errorf("field \"%s\" cannot be set", field)
 	}
+	fmt.Println("set", field, v)
 	if f.Kind() == reflect.Ptr {
 		switch t := v.(type) {
 		case string:
-			f.Set(reflect.ValueOf(&*&t))
+			s := new(string)
+			*s = t
+			f.Set(reflect.ValueOf(s))
 		case *string:
-			f.Set(reflect.ValueOf(&*t))
+			s := new(string)
+			*s = *t
+			f.Set(reflect.ValueOf(t))
 		default:
 			return fmt.Errorf("passed interface of %v is not a string or string pointer", v)
 		}
@@ -613,12 +634,31 @@ func (m *Manager) SetArchField(a *sdata.Archetype, field string, v interface{}) 
 		switch t := v.(type) {
 		case uint8:
 			f.Set(reflect.ValueOf(t))
+		case uint16:
+			f.Set(reflect.ValueOf(t))
+		case uint32:
+			f.Set(reflect.ValueOf(t))
 		default:
 			return fmt.Errorf("passed interface of %v is not a uint8", v)
 		}
 	} else if f.Kind() == reflect.Uint32 {
 		switch t := v.(type) {
 		case uint32:
+			f.Set(reflect.ValueOf(t))
+		case uint16:
+			f.Set(reflect.ValueOf(t))
+		case uint8:
+			f.Set(reflect.ValueOf(t))
+		default:
+			return fmt.Errorf("passed interface of %v is not a uint32", v)
+		}
+	} else if f.Kind() == reflect.Int8 {
+		switch t := v.(type) {
+		case int8:
+			f.Set(reflect.ValueOf(t))
+		case int16:
+			f.Set(reflect.ValueOf(t))
+		case int32:
 			f.Set(reflect.ValueOf(t))
 		default:
 			return fmt.Errorf("passed interface of %v is not a uint32", v)
@@ -643,6 +683,9 @@ func (m *Manager) ClearArchField(a *sdata.Archetype, field string) bool {
 		return false
 	}
 	if f.Kind() == reflect.Ptr {
+		f.Set(reflect.Zero(f.Type()))
+		return true
+	} else {
 		f.Set(reflect.Zero(f.Type()))
 		return true
 	}
