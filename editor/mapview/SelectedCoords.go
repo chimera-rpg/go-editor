@@ -1,6 +1,11 @@
 package mapview
 
-import "math"
+import (
+	"fmt"
+	"math"
+
+	"github.com/chimera-rpg/go-server/data"
+)
 
 // Coords is our type alias to [y, x, z]
 type Coords = [3]int
@@ -152,6 +157,72 @@ func (s *SelectedCoords) RangeCircle(doSelect bool, y1, x1, z1, y2, x2, z2 int) 
 			// TODO: Draw line.
 		}
 	}*/
+}
+
+func (s *SelectedCoords) FloodSelect(doSelect bool, y1, x1, z1 int, m *Mapset) {
+	sm := m.CurrentMap().Get()
+	traveledTiles := make(map[Coords]struct{})
+	t := m.getTiles(sm, y1, x1, z1)
+	if t == nil {
+		return
+	}
+	var target *data.Archetype
+	if len(*t) > 0 {
+		target = &((*t)[len(*t)-1])
+	}
+	var walk func(y, x, z int)
+	walk = func(y, x, z int) {
+		if _, ok := traveledTiles[Coords{y, x, z}]; ok {
+			return
+		}
+		traveledTiles[Coords{y, x, z}] = struct{}{}
+
+		tiles := m.getTiles(sm, y, x, z)
+		if tiles == nil {
+			return
+		}
+
+		var walkTarget *data.Archetype
+		if len(*tiles) > 0 {
+			walkTarget = &((*tiles)[len(*tiles)-1])
+		}
+		if walkTarget == nil && target == nil {
+			if doSelect {
+				s.Select(y, x, z)
+			} else {
+				s.Unselect(y, x, z)
+			}
+			// Now also iterate to others.
+			walk(y, x+1, z)
+			walk(y, x-1, z)
+			walk(y, x, z+1)
+			walk(y, x, z-1)
+		} else if walkTarget != nil && target != nil && len(walkTarget.Archs) == len(target.Archs) {
+			match := true
+			for i, _ := range walkTarget.Archs {
+				if walkTarget.Archs[i] != target.Archs[i] {
+					match = false
+				}
+			}
+			if walkTarget.Arch != target.Arch {
+				match = false
+			}
+			if match {
+				if doSelect {
+					s.Select(y, x, z)
+				} else {
+					s.Unselect(y, x, z)
+				}
+				// Now also iterate to others.
+				walk(y, x+1, z)
+				walk(y, x-1, z)
+				walk(y, x, z+1)
+				walk(y, x, z-1)
+			}
+		}
+	}
+	fmt.Println("Okay, do a flood selection using", target)
+	walk(y1, x1, z1)
 }
 
 func (s *SelectedCoords) ReplicateYSlice(doSelect bool, slice map[[3]int]struct{}, targetY int) {
