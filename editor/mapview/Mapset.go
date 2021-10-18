@@ -48,6 +48,9 @@ type Mapset struct {
 	saveMapCWD, saveMapFilename, pendingFilename string
 	isWheelSelecting                             bool
 	pendingClone                                 *sdata.Map
+	//
+	showSelectionAdjustPopup bool
+	selectionWidget          SelectionWidget
 }
 
 func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {
