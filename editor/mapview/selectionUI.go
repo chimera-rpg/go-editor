@@ -4,6 +4,7 @@ import (
 	"math"
 
 	g "github.com/AllenDang/giu"
+	"github.com/chimera-rpg/go-editor/editor/icons"
 )
 
 type SelectionWidget struct {
@@ -13,6 +14,11 @@ type SelectionWidget struct {
 	border              int32
 	inner               bool
 	edges               bool
+}
+
+func (s *SelectionWidget) Reset() {
+	s.ResetResize()
+	s.ResetBorderify()
 }
 
 func (s *SelectionWidget) ResetResize() {
@@ -31,9 +37,50 @@ func (s *SelectionWidget) ResetBorderify() {
 
 func (s *SelectionWidget) Draw(m *Mapset) (l g.Layout) {
 	l = g.Layout{
+		// Move
+		g.Label("Move"),
+		g.Child().Size(-1, 110).Border(false).Layout(
+			g.Row(
+				g.ImageButton(icons.Textures["tl"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+					m.selectedCoords.Shift(0, -1, -1)
+				}),
+				g.ImageButton(icons.Textures["t"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+					m.selectedCoords.Shift(0, 0, -1)
+				}),
+				g.ImageButton(icons.Textures["tr"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+					m.selectedCoords.Shift(0, 1, -1)
+				}),
+				g.ImageButton(icons.Textures["u"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+					m.selectedCoords.Shift(1, 0, 0)
+				}),
+			),
+			g.Row(
+				g.ImageButton(icons.Textures["l"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+					m.selectedCoords.Shift(0, -1, 0)
+				}),
+				g.ImageButton(icons.Textures["blank"].Texture).Size(30, 30).FramePadding(0),
+				g.ImageButton(icons.Textures["r"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+					m.selectedCoords.Shift(0, 1, 0)
+				}),
+			),
+			g.Row(
+				g.ImageButton(icons.Textures["bl"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+					m.selectedCoords.Shift(0, -1, 1)
+				}),
+				g.ImageButton(icons.Textures["b"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+					m.selectedCoords.Shift(0, 0, 1)
+				}),
+				g.ImageButton(icons.Textures["br"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+					m.selectedCoords.Shift(0, 1, 1)
+				}),
+				g.ImageButton(icons.Textures["d"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+					m.selectedCoords.Shift(-1, 0, 0)
+				}),
+			),
+		),
+		// Grow and Shrink
 		g.Label("Grow/Shrink"),
 		g.Child().Size(-1, 110).Layout(
-			// Grow and Shrink
 			g.InputInt(&s.grow).Size(50).Label("Size"),
 			g.Tooltip("The growth or shrink size."),
 			g.Checkbox("diagonal", &s.growDiagonal),

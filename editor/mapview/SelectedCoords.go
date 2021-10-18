@@ -378,6 +378,14 @@ func (s *SelectedCoords) Grow(size int, doSelect bool, diagonal, growY, growX, g
 func (s *SelectedCoords) Border(size int, inner, edges bool) {
 }
 
+func (s *SelectedCoords) Shift(y, x, z int) {
+	newSelection := make(map[Coords]struct{})
+	for k := range s.selected {
+		newSelection[Coords{k[0] + y, k[1] + x, k[2] + z}] = struct{}{}
+	}
+	s.selected = newSelection
+}
+
 func (s *SelectedCoords) ReplicateYSlice(doSelect bool, slice map[[3]int]struct{}, targetY int) {
 	for yxz := range slice {
 		if doSelect {

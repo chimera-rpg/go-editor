@@ -231,16 +231,14 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 					g.Tooltip("pick from map tool"),
 				),
 				g.Row(
-					g.Child().Size(140, g.Auto).Layout(
+					g.Child().Size(150, g.Auto).Border(false).Layout(
 						g.Custom(func() {
 							if !m.selectedCoords.Empty() {
 								// Draw our selection modification buttons
 								g.Column(
 									g.Label("Selection"),
-									g.Row(
-										g.Button("adjust").OnClick(func() {
-											m.showSelectionAdjustPopup = true
-										}),
+									g.Column(
+										m.selectionWidget.Draw(m),
 									),
 								).Build()
 								g.Label("selection tools").Build()
@@ -265,8 +263,6 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 				g.OpenPopup("Map Properties")
 			} else if deleteMapPopup {
 				g.OpenPopup("Delete Map")
-			} else if m.showSelectionAdjustPopup {
-				g.OpenPopup("Adjust Selection")
 			}
 		}),
 		g.PopupModal("Save Map").Layout(
@@ -398,14 +394,6 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 					g.CloseCurrentPopup()
 				}),
 			),
-		),
-		// Selection popups
-		g.PopupModal("Adjust Selection").Layout(
-			m.selectionWidget.Draw(m),
-			g.Button("Done").OnClick(func() {
-				m.showSelectionAdjustPopup = false
-				g.CloseCurrentPopup()
-			}),
 		),
 		widgets.KeyBinds(widgets.KeyBindsFlagWindowFocused,
 			widgets.KeyBind(widgets.KeyBindFlagPressed, widgets.Keys(widgets.KeyShift, widgets.KeyControl), widgets.Keys(widgets.KeyZ), func() {

@@ -49,8 +49,7 @@ type Mapset struct {
 	isWheelSelecting                             bool
 	pendingClone                                 *sdata.Map
 	//
-	showSelectionAdjustPopup bool
-	selectionWidget          SelectionWidget
+	selectionWidget SelectionWidget
 }
 
 func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset {
@@ -80,6 +79,7 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 	}
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)
+	m.selectionWidget.Reset()
 
 	m.bindMouseToTool(g.MouseButtonLeft, selectTool)
 	//m.bindMouseToTool(g.MouseButtonMiddle, eraseTool)
