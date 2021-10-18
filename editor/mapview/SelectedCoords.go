@@ -245,106 +245,107 @@ func (s *SelectedCoords) FloodSelect(doSelect bool, y1, x1, z1 int, m *Mapset) {
 	walk(y1, x1, z1)
 }
 
+func (s *SelectedCoords) getEmptyAdjacents(y, x, z int, diagonal, growY, growX, growZ bool) (c []Coords) {
+	if growX {
+		if _, ok := s.selected[Coords{y, x + 1, z}]; !ok {
+			c = append(c, Coords{y, x + 1, z})
+		}
+		if _, ok := s.selected[Coords{y, x - 1, z}]; !ok {
+			c = append(c, Coords{y, x - 1, z})
+		}
+	}
+	if growZ {
+		if _, ok := s.selected[Coords{y, x, z + 1}]; !ok {
+			c = append(c, Coords{y, x, z + 1})
+		}
+		if _, ok := s.selected[Coords{y, x, z - 1}]; !ok {
+			c = append(c, Coords{y, x, z - 1})
+		}
+	}
+	if diagonal && growX && growZ {
+		if _, ok := s.selected[Coords{y, x + 1, z + 1}]; !ok {
+			c = append(c, Coords{y, x + 1, z + 1})
+		}
+		if _, ok := s.selected[Coords{y, x - 1, z - 1}]; !ok {
+			c = append(c, Coords{y, x - 1, z - 1})
+		}
+		if _, ok := s.selected[Coords{y, x + 1, z - 1}]; !ok {
+			c = append(c, Coords{y, x + 1, z - 1})
+		}
+		if _, ok := s.selected[Coords{y, x - 1, z + 1}]; !ok {
+			c = append(c, Coords{y, x - 1, z + 1})
+		}
+	}
+	if growY {
+		if _, ok := s.selected[Coords{y + 1, x, z}]; !ok {
+			c = append(c, Coords{y + 1, x, z})
+		}
+		if _, ok := s.selected[Coords{y - 1, x, z}]; !ok {
+			c = append(c, Coords{y - 1, x, z})
+		}
+		if diagonal {
+			if growX {
+				if _, ok := s.selected[Coords{y + 1, x + 1, z}]; !ok {
+					c = append(c, Coords{y + 1, x + 1, z})
+				}
+				if _, ok := s.selected[Coords{y + 1, x - 1, z}]; !ok {
+					c = append(c, Coords{y + 1, x - 1, z})
+				}
+				if _, ok := s.selected[Coords{y - 1, x + 1, z}]; !ok {
+					c = append(c, Coords{y - 1, x + 1, z})
+				}
+				if _, ok := s.selected[Coords{y - 1, x - 1, z}]; !ok {
+					c = append(c, Coords{y - 1, x - 1, z})
+				}
+			}
+			if growZ {
+				if _, ok := s.selected[Coords{y + 1, x, z + 1}]; !ok {
+					c = append(c, Coords{y + 1, x, z + 1})
+				}
+				if _, ok := s.selected[Coords{y + 1, x, z - 1}]; !ok {
+					c = append(c, Coords{y + 1, x, z - 1})
+				}
+				if _, ok := s.selected[Coords{y - 1, x, z + 1}]; !ok {
+					c = append(c, Coords{y - 1, x, z + 1})
+				}
+				if _, ok := s.selected[Coords{y - 1, x, z - 1}]; !ok {
+					c = append(c, Coords{y - 1, x, z - 1})
+				}
+			}
+			if growX && growZ {
+				if _, ok := s.selected[Coords{y + 1, x + 1, z + 1}]; !ok {
+					c = append(c, Coords{y + 1, x + 1, z + 1})
+				}
+				if _, ok := s.selected[Coords{y + 1, x - 1, z - 1}]; !ok {
+					c = append(c, Coords{y + 1, x - 1, z - 1})
+				}
+				if _, ok := s.selected[Coords{y + 1, x + 1, z - 1}]; !ok {
+					c = append(c, Coords{y + 1, x + 1, z - 1})
+				}
+				if _, ok := s.selected[Coords{y + 1, x - 1, z + 1}]; !ok {
+					c = append(c, Coords{y + 1, x - 1, z + 1})
+				}
+				//
+				if _, ok := s.selected[Coords{y - 1, x + 1, z + 1}]; !ok {
+					c = append(c, Coords{y - 1, x + 1, z + 1})
+				}
+				if _, ok := s.selected[Coords{y - 1, x - 1, z - 1}]; !ok {
+					c = append(c, Coords{y - 1, x - 1, z - 1})
+				}
+				if _, ok := s.selected[Coords{y - 1, x + 1, z - 1}]; !ok {
+					c = append(c, Coords{y - 1, x + 1, z - 1})
+				}
+				if _, ok := s.selected[Coords{y - 1, x - 1, z + 1}]; !ok {
+					c = append(c, Coords{y - 1, x - 1, z + 1})
+				}
+			}
+		}
+	}
+	return
+}
+
 func (s *SelectedCoords) Grow(size int, doSelect bool, diagonal, growY, growX, growZ bool) {
 	if size <= 0 {
-		return
-	}
-	getEmptyAdjacents := func(y, x, z int) (c []Coords) {
-		if growX {
-			if _, ok := s.selected[Coords{y, x + 1, z}]; !ok {
-				c = append(c, Coords{y, x + 1, z})
-			}
-			if _, ok := s.selected[Coords{y, x - 1, z}]; !ok {
-				c = append(c, Coords{y, x - 1, z})
-			}
-		}
-		if growZ {
-			if _, ok := s.selected[Coords{y, x, z + 1}]; !ok {
-				c = append(c, Coords{y, x, z + 1})
-			}
-			if _, ok := s.selected[Coords{y, x, z - 1}]; !ok {
-				c = append(c, Coords{y, x, z - 1})
-			}
-		}
-		if diagonal && growX && growZ {
-			if _, ok := s.selected[Coords{y, x + 1, z + 1}]; !ok {
-				c = append(c, Coords{y, x + 1, z + 1})
-			}
-			if _, ok := s.selected[Coords{y, x - 1, z - 1}]; !ok {
-				c = append(c, Coords{y, x - 1, z - 1})
-			}
-			if _, ok := s.selected[Coords{y, x + 1, z - 1}]; !ok {
-				c = append(c, Coords{y, x + 1, z - 1})
-			}
-			if _, ok := s.selected[Coords{y, x - 1, z + 1}]; !ok {
-				c = append(c, Coords{y, x - 1, z + 1})
-			}
-		}
-		if growY {
-			if _, ok := s.selected[Coords{y + 1, x, z}]; !ok {
-				c = append(c, Coords{y + 1, x, z})
-			}
-			if _, ok := s.selected[Coords{y - 1, x, z}]; !ok {
-				c = append(c, Coords{y - 1, x, z})
-			}
-			if diagonal {
-				if growX {
-					if _, ok := s.selected[Coords{y + 1, x + 1, z}]; !ok {
-						c = append(c, Coords{y + 1, x + 1, z})
-					}
-					if _, ok := s.selected[Coords{y + 1, x - 1, z}]; !ok {
-						c = append(c, Coords{y + 1, x - 1, z})
-					}
-					if _, ok := s.selected[Coords{y - 1, x + 1, z}]; !ok {
-						c = append(c, Coords{y - 1, x + 1, z})
-					}
-					if _, ok := s.selected[Coords{y - 1, x - 1, z}]; !ok {
-						c = append(c, Coords{y - 1, x - 1, z})
-					}
-				}
-				if growZ {
-					if _, ok := s.selected[Coords{y + 1, x, z + 1}]; !ok {
-						c = append(c, Coords{y + 1, x, z + 1})
-					}
-					if _, ok := s.selected[Coords{y + 1, x, z - 1}]; !ok {
-						c = append(c, Coords{y + 1, x, z - 1})
-					}
-					if _, ok := s.selected[Coords{y - 1, x, z + 1}]; !ok {
-						c = append(c, Coords{y - 1, x, z + 1})
-					}
-					if _, ok := s.selected[Coords{y - 1, x, z - 1}]; !ok {
-						c = append(c, Coords{y - 1, x, z - 1})
-					}
-				}
-				if growX && growZ {
-					if _, ok := s.selected[Coords{y + 1, x + 1, z + 1}]; !ok {
-						c = append(c, Coords{y + 1, x + 1, z + 1})
-					}
-					if _, ok := s.selected[Coords{y + 1, x - 1, z - 1}]; !ok {
-						c = append(c, Coords{y + 1, x - 1, z - 1})
-					}
-					if _, ok := s.selected[Coords{y + 1, x + 1, z - 1}]; !ok {
-						c = append(c, Coords{y + 1, x + 1, z - 1})
-					}
-					if _, ok := s.selected[Coords{y + 1, x - 1, z + 1}]; !ok {
-						c = append(c, Coords{y + 1, x - 1, z + 1})
-					}
-					//
-					if _, ok := s.selected[Coords{y - 1, x + 1, z + 1}]; !ok {
-						c = append(c, Coords{y - 1, x + 1, z + 1})
-					}
-					if _, ok := s.selected[Coords{y - 1, x - 1, z - 1}]; !ok {
-						c = append(c, Coords{y - 1, x - 1, z - 1})
-					}
-					if _, ok := s.selected[Coords{y - 1, x + 1, z - 1}]; !ok {
-						c = append(c, Coords{y - 1, x + 1, z - 1})
-					}
-					if _, ok := s.selected[Coords{y - 1, x - 1, z + 1}]; !ok {
-						c = append(c, Coords{y - 1, x - 1, z + 1})
-					}
-				}
-			}
-		}
 		return
 	}
 
@@ -354,7 +355,7 @@ func (s *SelectedCoords) Grow(size int, doSelect bool, diagonal, growY, growX, g
 		y := k[0]
 		x := k[1]
 		z := k[2]
-		a := getEmptyAdjacents(y, x, z)
+		a := s.getEmptyAdjacents(y, x, z, diagonal, growY, growX, growZ)
 		if doSelect {
 			for _, c := range a {
 				targets = append(targets, Coords{c[0], c[1], c[2]})
@@ -375,7 +376,17 @@ func (s *SelectedCoords) Grow(size int, doSelect bool, diagonal, growY, growX, g
 	s.Grow(size-1, doSelect, diagonal, growY, growX, growZ)
 }
 
-func (s *SelectedCoords) Border(size int, inner, edges bool) {
+func (s *SelectedCoords) Border(outer, edges bool, checkY, checkX, checkZ bool) {
+	if outer {
+		s.Grow(1, true, edges, true, true, true)
+	}
+	n := s.Clone()
+	for k := range n.selected {
+		a := n.getEmptyAdjacents(k[0], k[1], k[2], edges, checkY, checkX, checkZ)
+		if len(a) == 0 {
+			s.Unselect(k[0], k[1], k[2])
+		}
+	}
 }
 
 func (s *SelectedCoords) Shift(y, x, z int) {

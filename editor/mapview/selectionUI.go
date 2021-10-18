@@ -8,12 +8,12 @@ import (
 )
 
 type SelectionWidget struct {
-	grow                int32
-	growDiagonal        bool
-	growY, growX, growZ bool
-	border              int32
-	inner               bool
-	edges               bool
+	grow                   int32
+	growDiagonal           bool
+	growY, growX, growZ    bool
+	checkY, checkX, checkZ bool
+	outer                  bool
+	edges                  bool
 }
 
 func (s *SelectionWidget) Reset() {
@@ -22,7 +22,7 @@ func (s *SelectionWidget) Reset() {
 }
 
 func (s *SelectionWidget) ResetResize() {
-	s.grow = 0
+	s.grow = 1
 	s.growDiagonal = true
 	s.growY = false
 	s.growX = true
@@ -30,9 +30,10 @@ func (s *SelectionWidget) ResetResize() {
 }
 
 func (s *SelectionWidget) ResetBorderify() {
-	s.border = 1
-	s.inner = false
+	s.outer = false
 	s.edges = true
+	s.checkX = true
+	s.checkZ = true
 }
 
 func (s *SelectionWidget) Draw(m *Mapset) (l g.Layout) {
@@ -110,18 +111,24 @@ func (s *SelectionWidget) Draw(m *Mapset) (l g.Layout) {
 		// Borderify
 		g.Label("Borderify"),
 		g.Child().Size(-1, 110).Layout(
-			g.InputInt(&s.border).Size(50).Label("Width"),
-			g.Tooltip("The width of the border"),
-			g.Checkbox("Inner", &s.inner),
-			g.Tooltip("Use the inside of the selection as the border."),
+			g.Checkbox("Outer", &s.outer),
+			g.Tooltip("Use the outside of the selection as the border."),
 			g.Checkbox("Corners", &s.edges),
 			g.Tooltip("Whether or not corners are considered for border selection."),
+			g.Row(
+				g.Checkbox("Y", &s.checkY),
+				g.Tooltip("Whether Y coordinates are checked for bordeirng."),
+				g.Checkbox("X", &s.checkX),
+				g.Tooltip("Whether X coordinates are checked for bordeirng."),
+				g.Checkbox("Z", &s.checkZ),
+				g.Tooltip("Whether Z coordinates are checked for bordeirng."),
+			),
 			g.Row(
 				g.Button("Reset").OnClick(func() {
 					s.ResetBorderify()
 				}),
 				g.Button("Apply").OnClick(func() {
-					m.selectedCoords.Border(int(s.border), s.inner, s.edges)
+					m.selectedCoords.Border(s.outer, s.edges, s.checkY, s.checkX, s.checkZ)
 					// TODO: Grow m.selectedCoords
 				}),
 			),
