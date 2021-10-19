@@ -7,6 +7,7 @@ import (
 	g "github.com/AllenDang/giu"
 	"github.com/chimera-rpg/go-editor/data"
 	"github.com/chimera-rpg/go-editor/widgets"
+	sdata "github.com/chimera-rpg/go-server/data"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -243,6 +244,64 @@ func (m *Mapset) toolErase(state ButtonState, v *data.UnReMap, y, x, z int) (err
 		}
 	}
 	return
+}
+
+func (m *Mapset) remove(v *data.UnReMap, y, x, z, i int) (err error) {
+	clone := v.Clone()
+	changed := false
+	if err := m.removeArchetype(clone, y, x, z, i); err != nil {
+		log.Println(err)
+		return err
+	} else {
+		changed = true
+	}
+	if changed {
+		v.Set(clone)
+	}
+	return nil
+}
+
+func (m *Mapset) move(v *data.UnReMap, y1, x1, z1, p1, y2, x2, z2, p2 int) (err error) {
+	clone := v.Clone()
+	tiles1 := m.getTiles(clone, y1, x1, z1)
+	if tiles1 == nil {
+		return errors.New("tile OOB")
+	}
+	if p1 == -1 {
+		p1 = len(*tiles1) - 1
+	}
+	if p1 == -1 {
+		p1 = 0
+	}
+	if p1 >= len(*tiles1) {
+		return errors.New("pos OOB")
+	}
+
+	tiles2 := m.getTiles(clone, y2, x2, z2)
+	if tiles2 == nil {
+		return errors.New("tile OOB")
+	}
+	if p2 == -1 {
+		p2 = len(*tiles2)
+	}
+	if p2 == -1 {
+		p2 = 0
+	}
+	if p2 > len(*tiles2) {
+		return errors.New("pos OOB")
+	}
+
+	a := (*tiles1)[p1]
+	m.removeArchetype(clone, y1, x1, z1, p1)
+	if len(*tiles2) == p2 {
+		*tiles2 = append(*tiles2, a)
+	} else {
+		*tiles2 = append((*tiles2)[:p2], append([]sdata.Archetype{a}, (*tiles2)[p2:]...)...)
+	}
+
+	v.Set(clone)
+
+	return nil
 }
 
 func (m *Mapset) toolFill(state ButtonState, v *data.UnReMap, y, x, z int) (err error) {

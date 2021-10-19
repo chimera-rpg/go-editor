@@ -493,7 +493,60 @@ func (m *Mapset) layoutMapTabs() g.Layout {
 					g.SplitLayout(g.DirectionVertical, true, defaultH, g.Layout{
 						g.SplitLayout(g.DirectionHorizontal, true, defaultW,
 							m.layoutMapView(v),
-							m.layoutArchsList(v),
+							g.Custom(func() {
+								_, h := g.GetAvailableRegion()
+								g.Child().Size(g.Auto, h-35).ID("archsView").Border(false).Layout(
+									m.layoutArchsList(v),
+								).Build()
+								g.Row(
+									g.ImageButton(icons.Textures["u"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+										if cm := m.CurrentMap(); cm != nil {
+											if t := m.getTiles(cm.Get(), m.focusedY, m.focusedX, m.focusedZ); t != nil {
+												if m.focusedI+1 >= len(*t) {
+													// If the target is moving beyond the tile's count, move it up a y.
+													if err := m.move(cm, m.focusedY, m.focusedX, m.focusedZ, m.focusedI, m.focusedY+1, m.focusedX, m.focusedZ, 0); err == nil {
+														m.focusedY++
+														m.focusedI = 0
+													}
+												} else {
+													// Otherwise shift it within its tile.
+													if err := m.move(cm, m.focusedY, m.focusedX, m.focusedZ, m.focusedI, m.focusedY, m.focusedX, m.focusedZ, m.focusedI+1); err == nil {
+														m.focusedI++
+													}
+												}
+											}
+										}
+									}),
+									g.Tooltip("Move focused archetype up"),
+									g.ImageButton(icons.Textures["d"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+										if cm := m.CurrentMap(); cm != nil {
+											if t := m.getTiles(cm.Get(), m.focusedY, m.focusedX, m.focusedZ); t != nil {
+												if m.focusedI == 0 {
+													// If the target is moving below 0, move it down a y.
+													if err := m.move(cm, m.focusedY, m.focusedX, m.focusedZ, m.focusedI, m.focusedY-1, m.focusedX, m.focusedZ, -1); err == nil {
+														m.focusedY--
+														if t := m.getTiles(cm.Get(), m.focusedY, m.focusedX, m.focusedZ); t != nil {
+															m.focusedI = len(*t) - 1
+														}
+													}
+												} else {
+													// Otherwise shift it within its tile.
+													if err := m.move(cm, m.focusedY, m.focusedX, m.focusedZ, m.focusedI, m.focusedY, m.focusedX, m.focusedZ, m.focusedI-1); err == nil {
+														m.focusedI--
+													}
+												}
+											}
+										}
+									}),
+									g.Tooltip("Move focused archetype down"),
+									g.ImageButton(icons.Textures["delete"].Texture).Size(30, 30).FramePadding(0).OnClick(func() {
+										if cm := m.CurrentMap(); cm != nil {
+											m.remove(cm, m.focusedY, m.focusedX, m.focusedZ, m.focusedI)
+										}
+									}),
+									g.Tooltip("Delete focused archetype"),
+								).Build()
+							}),
 						),
 					}, g.Dummy(0, 0)).Build()
 				}),
