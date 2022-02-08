@@ -515,6 +515,17 @@ func (m *Manager) GetArchType(a *sdata.Archetype, atype cdata.ArchetypeType) cda
 	return atype
 }
 
+// GetMissingArchAncestors returns a string slice of missing archetype names.
+func (m *Manager) GetMissingArchAncestors(a *sdata.Archetype) []string {
+	var missing []string
+	for _, archName := range a.Archs {
+		if m.GetArchetype(archName) == nil {
+			missing = append(missing, archName)
+		}
+	}
+	return missing
+}
+
 // GetArchField does a proper hierarchical lookup for a given field.
 func (m *Manager) GetArchField(a *sdata.Archetype, field string) reflect.Value {
 	s := reflect.ValueOf(a).Elem()
