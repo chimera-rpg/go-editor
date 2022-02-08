@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"fmt"
 	"image/color"
 	"log"
 	"reflect"
@@ -276,7 +277,19 @@ func (a *ArchEditorWidget) ArchetypeLayout() (l g.Layout) {
 			g.Label("no archetype selected"),
 		}
 	}
+	// Check if parent arch actually exists
+	dm := a.context.DataManager()
+	missing := dm.GetMissingArchAncestors(a.arch)
+
+	var label *g.LabelWidget
+	if len(missing) > 0 {
+		label = g.Label(fmt.Sprintf("Missing: %v", missing))
+	} else {
+		label = g.Label("")
+	}
+
 	l = g.Layout{
+		label,
 		a.StringLayout("Name", "Name", "The name of the object."),
 		a.StringLayout("Description", "Description", "The description of the object."),
 		a.musicLayout(),

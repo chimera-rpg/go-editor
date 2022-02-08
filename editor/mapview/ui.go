@@ -725,13 +725,20 @@ func (m *Mapset) layoutMapInfobar(v *data.UnReMap) g.Layout {
 	tiles := m.getTiles(v.Get(), m.hoveredY, m.hoveredX, m.hoveredZ)
 	var hoveredArch sdata.Archetype
 	hoveredHasMore := false
+	hoveredMissing := false
 	if len(*tiles) > 0 {
 		hoveredArch = (*tiles)[len(*tiles)-1]
 		if len(*tiles) > 1 {
 			hoveredHasMore = true
 		}
+		if len(dm.GetMissingArchAncestors(&hoveredArch)) > 0 {
+			hoveredMissing = true
+		}
 	}
 	hoveredArchName := dm.GetArchName(&hoveredArch, "")
+	if hoveredMissing {
+		hoveredArchName += "MISSING"
+	}
 	if hoveredHasMore {
 		hoveredArchName += "*"
 	}
@@ -739,13 +746,20 @@ func (m *Mapset) layoutMapInfobar(v *data.UnReMap) g.Layout {
 	tiles = m.getTiles(v.Get(), m.focusedY, m.focusedX, m.focusedZ)
 	var focusedArch sdata.Archetype
 	focusedHasMore := false
+	focusedMissing := false
 	if len(*tiles) > 0 {
 		focusedArch = (*tiles)[len(*tiles)-1]
 		if len(*tiles) > 1 {
 			focusedHasMore = true
 		}
+		if len(dm.GetMissingArchAncestors(&focusedArch)) > 0 {
+			focusedMissing = true
+		}
 	}
 	focusedArchName := dm.GetArchName(&focusedArch, "")
+	if focusedMissing {
+		focusedArchName += "MISSING"
+	}
 	if focusedHasMore {
 		focusedArchName += "*"
 	}
