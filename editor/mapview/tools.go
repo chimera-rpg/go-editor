@@ -367,3 +367,77 @@ func (m *Mapset) toolPick(state ButtonState, v *data.UnReMap, y, x, z int) (err 
 	}
 	return
 }
+
+func (m *Mapset) replace(v *data.UnReMap, match *sdata.Archetype, pos int, overwrite bool) {
+	clone := v.Clone()
+	changed := false
+
+	if m.context.SelectedArch() == "" {
+		return
+	}
+
+	replace := func(tiles *[]sdata.Archetype, start, end int) {
+		//
+		for i := start; i < end; i++ {
+			if match != nil {
+				matched := false
+				for _, archName := range (*tiles)[i].Archs {
+					for _, archName2 := range match.Archs {
+						if archName == archName2 {
+							matched = true
+						}
+					}
+				}
+				if matched {
+					if overwrite {
+						(*tiles)[i] = sdata.Archetype{
+							Archs: []string{m.context.SelectedArch()},
+						}
+					} else {
+						// This seems off.
+						(*tiles)[i].Archs = []string{m.context.SelectedArch()}
+					}
+					changed = true
+				}
+			} else {
+				if overwrite {
+					(*tiles)[i] = sdata.Archetype{
+						Archs: []string{m.context.SelectedArch()},
+					}
+				} else {
+					// This seems off.
+					(*tiles)[i].Archs = []string{m.context.SelectedArch()}
+				}
+				changed = true
+			}
+		}
+	}
+
+	for coord := range m.selectedCoords.Get() {
+		y, x, z := coord[0], coord[1], coord[2]
+
+		tiles := m.getTiles(clone, y, x, z)
+		if tiles == nil {
+			continue
+		}
+		if pos == -1 {
+			pos = len(*tiles) - 1
+		}
+		if pos == -1 {
+			pos = 0
+		}
+
+		if pos >= len(*tiles) {
+			continue
+		}
+
+		if pos == -2 {
+			replace(tiles, 0, len(*tiles))
+		} else {
+			replace(tiles, pos, 1)
+		}
+	}
+	if changed {
+		v.Set(clone)
+	}
+}

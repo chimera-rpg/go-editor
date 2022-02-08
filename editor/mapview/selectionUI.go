@@ -5,6 +5,7 @@ import (
 
 	g "github.com/AllenDang/giu"
 	"github.com/chimera-rpg/go-editor/editor/icons"
+	sdata "github.com/chimera-rpg/go-server/data"
 )
 
 type SelectionWidget struct {
@@ -14,11 +15,16 @@ type SelectionWidget struct {
 	checkY, checkX, checkZ bool
 	outer                  bool
 	edges                  bool
+	replaceFocusedIndex    bool
+	replaceTopmost         bool
+	replaceOverwrite       bool
+	replaceFocused         bool
 }
 
 func (s *SelectionWidget) Reset() {
 	s.ResetResize()
 	s.ResetBorderify()
+	s.ResetReplace()
 }
 
 func (s *SelectionWidget) ResetResize() {
@@ -34,6 +40,13 @@ func (s *SelectionWidget) ResetBorderify() {
 	s.edges = true
 	s.checkX = true
 	s.checkZ = true
+}
+
+func (s *SelectionWidget) ResetReplace() {
+	s.replaceFocused = true
+	s.replaceTopmost = false
+	s.replaceFocusedIndex = false
+	s.replaceOverwrite = true
 }
 
 func (s *SelectionWidget) Draw(m *Mapset) (l g.Layout) {
@@ -130,6 +143,41 @@ func (s *SelectionWidget) Draw(m *Mapset) (l g.Layout) {
 				g.Button("Apply").OnClick(func() {
 					m.selectedCoords.Border(s.outer, s.edges, s.checkY, s.checkX, s.checkZ)
 					// TODO: Grow m.selectedCoords
+				}),
+			),
+		),
+		// Replace
+		g.Label("Replace"),
+		g.Child().Size(-1, 110).Layout(
+			g.Checkbox("Match Focused", &s.replaceFocused),
+			g.Tooltip("Replace archetypes matching the focused archetype."),
+			g.Checkbox("Focused Index Only", &s.replaceFocusedIndex),
+			g.Tooltip("Only replace archetypes at the focused stack index."),
+			g.Checkbox("Topmost", &s.replaceTopmost),
+			g.Tooltip("Only replace the topmost archetype in the tile."),
+			g.Checkbox("Overwrite", &s.replaceOverwrite),
+			g.Tooltip("Overwrite archetype completely."),
+			g.Row(
+				g.Button("Reset").OnClick(func() {
+					s.ResetReplace()
+				}),
+				g.Button("Replace").OnClick(func() {
+					pos := 0
+					if s.replaceFocused {
+						pos = -2
+					} else if s.replaceFocusedIndex {
+						pos = m.focusedI
+					} else if s.replaceTopmost {
+						pos = -1
+					}
+					var match *sdata.Archetype
+					if s.replaceFocused {
+						focusedTiles := m.getTiles(m.CurrentMap().Get(), m.focusedY, m.focusedX, m.focusedZ)
+						if m.focusedI >= 0 && m.focusedI < len(*focusedTiles) {
+							match = &(*focusedTiles)[m.focusedI]
+						}
+					}
+					m.replace(m.CurrentMap(), match, pos, s.replaceOverwrite)
 				}),
 			),
 		),
