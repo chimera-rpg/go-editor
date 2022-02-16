@@ -29,8 +29,9 @@ type Mapset struct {
 	resizeT, resizeB                             int32
 	resizeU, resizeD                             int32
 	newH, newW, newD                             int32
+	newY, newX, newZ                             int32
 	newDataName, newName                         string
-	loreEditor, descEditor                       imgui.TextEditor
+	loreEditor, descEditor, scriptEditor         imgui.TextEditor
 	zoom                                         int32
 	showGrid                                     bool
 	showYGrids                                   bool
@@ -73,12 +74,14 @@ func NewMapset(context Context, name string, maps map[string]*sdata.Map) *Mapset
 		context:              context,
 		loreEditor:           imgui.NewTextEditor(),
 		descEditor:           imgui.NewTextEditor(),
+		scriptEditor:         imgui.NewTextEditor(),
 		mouseHeld:            make(map[g.MouseButton]bool),
 		toolBinds:            make(map[g.MouseButton]int),
 		saveMapCWD:           context.DataManager().MapsPath,
 	}
 	m.loreEditor.SetShowWhitespaces(false)
 	m.descEditor.SetShowWhitespaces(false)
+	m.scriptEditor.SetShowWhitespaces(false)
 	m.selectionWidget.Reset()
 
 	m.bindMouseToTool(g.MouseButtonLeft, selectTool)
@@ -177,6 +180,10 @@ func (m *Mapset) resizeMap(u, d, l, r, t, b int) {
 		nW,
 		nD,
 	)
+	newMap.Script = cm.Get().Script
+	newMap.Y = cm.Get().Y
+	newMap.X = cm.Get().X
+	newMap.Z = cm.Get().Z
 	// Create the new map according to dimensions.
 	for y := 0; y < nH; y++ {
 		newMap.Tiles = append(newMap.Tiles, [][][]sdata.Archetype{})

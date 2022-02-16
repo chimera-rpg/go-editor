@@ -3,13 +3,17 @@ package main
 import (
 	"os"
 	"os/signal"
+	"reflect"
 	"runtime/debug"
 	"syscall"
 
+	"github.com/cosmos72/gomacro/imports"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/chimera-rpg/go-editor/data"
 	"github.com/chimera-rpg/go-editor/editor"
+	sdata "github.com/chimera-rpg/go-server/data"
+	sworld "github.com/chimera-rpg/go-server/world"
 )
 
 func main() {
@@ -26,6 +30,27 @@ func main() {
 		}
 	}()
 	log.Print("Starting Chimera editor (golang)")
+
+	// TODO: Properly setup Interpreter with a shared function with the server.
+	{
+		var o sworld.ObjectI
+		var e sworld.EventI
+		imports.Packages["chimera"] = imports.Package{
+			Binds:    map[string]reflect.Value{},
+			Types:    map[string]reflect.Type{},
+			Proxies:  map[string]reflect.Type{},
+			Untypeds: map[string]string{},
+			Wrappers: map[string][]string{},
+		}
+
+		imports.Packages["chimera"].Binds["self"] = reflect.ValueOf(&o).Elem()
+		imports.Packages["chimera"].Binds["event"] = reflect.ValueOf(&e).Elem()
+
+		sdata.Interpreter.ImportPackage("lname", "chimera")
+		sdata.Interpreter.ChangePackage("lname", "chimera")
+
+		sworld.SetupInterpreterTypes(sdata.Interpreter)
+	}
 
 	if err = dataManager.Setup(); err != nil {
 		log.Fatalln(err)

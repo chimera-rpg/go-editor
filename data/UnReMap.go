@@ -89,6 +89,10 @@ func (u *UnReMap) Clone() *sdata.Map {
 		Height:      t.Height,
 		Width:       t.Width,
 		Depth:       t.Depth,
+		Script:      t.Script,
+		Y:           t.Y,
+		X:           t.X,
+		Z:           t.Z,
 	}
 	// Create the new map according to dimensions.
 	for y := 0; y < t.Height; y++ {

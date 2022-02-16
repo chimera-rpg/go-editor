@@ -29,7 +29,7 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 	windowOpen := true
 
 	var mapExists bool
-	var resizeMapPopup, newMapPopup, adjustMapPopup, deleteMapPopup bool
+	var resizeMapPopup, newMapPopup, adjustMapPopup, adjustScriptPopup, deleteMapPopup bool
 	var shortTitle string
 
 	if m.CurrentMap() != nil {
@@ -154,9 +154,17 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 				cm := m.CurrentMap()
 				m.newName = cm.Get().Name
 				m.newDataName = cm.DataName()
+				m.newY = int32(cm.Get().Y)
+				m.newX = int32(cm.Get().X)
+				m.newZ = int32(cm.Get().Z)
 				m.descEditor.SetText(cm.Get().Description)
 				m.loreEditor.SetText(cm.Get().Lore)
 				adjustMapPopup = true
+			}),
+			g.MenuItem("Script...").Enabled(mapExists).OnClick(func() {
+				cm := m.CurrentMap()
+				m.scriptEditor.SetText(cm.Get().Script)
+				adjustScriptPopup = true
 			}),
 			g.MenuItem("Resize...").Enabled(mapExists).OnClick(func() {
 				resizeMapPopup = true
@@ -261,6 +269,8 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 				g.OpenPopup("New Map")
 			} else if adjustMapPopup {
 				g.OpenPopup("Map Properties")
+			} else if adjustScriptPopup {
+				g.OpenPopup("Map Script")
 			} else if deleteMapPopup {
 				g.OpenPopup("Delete Map")
 			}
@@ -330,6 +340,9 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 			g.SliderInt(&m.newH, 1, 200).Label("Height").Format("%d"),
 			g.SliderInt(&m.newW, 1, 200).Label("Width ").Format("%d"),
 			g.SliderInt(&m.newD, 1, 200).Label("Depth ").Format("%d"),
+			g.SliderInt(&m.newY, 1, 200).Label("Y").Format("%d"),
+			g.SliderInt(&m.newX, 1, 200).Label("X").Format("%d"),
+			g.SliderInt(&m.newZ, 1, 200).Label("Z").Format("%d"),
 			g.Row(
 				g.Button("Create").OnClick(func() {
 					g.CloseCurrentPopup()
@@ -359,6 +372,9 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 				imgui.SameLine()
 				g.Label("Lore").Build()
 			}),
+			g.SliderInt(&m.newY, 1, 200).Label("Y").Format("%d"),
+			g.SliderInt(&m.newX, 1, 200).Label("X").Format("%d"),
+			g.SliderInt(&m.newZ, 1, 200).Label("Z").Format("%d"),
 			g.Row(
 				g.Button("Save").OnClick(func() {
 					g.CloseCurrentPopup()
@@ -369,6 +385,9 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 					clone.Name = m.newName
 					clone.Description = m.descEditor.GetText()
 					clone.Lore = m.loreEditor.GetText()
+					clone.Y = int(m.newY)
+					clone.X = int(m.newX)
+					clone.Z = int(m.newZ)
 
 					cm.SetDataName(m.newDataName)
 
@@ -379,6 +398,28 @@ func (m *Mapset) Draw() (title string, w *g.WindowWidget, layout g.Layout) {
 				g.Button("Cancel").OnClick(func() {
 					g.CloseCurrentPopup()
 					m.newName, m.newDataName = "", ""
+				}),
+			),
+		),
+		g.PopupModal("Map Script").Flags(g.WindowFlagsHorizontalScrollbar).Layout(
+			g.Custom(func() {
+				availW, availH := g.GetAvailableRegion()
+				m.scriptEditor.Render("Script", imgui.Vec2{X: availW - 5, Y: availH - 3}, false)
+			}),
+			g.Row(
+				g.Button("Save").OnClick(func() {
+					g.CloseCurrentPopup()
+					//
+					cm := m.CurrentMap()
+
+					clone := cm.Clone()
+					clone.Script = m.scriptEditor.GetText()
+
+					cm.Set(clone)
+
+				}),
+				g.Button("Cancel").OnClick(func() {
+					g.CloseCurrentPopup()
 				}),
 			),
 		),
