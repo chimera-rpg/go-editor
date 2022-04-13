@@ -10,7 +10,7 @@ require (
 	github.com/AllenDang/giu v0.5.7-0.20210927081311-2a792dae8138
 	github.com/AllenDang/imgui-go v1.12.1-0.20210927080912-46269bd8d896
 	github.com/c-bata/go-prompt v0.2.3 // indirect
-	github.com/chimera-rpg/go-common v0.0.0-20220409172830-ba3619d3b5e7
+	github.com/chimera-rpg/go-common v0.0.0-20220413014628-717c82077432
 	github.com/chimera-rpg/go-server v0.0.0-20220216090703-1bba1d62a844
 	github.com/cosmos72/gomacro v0.0.0-20220110200413-b2701849f898 // indirect
 	github.com/eczarny/lexer v0.0.0-20141213044152-5fcb9a5b73e7 // indirect
